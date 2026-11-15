@@ -6,12 +6,16 @@ import type { Schemas } from "./api.ts";
 import {
   countLabel,
   formatRunDuration,
+  INITIAL_RUN_TABS,
   initialView,
   locateVerdict,
   patientFactChips,
   patientTitle,
+  runTabsReducer,
+  shortCriteria,
   tierCounts,
   tierHint,
+  traceTabLabel,
 } from "./match-results.ts";
 
 type PatientFacts = Schemas["PatientFacts"];
@@ -125,4 +129,64 @@ test("a selected trace event is located at the tier and trial of the verdict it 
 
 test("a trial's outcome counts read OK / disqualifying / unknown, zeros included", () => {
   assert.equal(countLabel({ pass: 7, unknown: 1 }), "7 OK · 0 disqualifying · 1 unknown");
+});
+
+function verdicts(...outcomes: Schemas["Verdict"]["outcome"][]): Schemas["Verdict"][] {
+  return outcomes.map((outcome, i) => ({
+    criterion_id: `c${i + 1}`,
+    outcome,
+    method: "rule",
+    criterion_quote: "q",
+    patient_evidence: null,
+    rationale: "r",
+    verified: true,
+    trace_event_id: `e${i + 1}`,
+  }));
+}
+
+const ids = (vs: Schemas["Verdict"][]) => vs.map((v) => v.criterion_id);
+
+test("the short criterion list leads with what decides the tier, in the trial's order", () => {
+  const vs = verdicts("pass", "unknown", "pass", "fail", "pass");
+  assert.deepEqual(ids(shortCriteria(vs, null, 3)), ["c1", "c2", "c4"]);
+});
+
+test("the short criterion list always includes the highlighted verdict", () => {
+  const vs = verdicts("pass", "unknown", "pass", "fail", "pass");
+  assert.deepEqual(ids(shortCriteria(vs, "e5", 3)), ["c2", "c4", "c5"]);
+});
+
+test("a trial with no more criteria than the limit shows them all", () => {
+  const vs = verdicts("pass", "pass");
+  assert.deepEqual(ids(shortCriteria(vs, null, 3)), ["c1", "c2"]);
+});
+
+test("a run page opens on the Results tab with nothing to reveal", () => {
+  assert.deepEqual(INITIAL_RUN_TABS, { tab: "results", reveal: null });
+});
+
+test("Why? on a verdict switches to the Trace tab", () => {
+  const next = runTabsReducer(INITIAL_RUN_TABS, { type: "why" });
+  assert.equal(next.tab, "trace");
+});
+
+test("View verdict switches back to Results and asks to reveal that verdict, every time", () => {
+  const onTrace = { tab: "trace" as const, reveal: null };
+  const first = runTabsReducer(onTrace, { type: "view-verdict", eventId: "judge" });
+  assert.equal(first.tab, "results");
+  assert.equal(first.reveal?.eventId, "judge");
+  const again = runTabsReducer({ ...first, tab: "trace" }, { type: "view-verdict", eventId: "judge" });
+  assert.equal(again.reveal?.eventId, "judge");
+  assert.notEqual(again.reveal?.nonce, first.reveal?.nonce);
+});
+
+test("picking a tab shows it and keeps the last reveal", () => {
+  const state = runTabsReducer(INITIAL_RUN_TABS, { type: "view-verdict", eventId: "judge" });
+  const next = runTabsReducer(state, { type: "show", tab: "trace" });
+  assert.deepEqual(next, { tab: "trace", reveal: state.reveal });
+});
+
+test("the trace tab counts every event of the run", () => {
+  assert.equal(traceTabLabel(41), "Trace · 41");
+  assert.equal(traceTabLabel(0), "Trace · 0");
 });
