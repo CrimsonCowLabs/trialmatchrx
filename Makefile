@@ -1,4 +1,4 @@
-.PHONY: install dev api web check check-api check-web types seed cohort eval eval-offline \
+.PHONY: install dev api web check check-api check-web check-scripts types seed cohort eval eval-offline \
 	eval-smoke compile-fixtures record-demo
 
 API_PORT ?= 8045
@@ -21,13 +21,20 @@ api:
 web:
 	cd web && pnpm dev --port $(WEB_PORT)
 
-check: check-api check-web
+check: check-api check-web check-scripts
 
 check-api:
 	cd api && uv run ruff check . && uv run ruff format --check . && uv run mypy app/ && uv run pytest -q
 
 check-web:
 	cd web && pnpm typecheck && pnpm lint && pnpm test
+
+# The deploy scripts' suites: stubs only, no Docker, no network, no box.
+check-scripts:
+	@for t in scripts/tests/test-*.sh; do \
+		out="$$(bash "$$t")" || { printf '%s\n' "$$out"; exit 1; }; \
+		printf '%s: %s\n' "$$t" "$$(printf '%s\n' "$$out" | tail -1)"; \
+	done
 
 # Regenerate web/lib/api-types.ts from FastAPI's OpenAPI (no server needed).
 types:
