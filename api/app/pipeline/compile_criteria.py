@@ -13,9 +13,10 @@ import re
 from collections.abc import Callable
 from typing import Any, Literal
 
+from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 
 from app.config import get_settings
 from app.pipeline import criteria_cache
@@ -153,14 +154,17 @@ def compile_rate(criteria: list[Criterion]) -> float | None:
     return sum(c.predicate is not None for c in criteria) / len(criteria) if criteria else None
 
 
+class CompileModelUnavailable(RuntimeError):
+    """No compile model can be built (no API key) and the cache missed."""
+
+
 def anthropic_compile_model() -> BaseChatModel:
     """The real compile model (Sonnet, from settings). Built only on a cache miss."""
-    from langchain_anthropic import ChatAnthropic
-    from pydantic import SecretStr
-
     settings = get_settings()
     if not settings.anthropic_api_key:
-        raise RuntimeError("ANTHROPIC_API_KEY is not set; the compile cache missed")
+        raise CompileModelUnavailable(
+            "ANTHROPIC_API_KEY is not set and this trial is not in the compile cache"
+        )
     return ChatAnthropic(
         model=settings.model_compile,
         api_key=SecretStr(settings.anthropic_api_key),
