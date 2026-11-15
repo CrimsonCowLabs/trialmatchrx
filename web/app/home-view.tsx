@@ -1,12 +1,13 @@
 "use client";
 
-// The home page's four cards: match the demo patient, open a trial's feasibility view, the
+// The home page's four cards: match a demo patient, open a trial's feasibility view, the
 // latest match runs (GET /api/runs) and the latest eval (GET /api/eval/latest). Every figure
 // shown comes from an API response.
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
+import { DemoPatientCards } from "@/components/DemoPatientCards";
 import { OpenFeasibility } from "@/components/OpenFeasibility";
 import { StatusPill } from "@/components/StatusPill";
 import { TierChips } from "@/components/TierChips";
@@ -14,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api, errorMessage, type EvalLatest, type RunListItem } from "@/lib/api";
 import { runLinks } from "@/lib/browse";
-import { DEMO_MATCH } from "@/lib/demo";
+import { DEMO_PATIENTS, demoMatchRequest, type DemoPatient } from "@/lib/demo";
 import { formatScore } from "@/lib/eval";
 import { defaultFeasibilityNct, evalBars } from "@/lib/home";
 import { useLoad } from "@/lib/use-load";
@@ -37,6 +38,7 @@ function Failed({ error }: { error: string }) {
 
 export function MatchCard() {
   const router = useRouter();
+  const [patient, setPatient] = useState<DemoPatient>(DEMO_PATIENTS[0]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +46,7 @@ export function MatchCard() {
     setBusy(true);
     setError(null);
     try {
-      const { run_id } = await api.startMatch(DEMO_MATCH);
+      const { run_id } = await api.startMatch(demoMatchRequest(patient));
       router.push(`/match/${encodeURIComponent(run_id)}`);
     } catch (err) {
       setError(errorMessage(err));
@@ -53,23 +55,31 @@ export function MatchCard() {
   }
 
   return (
-    <Card data-testid="home-match">
+    <Card data-testid="home-match" className="md:col-span-2">
       <CardHeader>
         <CardTitle>Match a patient</CardTitle>
         <CardDescription>
-          Rank recruiting trials for one patient, with a quoted verdict on every criterion.
+          Pick a synthetic patient, then rank recruiting trials with a quoted verdict on every
+          criterion.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
+        <DemoPatientCards
+          selectedId={patient.id}
+          onSelect={setPatient}
+          className="lg:grid-cols-4"
+        />
         <figure className="rounded-lg border border-line bg-surface-sunken p-3">
           <figcaption className="mb-1 text-xs font-medium tracking-wide text-ink-4 uppercase">
-            Demo patient · synthetic
+            {patient.name} · synthetic note
           </figcaption>
-          <blockquote className="text-sm text-ink-2">{DEMO_MATCH.note}</blockquote>
+          <blockquote className="text-sm text-ink-2" data-testid="demo-note">
+            {patient.note}
+          </blockquote>
         </figure>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <Button onClick={findTrials} disabled={busy}>
-            {busy ? "Starting…" : "Find trials"}
+            {busy ? "Starting…" : `Find trials for ${patient.name}`}
           </Button>
           <Link href="/match" className={`text-sm ${LINK}`}>
             Use another patient
