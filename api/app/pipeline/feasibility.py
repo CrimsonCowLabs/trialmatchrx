@@ -207,6 +207,7 @@ def simulate(
                 remaining=int((remaining & passed).sum()),
                 dropped=int((remaining & ~passed).sum()),
                 missing=int((remaining & ~known).sum()),
+                access_barrier=c.access_barrier,
             )
         )
         remaining &= passed
@@ -220,7 +221,9 @@ def simulate(
         for i, (c, _) in enumerate(rules)
     ]
     review = [
-        ReviewCriterion(criterion_id=c.id, text=c.text, type=c.type)
+        ReviewCriterion(
+            criterion_id=c.id, text=c.text, type=c.type, access_barrier=c.access_barrier
+        )
         for c in criteria
         if c.predicate is None
     ]

@@ -346,6 +346,8 @@ export interface components {
             predicate: components["schemas"]["Predicate"] | null;
             /** Needs Judgment */
             needs_judgment: boolean;
+            /** Access Barrier */
+            access_barrier?: ("language" | "visit_burden" | "technology" | "support") | null;
         };
         /** EvalLatest */
         EvalLatest: {
@@ -564,6 +566,8 @@ export interface components {
              * @enum {string}
              */
             type: "inclusion" | "exclusion";
+            /** Access Barrier */
+            access_barrier?: ("language" | "visit_burden" | "technology" | "support") | null;
         };
         /**
          * RunListItem
@@ -831,6 +835,8 @@ export interface components {
             verified: boolean;
             /** Trace Event Id */
             trace_event_id: string;
+            /** Access Barrier */
+            access_barrier?: ("language" | "visit_burden" | "technology" | "support") | null;
         };
         /**
          * WaterfallStep
@@ -867,6 +873,8 @@ export interface components {
             dropped: number;
             /** Missing */
             missing: number;
+            /** Access Barrier */
+            access_barrier?: ("language" | "visit_burden" | "technology" | "support") | null;
         };
         /**
          * RunDone

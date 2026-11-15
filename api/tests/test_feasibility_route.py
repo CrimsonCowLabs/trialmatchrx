@@ -170,3 +170,34 @@ async def test_responds_under_100_ms_over_a_1000_patient_cohort() -> None:
         f"median {statistics.median(timings_ms):.1f} ms, max {max(timings_ms):.1f} ms"
     )
     assert max(timings_ms) < 100
+
+
+async def test_waterfall_and_review_rows_carry_access_barriers_of_cached_criteria() -> None:
+    """Criteria cached before the flag existed are flagged on the way out (issue #53)."""
+    load(10)
+    weekly = "Willing to attend weekly study visits, BMI >= 23"
+    criteria_cache.put(
+        NCT,
+        "h",
+        "v1",
+        None,
+        [
+            rule("inc-1", weekly, "vitals.bmi", ">=", 23),
+            rule("inc-2", "eGFR >= 60 mL/min/1.73 m^2", "labs.egfr", ">=", 60),
+            review("inc-3", "Able to read and write English"),
+            review("exc-1", "Participation in another trial"),
+        ],
+    )
+
+    async with client() as c:
+        response = await c.post(f"/api/feasibility/{NCT}", json={"overrides": {}})
+
+    result = FeasibilityResult.model_validate(response.json())
+    assert [(w.criterion_id, w.access_barrier) for w in result.waterfall] == [
+        ("inc-1", "visit_burden"),
+        ("inc-2", None),
+    ]
+    assert [(r.criterion_id, r.access_barrier) for r in result.review_criteria] == [
+        ("inc-3", "language"),
+        ("exc-1", None),
+    ]
