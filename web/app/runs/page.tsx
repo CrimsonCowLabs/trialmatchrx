@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { Page } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 
@@ -7,7 +8,7 @@ import { RunsView } from "./runs-view";
 
 export default function RunsPage() {
   return (
-    <main className="mx-auto flex w-full min-w-0 max-w-5xl flex-col gap-4 px-4 py-6 sm:p-8">
+    <Page width="wide">
       <PageHeader
         breadcrumb={[{ label: "Home", href: "/" }]}
         title="Match runs"
@@ -19,6 +20,6 @@ export default function RunsPage() {
         }
       />
       <RunsView />
-    </main>
+    </Page>
   );
 }

@@ -1,12 +1,13 @@
 import Link from "next/link";
 
+import { Page } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 
 import { TrialsView } from "./trials-view";
 
 export default function TrialsPage() {
   return (
-    <main className="mx-auto flex w-full min-w-0 max-w-5xl flex-col gap-4 px-4 py-6 sm:p-8">
+    <Page width="wide">
       <PageHeader
         breadcrumb={[{ label: "Home", href: "/" }]}
         title="Trials"
@@ -18,6 +19,6 @@ export default function TrialsPage() {
         }
       />
       <TrialsView />
-    </main>
+    </Page>
   );
 }

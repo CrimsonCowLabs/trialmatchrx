@@ -1,12 +1,13 @@
 import Link from "next/link";
 
+import { Page } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 
 import { EvalView } from "./eval-view";
 
 export default function EvalPage() {
   return (
-    <main className="mx-auto flex w-full min-w-0 max-w-5xl flex-col gap-4 px-4 py-6 sm:p-8">
+    <Page width="wide">
       <PageHeader
         breadcrumb={[{ label: "Home", href: "/" }]}
         title="Eval"
@@ -25,6 +26,6 @@ export default function EvalPage() {
         unless a criterion fails. Scores are not comparable with the official TREC numbers.
       </p>
       <EvalView />
-    </main>
+    </Page>
   );
 }
