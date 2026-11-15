@@ -1,6 +1,6 @@
 // Pure helpers for the /trials and /runs browse pages. Only a type import from ./api.ts, so
 // node:test can load this file directly.
-import type { RunListItem, Tier, TierCounts } from "./api.ts";
+import type { RunListItem, Tier, TierCounts, TrialListItem } from "./api.ts";
 
 // Every tier, in rank order; `satisfies` makes tsc flag a tier added to the API but not here.
 const TIER_LABELS = {
@@ -36,6 +36,52 @@ export type RunLinks = { view: string; replay: string | null };
 export function runLinks(run: RunListItem): RunLinks {
   const id = encodeURIComponent(run.run_id);
   return { view: `/match/${id}`, replay: run.status === "done" ? `/runs/${id}` : null };
+}
+
+export type TrialFilter = "all" | "compiled" | "not_compiled";
+
+const TRIAL_FILTERS = {
+  all: { label: "All", keep: () => true },
+  compiled: { label: "Compiled", keep: (t: TrialListItem) => t.compiled },
+  not_compiled: { label: "Not compiled", keep: (t: TrialListItem) => !t.compiled },
+} as const satisfies Record<TrialFilter, { label: string; keep: (t: TrialListItem) => boolean }>;
+
+export type TrialFilterChip = { filter: TrialFilter; label: string; count: number };
+
+/** The All / Compiled / Not compiled chips over `trials`, each with its count. */
+export function trialFilterChips(trials: TrialListItem[]): TrialFilterChip[] {
+  return (Object.keys(TRIAL_FILTERS) as TrialFilter[]).map((filter) => ({
+    filter,
+    label: TRIAL_FILTERS[filter].label,
+    count: trials.filter(TRIAL_FILTERS[filter].keep).length,
+  }));
+}
+
+/** The trials whose NCT ID or title contains `query`, ignoring case and surrounding space;
+ *  the same match as GET /api/trials?q, run here so one load gives the whole cache count too. */
+export function matchingTrials(trials: TrialListItem[], query: string): TrialListItem[] {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return trials;
+  return trials.filter(
+    (t) => t.nct_id.toLowerCase().includes(needle) || t.title.toLowerCase().includes(needle),
+  );
+}
+
+/** `trials` with one row updated after POST /api/trials/{nct}/compile returned
+ *  `criteriaCount` criteria; a trial counts as compiled once it has any, as on the API. */
+export function withCompiled(
+  trials: TrialListItem[],
+  nct: string,
+  criteriaCount: number,
+): TrialListItem[] {
+  return trials.map((t) =>
+    t.nct_id === nct ? { ...t, compiled: criteriaCount > 0, criteria_count: criteriaCount } : t,
+  );
+}
+
+/** The trials one chip keeps. */
+export function filterTrials(trials: TrialListItem[], filter: TrialFilter): TrialListItem[] {
+  return trials.filter(TRIAL_FILTERS[filter].keep);
 }
 
 export type TrialStatusTone = "recruiting" | "not-yet" | "other";
