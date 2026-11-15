@@ -15,11 +15,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { api, errorMessage, type EvalLatest, type RunListItem } from "@/lib/api";
 import { runLinks } from "@/lib/browse";
 import { DEMO_MATCH } from "@/lib/demo";
+import { formatScore } from "@/lib/eval";
 import { defaultFeasibilityNct, evalBars } from "@/lib/home";
 import { useLoad } from "@/lib/use-load";
 
 const RECENT_RUNS = 5;
 
+// HACK(demo): inline teal link classes until the shared link style from the app-shell ticket (#31)
+// lands; swap these for it then.
 const LINK = "font-medium text-teal hover:text-teal-strong hover:underline";
 
 const loadTrials = () => api.listTrials();
@@ -174,20 +177,22 @@ export function RecentRunsCard() {
   );
 }
 
-function Bar({ system, value }: { system: "matcher" | "bm25"; value: number | null }) {
+// Literal class names so Tailwind sees them.
+const BAR_SYSTEMS = {
+  matcher: { label: "Matcher", fill: "bg-teal" },
+  bm25: { label: "BM25", fill: "bg-ink-5" },
+} as const;
+
+function Bar({ system, value }: { system: keyof typeof BAR_SYSTEMS; value: number | null }) {
+  const { label, fill } = BAR_SYSTEMS[system];
   const width = value === null ? 0 : Math.min(Math.max(value, 0), 1) * 100;
   return (
     <div className="grid grid-cols-[4.5rem_minmax(0,1fr)_3.25rem] items-center gap-2 text-xs">
-      <span className="text-ink-3">{system === "matcher" ? "Matcher" : "BM25"}</span>
+      <span className="text-ink-3">{label}</span>
       <span className="h-2 overflow-hidden rounded-full bg-line-soft" aria-hidden>
-        <span
-          className={`block h-full rounded-full ${system === "matcher" ? "bg-teal" : "bg-ink-5"}`}
-          style={{ width: `${width}%` }}
-        />
+        <span className={`block h-full rounded-full ${fill}`} style={{ width: `${width}%` }} />
       </span>
-      <span className="text-right font-mono tabular-nums">
-        {value === null ? "–" : value.toFixed(3)}
-      </span>
+      <span className="text-right font-mono tabular-nums">{formatScore(value)}</span>
     </div>
   );
 }
