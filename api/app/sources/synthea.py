@@ -37,9 +37,9 @@ CANONICAL_UNITS = {"labs": LAB_UNITS, "vitals": VITAL_UNITS}
 # UCUM spellings Synthea writes -> the canonical unit (after `normalize_unit`).
 UCUM_ALIASES = {"ml/min/{1.73_m2}": "ml/min/1.73m2", "mm[hg]": "mmhg"}
 
-# SNOMED codes whose Synthea display doesn't contain the name compiled predicates use
-# (`has "type 2 diabetes"` vs "Diabetes mellitus type 2 (disorder)"). Everything else keeps its
-# display, minus the SNOMED semantic tag.
+# HACK(demo): one hand-picked rename, not a terminology map. SNOMED codes whose Synthea display
+# doesn't contain the name compiled predicates use (`has "type 2 diabetes"` vs "Diabetes
+# mellitus type 2 (disorder)"). Everything else keeps its display, minus the semantic tag.
 CONDITION_NAMES = {"44054006": "type 2 diabetes mellitus"}
 SMOKING_STATUS = "72166-2"
 # SNOMED smoking-status answers Synthea writes. "Ex-smoker" is not a current smoker; anything
@@ -55,13 +55,20 @@ SMOKING_CODES: dict[str, bool] = {
 SEMANTIC_TAG = re.compile(r"\s*\((disorder|finding|situation|morphologic abnormality)\)\s*$")
 
 
+def _entries(bundle: dict[str, Any]) -> list[dict[str, Any]]:
+    """Bundle entries that carry a resource (malformed entries are skipped)."""
+    return [
+        e
+        for e in bundle.get("entry") or []
+        if isinstance(e, dict) and isinstance(e.get("resource"), dict)
+    ]
+
+
 def _resources(bundle: dict[str, Any], resource_type: str) -> list[dict[str, Any]]:
     return [
-        r
-        for e in bundle.get("entry") or []
-        if isinstance(e, dict)
-        and isinstance(r := e.get("resource"), dict)
-        and r.get("resourceType") == resource_type
+        e["resource"]
+        for e in _entries(bundle)
+        if e["resource"].get("resourceType") == resource_type
     ]
 
 
@@ -81,24 +88,45 @@ def _age(birth: dt.date | None, on: dt.date) -> int | None:
     return on.year - birth.year - ((on.month, on.day) < (birth.month, birth.day))
 
 
+def _number(value: Any) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
+    return float(value)
+
+
 def _location(patient: dict[str, Any]) -> tuple[float | None, float | None]:
+    """Synthea's geolocation extension on the Patient's address."""
     for address in patient.get("address") or []:
+        if not isinstance(address, dict):
+            continue
         for ext in address.get("extension") or []:
-            if ext.get("url") != GEOLOCATION:
+            if not isinstance(ext, dict) or ext.get("url") != GEOLOCATION:
                 continue
-            parts = {x.get("url"): x.get("valueDecimal") for x in ext.get("extension") or []}
-            lat, lon = parts.get("latitude"), parts.get("longitude")
-            if isinstance(lat, int | float) and isinstance(lon, int | float):
-                return float(lat), float(lon)
+            parts = {
+                x.get("url"): x.get("valueDecimal")
+                for x in ext.get("extension") or []
+                if isinstance(x, dict)
+            }
+            lat, lon = _number(parts.get("latitude")), _number(parts.get("longitude"))
+            if lat is not None and lon is not None:
+                return lat, lon
     return None, None
 
 
-def _loinc_codes(concept: dict[str, Any] | None) -> list[str]:
+def _codes(concept: dict[str, Any] | None, system: str) -> list[str]:
     return [
         c["code"]
         for c in (concept or {}).get("coding") or []
-        if c.get("system") == "http://loinc.org" and isinstance(c.get("code"), str)
+        if c.get("system") == system and isinstance(c.get("code"), str)
     ]
+
+
+def _loinc_codes(concept: dict[str, Any] | None) -> list[str]:
+    return _codes(concept, "http://loinc.org")
+
+
+def _snomed_codes(concept: dict[str, Any] | None) -> list[str]:
+    return _codes(concept, "http://snomed.info/sct")
 
 
 def _quantities(obs: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
@@ -134,9 +162,9 @@ def _measurements(
                 continue
             section, key = LOINC[code]
             canonical = CANONICAL_UNITS[section][key]
-            value = qty.get("value")
+            value = _number(qty.get("value"))
             label = f"{section}.{key} ({obs.get('id')})"
-            if isinstance(value, bool) or not isinstance(value, int | float):
+            if value is None:
                 dropped.append(f"{label}: no numeric value")
                 continue
             if not _canonical_unit(qty.get("unit"), canonical):
@@ -146,7 +174,7 @@ def _measurements(
             rank = (when or dt.date.min, index)
             current = latest.get((section, key))
             if current is None or rank > current[:2]:
-                fact = Fact(value=float(value), unit=canonical, date=when)
+                fact = Fact(value=value, unit=canonical, date=when)
                 latest[(section, key)] = (*rank, fact)
     out: dict[str, dict[str, Fact]] = {"labs": {}, "vitals": {}}
     for (section, key), (_, _, fact) in sorted(latest.items()):
@@ -163,21 +191,21 @@ def _display(concept: dict[str, Any] | None) -> str | None:
     return text.strip() if isinstance(text, str) and text.strip() else None
 
 
-def _snomed_codes(concept: dict[str, Any] | None) -> list[str]:
-    return [
-        str(c.get("code"))
-        for c in (concept or {}).get("coding") or []
-        if c.get("system") == "http://snomed.info/sct"
-    ]
+def _status_codes(concept: Any) -> set[str]:
+    coding = concept.get("coding") if isinstance(concept, dict) else None
+    return {
+        c["code"] for c in coding or [] if isinstance(c, dict) and isinstance(c.get("code"), str)
+    }
 
 
 def _is_active(condition: dict[str, Any]) -> bool:
-    """Synthea marks a cured condition `resolved` and gives it an abatement date."""
+    """Synthea marks a cured condition `resolved` and gives it an abatement date. A condition
+    verified as refuted or entered in error isn't the patient's either."""
     if condition.get("abatementDateTime"):
         return False
-    status = condition.get("clinicalStatus") or {}
-    codes = {c.get("code") for c in status.get("coding") or []}
-    return not codes & {"resolved", "inactive", "remission"}
+    if _status_codes(condition.get("clinicalStatus")) & {"resolved", "inactive", "remission"}:
+        return False
+    return not _status_codes(condition.get("verificationStatus")) & {"refuted", "entered-in-error"}
 
 
 def _conditions(conditions: list[dict[str, Any]]) -> list[Fact]:
@@ -211,13 +239,7 @@ def _medication_concept(
 
 def _meds(bundle: dict[str, Any]) -> list[Fact]:
     """Active MedicationRequests, one per drug (latest authored), in bundle order."""
-    by_url = {
-        e["fullUrl"]: e["resource"]
-        for e in bundle.get("entry") or []
-        if isinstance(e, dict)
-        and isinstance(e.get("fullUrl"), str)
-        and isinstance(e.get("resource"), dict)
-    }
+    by_url = {e["fullUrl"]: e["resource"] for e in _entries(bundle) if "fullUrl" in e}
     out: dict[str, Fact] = {}
     for request in _resources(bundle, "MedicationRequest"):
         if request.get("status") != "active":
@@ -304,11 +326,7 @@ async def parse_bundle(
 ) -> PatientFacts:
     """The FHIR path of the patient parse, traced as one `parse_patient` step (no LLM).
     `as_of` defaults to today."""
-    counts = Counter(
-        r.get("resourceType")
-        for e in bundle.get("entry") or []
-        if isinstance(e, dict) and isinstance(r := e.get("resource"), dict)
-    )
+    counts = Counter(e["resource"].get("resourceType") for e in _entries(bundle))
     step_input = {"source": "fhir_bundle", "resources": dict(counts)}
     async with rec.step("parse_patient", "step", step_input) as s:
         mapping = map_bundle(bundle, as_of=as_of or dt.date.today())

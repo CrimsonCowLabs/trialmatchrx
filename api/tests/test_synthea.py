@@ -69,6 +69,15 @@ def test_active_conditions_only_without_the_snomed_semantic_tag() -> None:
     ]  # the resolved acute bronchitis is left out
 
 
+def test_a_refuted_or_mistaken_condition_is_left_out() -> None:
+    data = bundle("full")
+    for entry in data["entry"]:
+        if entry["resource"]["id"] == "c-htn":
+            entry["resource"]["verificationStatus"] = {"coding": [{"code": "entered-in-error"}]}
+    names = [c.value for c in synthea.facts_from_bundle(data, as_of=AS_OF).conditions]
+    assert names == ["type 2 diabetes mellitus", "Chronic kidney disease stage 3"]
+
+
 def test_active_medication_requests_only() -> None:
     meds = synthea.facts_from_bundle(bundle("full"), as_of=AS_OF).meds
     assert meds == [
