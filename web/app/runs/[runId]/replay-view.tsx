@@ -54,6 +54,7 @@ function Replay({ runId, trace, summary }: { runId: string } & Loaded) {
   const skipToEnd = () => setShown({ index: emissions.length, events: trace });
 
   const stillRecording = summary.status === "running";
+  const isCloser = summary.kind === "closer";
   return (
     <RunWithTrace
       runId={runId}
@@ -63,9 +64,13 @@ function Replay({ runId, trace, summary }: { runId: string } & Loaded) {
         label: finished ? "replayed" : `replay ${shown.index}/${emissions.length}`,
         variant: finished ? "secondary" : "outline",
       }}
-      matches={finished && summary.status === "done" ? summary.matches : null}
+      matches={finished && summary.status === "done" && !isCloser ? summary.matches : null}
+      closer={finished ? (summary.closer ?? null) : null}
       runStatus={summary.status}
-      link={{ href: `/match/${encodeURIComponent(runId)}`, label: "Live view" }}
+      link={{
+        href: `/${isCloser ? "closer" : "match"}/${encodeURIComponent(runId)}`,
+        label: "Live view",
+      }}
     >
       {stillRecording && (
         <p className="text-sm text-amber-600">

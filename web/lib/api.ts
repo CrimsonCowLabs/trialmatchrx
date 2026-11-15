@@ -11,6 +11,8 @@ export type EvalLatest = Schemas["EvalLatest"];
 export type Criterion = Schemas["Criterion"];
 export type FeasibilityRequest = Schemas["FeasibilityRequest"];
 export type FeasibilityResult = Schemas["FeasibilityResult"];
+export type CloserRequest = Schemas["CloserRequest"];
+export type CloserOutput = Schemas["CloserOutput"];
 
 // Called directly (not through a Next rewrite) so the SSE stream is never buffered.
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -51,6 +53,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   startMatch: (body: JsonBody<"/api/match", "post">) =>
     request<RunStarted>("/api/match", { method: "POST", body: JSON.stringify(body) }),
+  startCloser: (body: CloserRequest) =>
+    request<RunStarted>("/api/closer", { method: "POST", body: JSON.stringify(body) }),
   getRun: (runId: string) => request<RunSummary>(`/api/runs/${encodeURIComponent(runId)}`),
   getTrace: (runId: string) =>
     request<TraceEvent[]>(`/api/runs/${encodeURIComponent(runId)}/trace`),
