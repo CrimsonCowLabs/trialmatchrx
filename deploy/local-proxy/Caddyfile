@@ -1,0 +1,18 @@
+# Local stand-in for the ccl-vps routing (compose.override.yaml): `/api/*` to the API,
+# everything else to Next. Plain HTTP on :80; prod's TLS and basic_auth are not mirrored.
+{
+	auto_https off
+	admin off
+}
+
+:80 {
+	handle /api/* {
+		reverse_proxy api:8045 {
+			# Pass each SSE event through as it is written, never buffered.
+			flush_interval -1
+		}
+	}
+	handle {
+		reverse_proxy web:3045
+	}
+}
