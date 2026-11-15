@@ -13,8 +13,8 @@ from app.db import RunRow, TraceEventRow, session_scope, utcnow
 from app.schemas import RunKind, RunStatus, TraceEvent
 
 
-def create_run(kind: RunKind, request: dict[str, Any], run_id: str | None = None) -> str:
-    run_id = run_id or str(uuid.uuid4())
+def create_run(kind: RunKind, request: dict[str, Any]) -> str:
+    run_id = str(uuid.uuid4())
     with session_scope() as s:
         s.add(RunRow(id=run_id, kind=kind, request=request))
     return run_id

@@ -29,7 +29,7 @@ from app.schemas import RunKind
 from app.trace import store
 from app.trace.bus import EventBus
 from app.trace.bus import bus as default_bus
-from app.trace.recorder import TraceRecorder
+from app.trace.recorder import TraceRecorder, describe_error
 
 log = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ async def traced_run(
     try:
         yield run
     except BaseException as exc:
-        message = f"{type(exc).__name__}: {exc}"
+        message = describe_error(exc)
         run.recorder.event(kind, "error", status="failed", output={"error": message})
         store.finish_run(run_id, "failed", result=run.result, error=message)
         raise

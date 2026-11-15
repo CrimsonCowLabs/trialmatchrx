@@ -1,4 +1,5 @@
-"""HACK(demo): stub — fixed, schema-valid payloads for routes whose pipelines don't exist yet.
+# HACK(demo): stub — everything in this module is fake and replaced milestone by milestone.
+"""Fixed, schema-valid payloads for routes whose pipelines don't exist yet.
 
 Every constant here is fake and synthetic. Each milestone replaces its piece:
 patient/matches (M2), trial + criteria (M1), feasibility (M5), eval (M4).
@@ -58,6 +59,7 @@ STUB_CRITERIA = [
     ),
 ]
 
+# HACK(demo): stub — one fake trial returned for every NCT id.
 STUB_TRIAL = TrialDetail(
     nct_id=STUB_NCT,
     title="Stub trial: SGLT2 inhibitor in T2D with CKD",
@@ -69,8 +71,8 @@ STUB_TRIAL = TrialDetail(
 )
 
 
+# HACK(demo): stub — one ranked trial whose verdicts point at a real event of the run.
 def stub_matches(trace_event_id: str) -> list[TrialMatch]:
-    """HACK(demo): stub — one ranked trial whose verdicts point at a real event of the run."""
     return [
         TrialMatch(
             nct_id=STUB_NCT,
@@ -105,8 +107,8 @@ def stub_matches(trace_event_id: str) -> list[TrialMatch]:
     ]
 
 
+# HACK(demo): stub — fake waterfall; the eGFR threshold moves the count so the UI reacts.
 def stub_feasibility(nct_id: str, egfr_min: float) -> FeasibilityResult:
-    """HACK(demo): stub — fake waterfall; the eGFR threshold moves the count so the UI reacts."""
     cohort = 1000
     after_dx = 412
     after_egfr = int(after_dx * max(0.0, min(1.0, (90 - egfr_min) / 60)))

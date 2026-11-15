@@ -15,8 +15,8 @@ from app.trace.runner import start_traced_run
 router = APIRouter(prefix="/api", tags=["match"])
 
 
+# HACK(demo): stub — five fake trace events, 300 ms apart, then a fixed result (M2).
 async def stub_match(rec: TraceRecorder, req: MatchRequest) -> dict[str, Any]:
-    """HACK(demo): stub — five fake trace events, 300 ms apart, then a fixed result (M2)."""
     delay = get_settings().stub_event_delay_s
     note_len = len(req.note or "")
 
@@ -78,8 +78,8 @@ async def start_match(req: MatchRequest) -> RunStarted:
     return RunStarted(run_id=start_traced_run("match", req.model_dump(mode="json"), work))
 
 
+# HACK(demo): stub — fake agent steps and canned output until the LangGraph agent (M6).
 async def stub_closer(rec: TraceRecorder, req: CloserRequest) -> dict[str, Any]:
-    """HACK(demo): stub — fake agent steps and canned output until the LangGraph agent (M6)."""
     delay = get_settings().stub_event_delay_s
     async with rec.step("closer_agent", "run", {"run_id": req.run_id, "nct_id": req.nct_id}) as s:
         await asyncio.sleep(delay)
@@ -105,6 +105,8 @@ async def start_closer(req: CloserRequest) -> RunStarted:
         raise HTTPException(status_code=404, detail=f"run {req.run_id} not found")
 
     async def work(rec: TraceRecorder) -> dict[str, Any]:
-        return await stub_closer(rec, req)
+        return await stub_closer(rec, req)  # HACK(demo): stub
+
+    # HACK(demo): stub — DEMO_MODE=replay is not implemented yet (M7); always runs the stub.
 
     return RunStarted(run_id=start_traced_run("closer", req.model_dump(mode="json"), work))

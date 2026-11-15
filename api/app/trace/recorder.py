@@ -14,7 +14,7 @@ published on the bus, synchronously, so seq order == storage order == publish or
 
 import datetime as dt
 import uuid
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -32,6 +32,11 @@ from app.trace.bus import EventBus
 
 def _now() -> dt.datetime:
     return dt.datetime.now(dt.UTC)
+
+
+def describe_error(exc: BaseException) -> str:
+    """How errors read in trace output and run rows: `ValueError: boom`."""
+    return f"{type(exc).__name__}: {exc}"
 
 
 @dataclass
@@ -60,12 +65,9 @@ class TraceRecorder:
         self,
         run_id: str,
         bus: EventBus,
-        *,
-        persist: Callable[[TraceEvent], None] = store.save_event,
     ) -> None:
         self.run_id = run_id
         self._bus = bus
-        self._persist = persist
         self._seq = 0
         # Per-recorder so that concurrent runs never inherit each other's parents.
         self._current: ContextVar[str | None] = ContextVar(f"trace_parent_{run_id}", default=None)
@@ -79,7 +81,7 @@ class TraceRecorder:
         """Assign the next seq, persist, publish. Returns the stamped event."""
         self._seq += 1
         stamped = event.model_copy(update={"seq": self._seq, "run_id": self.run_id})
-        self._persist(stamped)
+        store.save_event(stamped)
         self._bus.publish(stamped)
         return stamped
 
@@ -113,14 +115,13 @@ class TraceRecorder:
         parent_id: str | None = None,
         note: str | None = None,
         model: str | None = None,
-        event_id: str | None = None,
     ) -> Step:
         """Emit a `started` event and return its handle. Pair with `close_step`.
 
         Prefer `step()`; this pair exists for callback-style code (LangChain handlers).
         """
         step = Step(
-            id=event_id or str(uuid.uuid4()),
+            id=str(uuid.uuid4()),
             name=name,
             kind=kind,
             parent_id=parent_id if parent_id is not None else self.current_step_id,
@@ -152,7 +153,7 @@ class TraceRecorder:
             yield step
         except BaseException as exc:
             if step.output is None:
-                step.output = {"error": f"{type(exc).__name__}: {exc}"}
+                step.output = {"error": describe_error(exc)}
             self.close_step(step, "failed")
             raise
         else:
@@ -253,15 +254,15 @@ class TraceCallbackHandler(AsyncCallbackHandler):
     """
 
     def __init__(self, recorder: TraceRecorder) -> None:
-        self._rec = recorder
-        self._open: dict[UUID, Step] = {}
+        self._recorder = recorder
+        self._open_steps: dict[UUID, Step] = {}
 
     def _parent(self, parent_run_id: UUID | None, metadata: dict[str, Any] | None) -> str | None:
         if metadata and metadata.get("parent_id"):
             return str(metadata["parent_id"])
-        if parent_run_id is not None and parent_run_id in self._open:
-            return self._open[parent_run_id].id
-        return self._rec.current_step_id
+        if parent_run_id is not None and parent_run_id in self._open_steps:
+            return self._open_steps[parent_run_id].id
+        return self._recorder.current_step_id
 
     def _start(
         self,
@@ -273,16 +274,29 @@ class TraceCallbackHandler(AsyncCallbackHandler):
         metadata: dict[str, Any] | None,
         model: str | None = None,
     ) -> None:
-        self._open[lc_run_id] = self._rec.open_step(
+        self._open_steps[lc_run_id] = self._recorder.open_step(
             name, kind, input, parent_id=self._parent(parent_run_id, metadata), model=model
         )
 
     def _finish(self, lc_run_id: UUID, status: TraceStatus, output: dict[str, Any]) -> Step | None:
-        step = self._open.pop(lc_run_id, None)
+        step = self._open_steps.pop(lc_run_id, None)
         if step is not None:
             step.output = output
-            self._rec.close_step(step, status)
+            self._recorder.close_step(step, status)
         return step
+
+    def _start_llm(
+        self,
+        serialized: dict[str, Any] | None,
+        prompt: dict[str, Any],
+        run_id: UUID,
+        parent_run_id: UUID | None,
+        metadata: dict[str, Any] | None,
+        kwargs: dict[str, Any],
+    ) -> None:
+        name = kwargs.get("name") or (serialized or {}).get("name") or "llm"
+        model = _model_name(serialized, {"metadata": metadata, **kwargs})
+        self._start(run_id, str(name), "llm", prompt, parent_run_id, metadata, model)
 
     async def on_chat_model_start(
         self,
@@ -294,16 +308,8 @@ class TraceCallbackHandler(AsyncCallbackHandler):
         metadata: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
-        model = _model_name(serialized, {"metadata": metadata, **kwargs})
-        self._start(
-            run_id,
-            kwargs.get("name") or (serialized or {}).get("name") or "llm",
-            "llm",
-            {"messages": [[_message(m) for m in batch] for batch in messages]},
-            parent_run_id,
-            metadata,
-            model,
-        )
+        prompt = {"messages": [[_message(m) for m in batch] for batch in messages]}
+        self._start_llm(serialized, prompt, run_id, parent_run_id, metadata, kwargs)
 
     async def on_llm_start(
         self,
@@ -315,19 +321,10 @@ class TraceCallbackHandler(AsyncCallbackHandler):
         metadata: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
-        model = _model_name(serialized, {"metadata": metadata, **kwargs})
-        self._start(
-            run_id,
-            kwargs.get("name") or (serialized or {}).get("name") or "llm",
-            "llm",
-            {"prompts": prompts},
-            parent_run_id,
-            metadata,
-            model,
-        )
+        self._start_llm(serialized, {"prompts": prompts}, run_id, parent_run_id, metadata, kwargs)
 
     async def on_llm_end(self, response: LLMResult, *, run_id: UUID, **kwargs: Any) -> None:
-        step = self._open.get(run_id)
+        step = self._open_steps.get(run_id)
         if step is None:
             return
         texts: list[str] = []
@@ -351,7 +348,7 @@ class TraceCallbackHandler(AsyncCallbackHandler):
         self._finish(run_id, "ok", {"text": "\n".join(texts), "messages": raw})
 
     async def on_llm_error(self, error: BaseException, *, run_id: UUID, **kwargs: Any) -> None:
-        self._finish(run_id, "failed", {"error": f"{type(error).__name__}: {error}"})
+        self._finish(run_id, "failed", {"error": describe_error(error)})
 
     async def on_tool_start(
         self,
@@ -373,4 +370,4 @@ class TraceCallbackHandler(AsyncCallbackHandler):
         self._finish(run_id, "ok", {"result": _jsonable(content)})
 
     async def on_tool_error(self, error: BaseException, *, run_id: UUID, **kwargs: Any) -> None:
-        self._finish(run_id, "failed", {"error": f"{type(error).__name__}: {error}"})
+        self._finish(run_id, "failed", {"error": describe_error(error)})

@@ -34,7 +34,7 @@ function Results({ runId }: { runId: string }) {
   );
 }
 
-function Run({ runId }: { runId: string }) {
+function MatchRun({ runId }: { runId: string }) {
   const { events, state, runStatus } = useRunEvents(runId);
   return (
     <div className="grid gap-4 md:grid-cols-[1fr_minmax(0,28rem)]">
@@ -51,5 +51,5 @@ function Run({ runId }: { runId: string }) {
 
 export function RunView() {
   const { runId } = useParams<{ runId: string }>();
-  return <Run key={runId} runId={runId} />;
+  return <MatchRun key={runId} runId={runId} />;
 }

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 
+// HACK(demo): prefilled synthetic demo patient from SPEC.md; condition and radius defaults too.
 const DEMO_NOTE =
   "61-year-old man with type 2 diabetes, HbA1c 8.4%, eGFR 48, on metformin. Lives in Sacramento.";
 

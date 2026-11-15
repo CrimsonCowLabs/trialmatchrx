@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     )
 
     anthropic_api_key: str | None = None
+    # HACK(demo): placeholder model ids; confirm the exact ids before M1 (override via .env).
     model_compile: str = "claude-sonnet-4-5"
     model_judge: str = "claude-sonnet-4-5"
     model_parse: str = "claude-haiku-4-5"

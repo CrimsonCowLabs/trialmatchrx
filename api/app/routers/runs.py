@@ -28,7 +28,7 @@ def compute_totals(run: RunRow, events: list[TraceEvent]) -> RunTotals:
         llm_calls=len(llm),
         tokens_in=sum(e.tokens_in or 0 for e in llm),
         tokens_out=sum(e.tokens_out or 0 for e in llm),
-        cost_usd=sum(e.cost_usd or 0.0 for e in events),
+        cost_usd=sum(e.cost_usd or 0.0 for e in llm),
         cache_hits=sum(1 for e in events if e.cache_hit),
         wall_time_s=wall,
     )
