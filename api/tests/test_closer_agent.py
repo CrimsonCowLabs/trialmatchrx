@@ -296,3 +296,23 @@ async def test_closer_route_without_an_api_key_is_503(run_id: str) -> None:
     async with client() as c:
         response = await c.post("/api/closer", json={"run_id": run_id, "nct_id": TRIAL})
     assert response.status_code == 503
+
+
+def test_the_closer_model_asks_for_its_answer_as_a_json_schema(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # create_react_agent calls `with_structured_output(schema)` with no method; forced tool
+    # calling (the langchain-anthropic default) is refused by newer Sonnet models.
+    from app.config import get_settings
+    from app.pipeline.closer_agent import anthropic_closer_model
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    get_settings.cache_clear()
+    try:
+        bound = anthropic_closer_model().with_structured_output(CloserOutput)
+    finally:
+        get_settings.cache_clear()
+
+    kwargs = bound.first.kwargs  # type: ignore[attr-defined]
+    assert "tool_choice" not in kwargs
+    assert kwargs["output_config"]["format"]["type"] == "json_schema"

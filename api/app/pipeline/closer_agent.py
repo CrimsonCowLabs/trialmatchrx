@@ -190,12 +190,23 @@ def closer_tools() -> list[BaseTool]:
 # --------------------------------------------------------------------------------------------
 
 
+class _JsonSchemaChatAnthropic(ChatAnthropic):
+    """ChatAnthropic whose structured output defaults to `json_schema`, like every other LLM step.
+    `create_react_agent` asks for the final answer with no method, and the langchain-anthropic
+    default (forced tool calling) is refused by newer Sonnet models."""
+
+    def with_structured_output(
+        self, schema: Any, *, method: Any = "json_schema", **kwargs: Any
+    ) -> Any:
+        return super().with_structured_output(schema, method=method, **kwargs)
+
+
 def anthropic_closer_model() -> BaseChatModel:
     """The real closer model (Sonnet, from settings)."""
     settings = get_settings()
     if not settings.anthropic_api_key:
         raise CloserModelUnavailable("ANTHROPIC_API_KEY is not set; the closer agent can't run")
-    return ChatAnthropic(
+    return _JsonSchemaChatAnthropic(
         model=settings.model_closer,
         api_key=SecretStr(settings.anthropic_api_key),
         max_tokens=4000,
