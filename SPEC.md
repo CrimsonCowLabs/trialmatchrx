@@ -73,7 +73,7 @@ trialmatch/
     tests/                 # pytest, fixtures/ holds saved API responses
     pyproject.toml
   web/
-    app/                   # /, /match/[runId], /feasibility/[nct], /eval, /runs/[runId]
+    app/                   # /, /match/[runId], /feasibility/[nct], /eval, /trials, /runs, /runs/[runId]
     components/            # TracePanel, VerdictTable, CriterionRow, Waterfall, ThresholdSlider
     lib/api.ts             # typed client from generated types
     lib/sse.ts             # EventSource hook
@@ -244,9 +244,11 @@ class FeasibilityResult(BaseModel):
 | Method | Path | Body / params | Returns |
 | --- | --- | --- | --- |
 | POST | `/api/match` | `{note?: str, fhir_bundle?: dict, condition: str, radius_mi: int = 50}` | `{run_id}`; work continues in a background task |
+| GET | `/api/runs` | `?kind: RunKind = match`, `?limit: int = 50` (max 200) | `list[RunListItem]`, newest first; read-only, not traced |
 | GET | `/api/runs/{run_id}/events` | SSE | `TraceEvent` stream, then `done` |
 | GET | `/api/runs/{run_id}` |  | `{status, patient: PatientFacts, matches: list[TrialMatch], totals}` |
 | GET | `/api/runs/{run_id}/trace` |  | `list[TraceEvent]` (export / replay) |
+| GET | `/api/trials` | `?q: str` (substring of NCT ID or title) | `list[TrialListItem]` from the trials cache, by NCT ID; no network, not traced |
 | GET | `/api/trials/{nct}` |  | trial summary + compiled `list[Criterion]` |
 | POST | `/api/trials/{nct}/compile` | `{force: bool}` | `list[Criterion]`, traced |
 | POST | `/api/feasibility/{nct}` | `{overrides: {criterion_id: value}}` | `FeasibilityResult` |
