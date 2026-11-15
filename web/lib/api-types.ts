@@ -106,6 +106,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/trials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Trials
+         * @description Every cached trial (newest version per NCT ID), sorted by NCT ID; `q` is a
+         *     case-insensitive substring match on NCT ID or title. A plain read of the trials and compile
+         *     caches: no network, and not a traced run (it would add a run on every page view).
+         */
+        get: operations["list_trials"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/trials/{nct}": {
         parameters: {
             query?: never;
@@ -198,7 +220,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health */
+        /**
+         * Health
+         * @description `ok` is false in DEMO_MODE=replay until a match and a closer run have been recorded
+         *     (and every fixture file loads).
+         */
         get: operations["health"];
         put?: never;
         post?: never;
@@ -605,6 +631,24 @@ export interface components {
             /** Criteria */
             criteria: components["schemas"]["Criterion"][];
         };
+        /**
+         * TrialListItem
+         * @description One row of the trials browser: a cached trial and whether its criteria are compiled.
+         */
+        TrialListItem: {
+            /** Nct Id */
+            nct_id: string;
+            /** Title */
+            title: string;
+            /** Phase */
+            phase: string | null;
+            /** Overall Status */
+            overall_status: string | null;
+            /** Compiled */
+            compiled: boolean;
+            /** Criteria Count */
+            criteria_count: number;
+        };
         /** TrialMatch */
         TrialMatch: {
             /** Nct Id */
@@ -869,6 +913,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TraceEvent"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_trials: {
+        parameters: {
+            query?: {
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrialListItem"][];
                 };
             };
             /** @description Validation Error */

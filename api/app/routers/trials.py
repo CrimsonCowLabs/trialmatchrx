@@ -13,7 +13,7 @@ from app.pipeline.compile_criteria import (
     anthropic_compile_model,
     compile_study,
 )
-from app.schemas import CompileRequest, Criterion, TrialDetail
+from app.schemas import CompileRequest, Criterion, TrialDetail, TrialListItem
 from app.sources import ctgov
 from app.trace.runner import traced_run
 
@@ -23,6 +23,31 @@ router = APIRouter(prefix="/api/trials", tags=["trials"])
 def compile_model_factory() -> ModelFactory:
     """Dependency: how the compile route builds its model (tests override it)."""
     return anthropic_compile_model
+
+
+@router.get("", response_model=list[TrialListItem])
+async def list_trials(q: str | None = None) -> list[TrialListItem]:
+    """Every cached trial (newest version per NCT ID), sorted by NCT ID; `q` is a
+    case-insensitive substring match on NCT ID or title. A plain read of the trials and compile
+    caches: no network, and not a traced run (it would add a run on every page view)."""
+    needle = (q or "").strip().lower()
+    items = []
+    for study in ctgov.cached_studies():
+        trial = ctgov.summarize(study)
+        if needle and needle not in trial.nct_id.lower() and needle not in trial.title.lower():
+            continue
+        criteria = criteria_cache.latest(trial.nct_id)
+        items.append(
+            TrialListItem(
+                nct_id=trial.nct_id,
+                title=trial.title,
+                phase=trial.phase,
+                overall_status=trial.overall_status,
+                compiled=bool(criteria),
+                criteria_count=len(criteria),
+            )
+        )
+    return sorted(items, key=lambda item: item.nct_id)
 
 
 @router.get("/{nct}", response_model=TrialDetail)

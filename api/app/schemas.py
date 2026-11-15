@@ -231,6 +231,17 @@ class TrialDetail(BaseModel):
     criteria: list[Criterion]
 
 
+class TrialListItem(BaseModel):
+    """One row of the trials browser: a cached trial and whether its criteria are compiled."""
+
+    nct_id: str
+    title: str
+    phase: str | None
+    overall_status: str | None
+    compiled: bool
+    criteria_count: int
+
+
 class CompileRequest(BaseModel):
     force: bool = False
 
