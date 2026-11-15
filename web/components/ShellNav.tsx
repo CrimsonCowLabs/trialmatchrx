@@ -32,26 +32,38 @@ type ShellStatus = {
 
 const UNKNOWN: ShellStatus = { runs: null, trials: null, health: null, healthError: null };
 
-/** Reads the counts and health on mount and on every navigation. A failed count hides its hint;
- *  a failed health check reads as "API unreachable". */
+/** Re-checks the health line this often while the user stays on one page. */
+const HEALTH_POLL_MS = 30_000;
+
+/** Reads the counts and health on mount and on every navigation, and re-checks health every
+ *  HEALTH_POLL_MS. A failed count hides its hint; a failed health check reads as
+ *  "API unreachable". */
 function useShellStatus(pathname: string): ShellStatus {
   const [status, setStatus] = useState(UNKNOWN);
   useEffect(() => {
     let cancelled = false;
-    Promise.allSettled([api.listRuns({ limit: RUNS_CAP }), api.listTrials(), api.getHealth()]).then(
-      ([runs, trials, health]) => {
+    Promise.allSettled([api.listRuns({ limit: RUNS_CAP }), api.listTrials()]).then(
+      ([runs, trials]) => {
         if (cancelled) return;
-        setStatus({
+        setStatus((s) => ({
+          ...s,
           runs: runs.status === "fulfilled" ? countHint(runs.value.length, RUNS_CAP) : null,
           // `/api/trials` is uncapped: its length is the count.
           trials: trials.status === "fulfilled" ? String(trials.value.length) : null,
-          health: health.status === "fulfilled" ? health.value : null,
-          healthError: health.status === "rejected" ? errorMessage(health.reason) : null,
-        });
+        }));
       },
     );
+    const checkHealth = () =>
+      api.getHealth().then(
+        (health) => !cancelled && setStatus((s) => ({ ...s, health, healthError: null })),
+        (err: unknown) =>
+          !cancelled && setStatus((s) => ({ ...s, health: null, healthError: errorMessage(err) })),
+      );
+    checkHealth();
+    const timer = setInterval(checkHealth, HEALTH_POLL_MS);
     return () => {
       cancelled = true;
+      clearInterval(timer);
     };
   }, [pathname]);
   return status;
@@ -74,7 +86,7 @@ function SidebarItems({ active, status }: { active: NavId | null; status: ShellS
             <Link
               href={href}
               aria-current={isActive ? "page" : undefined}
-              className={`flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium ${
+              className={`flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium ${
                 isActive ? "bg-teal-tint text-teal-strong" : "text-ink-2 hover:bg-surface-sunken"
               }`}
             >

@@ -11,7 +11,7 @@ function RxMark() {
   return (
     <span
       aria-hidden
-      className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-teal font-mono text-sm font-semibold text-white"
+      className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-teal font-mono text-sm font-semibold text-primary-foreground"
     >
       Rx
     </span>
@@ -32,7 +32,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <p className="text-xs text-ink-4">Synthetic data only</p>
       </aside>
       {/* Bottom padding below md clears the fixed tab bar (h-16 plus the safe-area inset). */}
-      <main className="flex min-w-0 flex-1 flex-col px-4 pt-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:p-8">
+      <main className="flex min-w-0 flex-1 flex-col px-4 pt-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-8 sm:pt-8 md:pb-8">
         {children}
       </main>
       <nav
