@@ -36,6 +36,15 @@ def test_a_changed_number_is_not_present() -> None:
     assert not quote_present("eGFR 45 mL/min/1.73m2", [NOTE])
 
 
+def test_an_added_or_dropped_negation_is_not_present() -> None:
+    source = "PMH: history of pancreatitis in 2019. Denies tobacco use."
+    # Fuzzy ratio alone scores the first at ~92: an invented "no" would flip an exclusion.
+    assert not quote_present("no history of pancreatitis", [source])
+    assert not quote_present("tobacco use", [source])  # drops the "denies" just before it
+    assert quote_present("Denies tobacco use", [source])
+    assert quote_present("history of pancreatitis", [source])
+
+
 def test_quote_longer_than_its_source_is_not_present() -> None:
     # partial_ratio would score the short source inside the long quote at 100.
     assert not quote_present("on metformin 1000 mg twice daily plus insulin", ["metformin"])

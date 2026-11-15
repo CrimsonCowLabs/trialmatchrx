@@ -8,8 +8,11 @@ judge model answers through `with_structured_output(JudgeOutput)`; `verify.verif
 checks both quotes against their sources and downgrades unverifiable verdicts to `unknown`.
 
 Failure handling, per criterion, never failing the batch:
-- malformed output (parser/validation error, or no tool call) gets one retry; a second failure
-  gives `unknown` plus an `error` event `judge:<nct>:<id>:malformed`.
+- malformed output (parser/validation error, or no tool call) gets one retry, with the prompt's
+  `## retry` turn naming the error appended; a second failure gives `unknown` plus an `error`
+  event `judge:<nct>:<id>:malformed`.
+- with no API key, `judge_criteria` raises `JudgeModelUnavailable` before any call; the caller
+  decides whether that fails the run.
 - any other model error (network, API) gives `unknown` plus an `error` event
   `judge:<nct>:<id>:error`, no retry (ChatAnthropic already retries transient API errors).
 
@@ -21,7 +24,7 @@ guardrail event, or the error event.
 import asyncio
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.exceptions import OutputParserException
@@ -71,6 +74,12 @@ class JudgeModelUnavailable(RuntimeError):
 
 class _Malformed(Exception):
     pass
+
+
+def model_id(model: BaseChatModel) -> str | None:
+    """The model id a LangChain chat model will call (`model` on ChatAnthropic)."""
+    name = getattr(model, "model", None) or getattr(model, "model_name", None)
+    return str(name) if name else None
 
 
 def new_judge_semaphore() -> asyncio.Semaphore:
@@ -135,15 +144,31 @@ async def _ask(
     return result
 
 
-def _unknown(item: JudgeItem, step: Step, rationale: str) -> Verdict:
+def _give_up(
+    rec: TraceRecorder, item: JudgeItem, step: Step, kind: str, output: dict[str, Any], why: str
+) -> Verdict:
+    """Mark the judge step failed, emit `judge:<nct>:<id>:<kind>` (an `error` event) and return
+    an `unknown` verdict. `verified` is true: the verdict quotes only the criterion text and
+    claims no patient evidence, so there is nothing unverified to badge."""
+    label = f"{item.nct_id}:{item.criterion.id}"
+    step.status = "failed"
+    step.output = {"outcome": "unknown", **output}
+    rec.event(
+        f"judge:{label}:{kind}",
+        "error",
+        status="failed",
+        input={"criterion_id": item.criterion.id},
+        output={**output, "action": "outcome=unknown"},
+        note=f"{label}: {why}; marked unknown",
+    )
     return Verdict(
         criterion_id=item.criterion.id,
         outcome="unknown",
         method="llm",
         criterion_quote=item.criterion.text,
         patient_evidence=None,
-        rationale=rationale,
-        verified=False,
+        rationale=f"No judgment: {why}.",
+        verified=True,
         trace_event_id=step.id,
     )
 
@@ -170,45 +195,31 @@ async def judge_criterion(
             "prompt": prompt.name,
             "prompt_version": prompt.version,
         },
+        model=model_id(model),
     ) as s:
         messages = _messages(prompt, item, facts, note)
         problems: list[str] = []
         answer: JudgeOutput | None = None
         try:
             while answer is None and len(problems) < MAX_ATTEMPTS:
+                if problems:  # the retry says what was wrong with the last answer
+                    messages = [*messages, HumanMessage(prompt.render_retry(error=problems[-1]))]
                 try:
                     answer = await _ask(model, messages, rec, s, prompt)
                 except _Malformed as exc:
                     problems.append(str(exc))
         except Exception as exc:  # model/API failure: one criterion, not the whole run
-            s.status = "failed"
-            s.output = {"outcome": "unknown", "error": describe_error(exc)}
-            rec.event(
-                f"judge:{label}:error",
-                "error",
-                status="failed",
-                input={"criterion_id": item.criterion.id},
-                output={"error": describe_error(exc), "action": "outcome=unknown"},
-                note=f"{label}: judge call failed; marked unknown",
-            )
-            return _unknown(item, s, f"The judge call failed ({describe_error(exc)}).")
-
+            error = describe_error(exc)
+            return _give_up(rec, item, s, "error", {"error": error}, f"judge call failed ({error})")
         if answer is None:
-            s.status = "failed"
-            s.output = {"outcome": "unknown", "attempts": len(problems), "errors": problems}
-            rec.event(
-                f"judge:{label}:malformed",
-                "error",
-                status="failed",
-                input={"criterion_id": item.criterion.id},
-                output={
-                    "attempts": len(problems),
-                    "errors": problems,
-                    "action": "outcome=unknown",
-                },
-                note=f"{label}: malformed judge output {len(problems)}x; marked unknown",
+            return _give_up(
+                rec,
+                item,
+                s,
+                "malformed",
+                {"attempts": len(problems), "errors": problems},
+                f"malformed judge output {len(problems)} times",
             )
-            return _unknown(item, s, f"The judge returned malformed output {len(problems)} times.")
 
         draft = Verdict(
             criterion_id=item.criterion.id,

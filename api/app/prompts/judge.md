@@ -62,3 +62,10 @@ Criterion to judge ({{criterion_type}}, id {{criterion_id}}):
 <patient_note>
 {{patient_note}}
 </patient_note>
+
+## retry
+
+Your previous answer could not be used: {{error}}
+
+Answer again with exactly one `JudgeOutput` tool call. `outcome` must be `pass`, `fail` or
+`unknown`, and every field must be present (`patient_evidence` may be null only for `unknown`).

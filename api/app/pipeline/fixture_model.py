@@ -46,6 +46,8 @@ class FixtureChatModel(BaseChatModel):
     calls: int = 0
 
     def model_post_init(self, context: Any) -> None:
+        if not self.output and not self.replies:
+            raise ValueError("FixtureChatModel needs `output` or `replies`")
         if not self.model_name:
             self.model_name = get_settings().model_compile
 

@@ -3,8 +3,9 @@
     ok = quote_present(verdict.criterion_quote, [trial_text])
 
 A quote is present in a source when, after lowercasing and collapsing whitespace, the best
-matching window of the source scores a rapidfuzz `partial_ratio` of at least 90 AND every
-number in the quote appears in that window.
+matching window of the source scores a rapidfuzz `partial_ratio` of at least 90, every
+number in the quote appears in that window, and the quote has the same negation words
+("no", "denies", "without", ...) as the window plus the two tokens before it.
 
 Why `partial_ratio`, not `ratio`: the quote is a span of a much longer source, and `ratio`
 compares whole strings, so a perfect 40-char quote from a 2,000-char note scores ~4.
@@ -14,6 +15,8 @@ substring matching that tolerates a typo or two. Two cases it gets wrong are gua
   around a short real fact would score 100. A quote longer than its source falls back to `ratio`.
 - one changed digit in a short quote ("eGFR 148" vs "eGFR 48") still scores ~88; for clinical
   values that is a different fact, so numbers must match exactly.
+- an invented "no" ("no history of pancreatitis" vs "history of pancreatitis") scores ~92 and
+  flips the fact, as does quoting "tobacco use" out of "denies tobacco use"; negations must match.
 """
 
 import re
@@ -34,11 +37,25 @@ def normalize(text: str) -> str:
     return " ".join(text.lower().split())
 
 
-def _token_window(source: str, start: int, end: int) -> str:
-    """Widen [start, end) to whole whitespace-separated tokens, so numbers aren't clipped."""
+_NEGATIONS = frozenset(
+    {"no", "not", "non", "nor", "none", "never", "without", "deny", "denies", "denied"}
+    | {"negative", "absent", "free"}
+)
+_NEGATION_LOOKBEHIND = 2  # tokens before the window that can negate it ("denies tobacco use")
+
+
+def _token_window(source: str, start: int, end: int) -> tuple[str, str]:
+    """Widen [start, end) to whole whitespace-separated tokens, so numbers aren't clipped.
+    Returns (window, the few tokens just before it)."""
     start = source.rfind(" ", 0, start) + 1
     stop = source.find(" ", end)
-    return source[start : len(source) if stop == -1 else stop]
+    before = " ".join(source[:start].split()[-_NEGATION_LOOKBEHIND:])
+    return source[start : len(source) if stop == -1 else stop], before
+
+
+def _negations(text: str) -> set[str]:
+    words = (w.strip(".,;:()[]\"'") for w in text.split())
+    return {w for w in words if w in _NEGATIONS or w.endswith("n't")}
 
 
 def quote_score(quote: str, source: str) -> float:
@@ -47,13 +64,16 @@ def quote_score(quote: str, source: str) -> float:
     if not q or not s:
         return 0.0
     if len(q) > len(s):
-        window, score = s, fuzz.ratio(q, s)
+        window, before, score = s, "", fuzz.ratio(q, s)
     else:
         aligned = fuzz.partial_ratio_alignment(q, s)
         if aligned is None:
             return 0.0
-        window, score = _token_window(s, aligned.dest_start, aligned.dest_end), aligned.score
+        window, before = _token_window(s, aligned.dest_start, aligned.dest_end)
+        score = aligned.score
     if not set(_NUMBER.findall(q)) <= set(_NUMBER.findall(window)):
+        return 0.0
+    if _negations(q) != _negations(f"{before} {window}"):
         return 0.0
     return float(score)
 

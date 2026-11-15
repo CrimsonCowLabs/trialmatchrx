@@ -115,6 +115,7 @@ async def test_judge_returns_a_verified_llm_verdict_linked_to_its_step() -> None
     (step,) = [e for e in events(rec) if e.name == f"judge:{NCT}:inc-1"]
     assert verdict.trace_event_id == step.id
     assert step.status == "ok"
+    assert step.model == "judge-fake"
     assert step.input is not None and step.input["prompt_version"].startswith("judge-")
 
 
@@ -159,8 +160,14 @@ async def test_malformed_response_is_retried_once() -> None:
 
     assert model.calls == 2
     assert (verdict.outcome, verdict.verified) == ("pass", True)
-    assert len(of_kind(rec, "llm")) == 2
+    first, second = of_kind(rec, "llm")
     assert of_kind(rec, "error") == []
+    # The retry tells the model what was wrong instead of resending the same turn.
+    assert first.input is not None and second.input is not None
+    (first_turns,), (second_turns,) = first.input["messages"], second.input["messages"]
+    assert second_turns[:-1] == first_turns
+    assert "could not be used" in second_turns[-1]["content"]
+    assert "rationale" in second_turns[-1]["content"]  # the validation error names the field
 
 
 async def test_malformed_twice_becomes_unknown_with_an_error_event() -> None:
@@ -172,7 +179,8 @@ async def test_malformed_twice_becomes_unknown_with_an_error_event() -> None:
     assert model.calls == 2
     assert verdict.outcome == "unknown"
     assert verdict.method == "llm"
-    assert verdict.verified is False
+    # Nothing unverifiable was claimed (criterion text, no evidence): no "unverified quote" badge.
+    assert verdict.verified is True
     assert verdict.patient_evidence is None
     assert verdict.criterion_quote == INC_1.text
     (error,) = of_kind(rec, "error")
@@ -194,7 +202,9 @@ async def test_a_model_error_becomes_unknown_with_an_error_event_without_failing
 
     rec = recorder()
 
-    verdict = await judge_one(rec, Down(tool_name="JudgeOutput", model_name="judge-fake"))
+    down = Down(output=GOOD, tool_name="JudgeOutput", model_name="judge-fake")
+
+    verdict = await judge_one(rec, down)
 
     assert verdict.outcome == "unknown"
     (error,) = of_kind(rec, "error")
