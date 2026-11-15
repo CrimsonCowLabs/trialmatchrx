@@ -17,6 +17,7 @@ import asyncio
 from dataclasses import dataclass
 from typing import Any
 
+from app.pipeline import compile_criteria, judge, match_run, parse_patient
 from app.schemas import TraceEvent
 from app.trace.bus import EventBus
 
@@ -33,11 +34,11 @@ class FailFastStop:
 
 
 def _step(name: str) -> str | None:
-    if name == "parse_patient":
+    if name == parse_patient.STEP_NAME:
         return "parse"
-    if name in ("compile_criteria", "llm_split"):
+    if name in (compile_criteria.STEP_NAME, compile_criteria.LLM_SPLIT_STEP):
         return "compile"
-    if name.startswith("judge:"):
+    if name.startswith(judge.STEP_PREFIX):
         return "judge"
     return None
 
@@ -61,8 +62,8 @@ class FailFastWatch(EventBus):
         self._events[event.id] = event
         if self.failure is None and event.status == "failed" and event.kind != "guardrail":
             self.failure = self._describe(event)
-            if self._task is not None:  # the run is stored failed with this message
-                self._task.cancel(f"--fail-fast: stopped at {self.failure.error}")
+            if self._task is not None:
+                self._task.cancel("--fail-fast")
 
     def _describe(self, event: TraceEvent) -> FailFastStop:
         """The failure's step (the nearest parse / compile / judge step at or above the failed
@@ -72,8 +73,8 @@ class FailFastWatch(EventBus):
         current: TraceEvent | None = event
         while current is not None:
             step = step or _step(current.name)
-            if nct is None and current.name.startswith("trial:"):
-                nct = current.name.removeprefix("trial:")
+            if nct is None and current.name.startswith(match_run.TRIAL_STEP_PREFIX):
+                nct = current.name.removeprefix(match_run.TRIAL_STEP_PREFIX)
             current = self._events.get(current.parent_id) if current.parent_id else None
         output = event.output or {}
         error = str(output.get("error") or event.note or event.name)

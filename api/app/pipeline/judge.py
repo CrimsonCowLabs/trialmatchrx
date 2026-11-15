@@ -43,6 +43,7 @@ from app.schemas import Criterion, PatientFacts, Verdict
 from app.trace.recorder import Step, TraceRecorder, describe_error
 
 PROMPT_NAME = "judge"
+STEP_PREFIX = "judge:"  # judge:<nct>:<id>, the traced step (the eval reads it)
 
 # SPEC.md: asyncio.Semaphore(8) across trials and criteria.
 JUDGE_CONCURRENCY = 8
@@ -159,7 +160,7 @@ def _give_up(
     step.status = "failed"
     step.output = {"outcome": "unknown", **output}
     rec.event(
-        f"judge:{label}:{kind}",
+        f"{STEP_PREFIX}{label}:{kind}",
         "error",
         status="failed",
         input={"criterion_id": item.criterion.id},
@@ -190,7 +191,7 @@ async def judge_criterion(
     prompt = load_prompt(PROMPT_NAME)
     label = f"{item.nct_id}:{item.criterion.id}"
     async with rec.step(
-        f"judge:{label}",
+        f"{STEP_PREFIX}{label}",
         "step",
         {
             "nct": item.nct_id,

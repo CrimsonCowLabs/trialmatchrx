@@ -38,7 +38,6 @@ from app.eval.offline import (
     STEPS,
     CacheMisses,
     CacheOnly,
-    NotCached,
     Step,
     offline_compile_model,
     offline_judge_model,
@@ -48,6 +47,7 @@ from app.eval.runs import COMPILE_RATE, score_rankings, topic_labels
 from app.pipeline import criteria_cache
 from app.pipeline.compile_criteria import PROMPT_NAME as COMPILE_PROMPT
 from app.pipeline.compile_criteria import ModelFactory, anthropic_compile_model
+from app.pipeline.judge import STEP_PREFIX as JUDGE_STEP
 from app.pipeline.judge import anthropic_judge_model
 from app.pipeline.match_run import TRIAL_CONCURRENCY, match_trials, rank_step
 from app.pipeline.parse_patient import anthropic_parse_model, parse_patient
@@ -117,14 +117,10 @@ def _candidate(nct: str, sample: TrecSample) -> CandidateTrial:
 
 
 def _judge_errors(run_id: str) -> int:
-    """`judge:<nct>:<id>:error` events: the judge's API call failed (see `judge.py`). An offline
-    cache miss is counted as a miss instead (`CacheMisses`), not as an error."""
-    not_cached = f"{NotCached.__name__}: "
+    """`judge:<nct>:<id>:error` events: the judge's API call failed (see `judge.py`). Offline,
+    this includes the cache misses; `score_matcher` takes those out (`CacheMisses`)."""
     return sum(
-        e.kind == "error"
-        and e.name.startswith("judge:")
-        and e.name.endswith(":error")
-        and not str((e.output or {}).get("error", "")).startswith(not_cached)
+        e.kind == "error" and e.name.startswith(JUDGE_STEP) and e.name.endswith(":error")
         for e in store.latest_events(run_id)
     )
 
@@ -266,6 +262,7 @@ async def score_matcher(
             parse_cache = CacheOnly(pending, "parse", misses)
             judge_cache = CacheOnly(pending, "judge", misses)
         watch = FailFastWatch(topic.id) if fail_fast else None
+        judge_misses = len(misses.keys["judge"])
         match = _match_topic(
             topic,
             sample,
@@ -279,6 +276,8 @@ async def score_matcher(
         if isinstance(result, FailFastStop):  # no later topic runs
             stopped = result
             run_ids[topic.id] = stopped.run_id
+            # The cause, not the cancel; and failed even if the run got to finish first.
+            store.finish_run(stopped.run_id, "failed", error=stopped.error)
             if stopped.step in KEEPS_ANSWERS:
                 pending.commit()
             break
@@ -289,7 +288,8 @@ async def score_matcher(
         pending.commit()
         rankings[topic.id] = result.ranking
         uncompiled.update(result.uncompiled)
-        judge_errors += result.judge_errors
+        # an offline judge miss is an error event too; it is counted as a miss instead
+        judge_errors += result.judge_errors - (len(misses.keys["judge"]) - judge_misses)
         called |= {(topic.id, nct): ok for nct, ok in result.called_eligible.items()}
 
     # Failed topics have no ranking: the metrics are over the matched topics only.

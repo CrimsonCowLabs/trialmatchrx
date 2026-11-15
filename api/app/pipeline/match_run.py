@@ -46,6 +46,7 @@ from app.trace.recorder import TraceRecorder, describe_error
 # SPEC.md: Semaphore(8). This bounds trials in flight; a judge that calls an LLM per criterion
 # must use its own semaphore (sharing this one would deadlock: each trial holds a slot).
 TRIAL_CONCURRENCY = 8
+TRIAL_STEP_PREFIX = "trial:"  # trial:<nct>, the traced step (the eval reads it)
 
 
 async def _parse_patient(
@@ -103,7 +104,7 @@ async def match_trial(
     """Compile (cached) and evaluate one trial inside a `trial:<nct>` step. None if the trial's
     criteria can't be compiled."""
     step_input = {"nct": trial.nct_id, "distance_mi": trial.distance_mi}
-    async with rec.step(f"trial:{trial.nct_id}", "step", step_input) as s:
+    async with rec.step(f"{TRIAL_STEP_PREFIX}{trial.nct_id}", "step", step_input) as s:
         try:
             criteria = await compile_study(trial.study, rec, model_factory=model_factory)
         except (CompileModelUnavailable, CompileFailed) as exc:

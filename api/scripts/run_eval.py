@@ -164,21 +164,23 @@ def _score_matcher(
     elif score.complete:
         row = record_eval_run(MATCHER, score.metrics, sample=sample, git_sha=git_sha)
         print(f"matcher: eval_runs {row.id[:8]}, git {row.git_sha}")
+    elif offline:  # mostly the misses above: say what they left out, not as new failures
+        print(
+            "matcher: incomplete, NOT recorded (offline, see the cache misses above): "
+            f"{len(score.failed)} topics not matched, {len(score.uncompiled)} trials not "
+            f"compiled ({', '.join(score.uncompiled) or 'none'}), {score.judge_errors} judge "
+            "calls failed besides the misses. Run without --offline to fill the cache."
+        )
     else:
         print(
             f"matcher: incomplete, NOT recorded: {len(score.failed)} topics failed, "
             f"{len(score.uncompiled)} trials could not be compiled "
             f"({', '.join(score.uncompiled) or 'none'}), {score.judge_errors} judge calls "
-            "failed. "
-            + (
-                "Run without --offline to fill the cache."
-                if offline
-                else "Re-run to retry them (everything else replays from the cache)."
-            )
+            "failed. Re-run to retry them (everything else replays from the cache)."
         )
-        for f in score.failed:  # the first line of the error; the run's trace has the rest
-            error = f.error.splitlines()[0]
-            print(f"  topic {f.topic_id} failed at {f.step}: {error} (run {f.run_id})")
+    for f in score.failed:  # the first line of the error; the run's trace has the rest
+        error = f.error.splitlines()[0]
+        print(f"  topic {f.topic_id} failed at {f.step}: {error} (run {f.run_id})")
     return score
 
 
