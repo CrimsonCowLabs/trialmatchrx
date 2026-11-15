@@ -1,0 +1,470 @@
+{
+  "studies": [
+    {
+      "protocolSection": {
+        "identificationModule": {
+          "nctId": "NCT05485961",
+          "orgStudyIdInfo": {
+            "id": "CSL300_2301"
+          },
+          "secondaryIdInfos": [
+            {
+              "id": "2022-500273-14-00",
+              "type": "OTHER",
+              "domain": "EU CT"
+            }
+          ],
+          "organization": {
+            "fullName": "CSL Behring",
+            "class": "INDUSTRY"
+          },
+          "briefTitle": "Combined Dose-Finding and CV Outcomes Study With CSL300 (Clazakizumab) in Adult Subjects With ESKD Undergoing Dialysis (POSIBIL6ESKD)",
+          "officialTitle": "A Phase 2b / 3, Multicenter, Randomized, Double-Blind, Placebo-Controlled, Combined Dose-Finding and Cardiovascular Outcome Study to Investigate the Efficacy and Safety of CSL300 (Clazakizumab) in Subjects With End Stage Kidney Disease Undergoing Dialysis",
+          "acronym": "POSIBIL6ESKD"
+        },
+        "statusModule": {
+          "statusVerifiedDate": "2026-09",
+          "overallStatus": "RECRUITING",
+          "expandedAccessInfo": {
+            "hasExpandedAccess": false
+          },
+          "startDateStruct": {
+            "date": "2024-04-27",
+            "type": "ACTUAL"
+          },
+          "primaryCompletionDateStruct": {
+            "date": "2029-05-22",
+            "type": "ESTIMATED"
+          },
+          "completionDateStruct": {
+            "date": "2029-05-22",
+            "type": "ESTIMATED"
+          },
+          "studyFirstSubmitDate": "2022-07-29",
+          "studyFirstSubmitQcDate": "2022-08-01",
+          "studyFirstPostDateStruct": {
+            "date": "2022-08-03",
+            "type": "ACTUAL"
+          },
+          "lastUpdateSubmitDate": "2026-09-18",
+          "lastUpdatePostDateStruct": {
+            "date": "2026-09-21",
+            "type": "ACTUAL"
+          }
+        },
+        "designModule": {
+          "phases": [
+            "PHASE2",
+            "PHASE3"
+          ]
+        },
+        "eligibilityModule": {
+          "eligibilityCriteria": "Inclusion Criteria:\n\n* Male or female at least 18 years of age.\n* A diagnosis of ESKD undergoing maintenance dialysis for at least 12 weeks.\n* Serum hs-CRP ≥ 2.0 mg/L.\n* A diagnosis of diabetes mellitus OR ASCVD.\n\nExclusion Criteria:\n\n* Subjects who participated in Part 1 (phase 2b) are not eligible to participate in Part 2 (phase 3).\n* Concomitant use of systemic immunosuppressant drugs.\n* Part 1 (Phase 2b) excludes subjects with a positive TB or a history of latent TB, whereas Part 2 (Phase 3) excludes active TB but allows inclusion of subjects with a latent TB and at least 4 weeks of prophylactic TB treatment.\n* Abnormal LFTs.\n* Any life-threatening disease expected to result in death within 12 months.\n* A history of GI perforation, inflammatory bowel disease (except fully excised. ulcerative colitis), or peptic ulcer disease.\n* Clinically significant active infection or history of opportunistic or invasive fungal infection.",
+          "healthyVolunteers": false,
+          "sex": "ALL",
+          "minimumAge": "18 Years",
+          "stdAges": [
+            "ADULT",
+            "OLDER_ADULT"
+          ]
+        },
+        "contactsLocationsModule": {
+          "centralContacts": [
+            {
+              "name": "Trial Registration Coordinator",
+              "role": "CONTACT",
+              "phone": "+1 610-878-4697",
+              "email": "clinicaltrials@cslbehring.com"
+            }
+          ],
+          "overallOfficials": [
+            {
+              "name": "Study Director",
+              "affiliation": "CSL Behring LLC",
+              "role": "STUDY_DIRECTOR"
+            }
+          ],
+          "locations": [
+            {
+              "facility": "Nephrology of North Alabama",
+              "status": "RECRUITING",
+              "city": "Decatur",
+              "state": "Alabama",
+              "zip": "35601",
+              "country": "United States",
+              "geoPoint": {
+                "lat": 34.60593,
+                "lon": -86.98334
+              }
+            },
+            {
+              "facility": "Nephrology Consultants, LLC",
+              "status": "RECRUITING",
+              "city": "Huntsville",
+              "state": "Alabama",
+              "zip": "35805",
+              "country": "United States",
+              "contacts": [
+                {
+                  "name": "Use Central Contact",
+                  "role": "CONTACT"
+                }
+              ],
+              "geoPoint": {
+                "lat": 34.7304,
+                "lon": -86.58594
+              }
+            },
+            {
+              "facility": "DaVita Clinical Research Montgomery",
+              "status": "RECRUITING",
+              "city": "Montgomery",
+              "state": "Alabama",
+              "zip": "36117",
+              "country": "United States",
+              "contacts": [
+                {
+                  "name": "Use Central Contact",
+                  "role": "CONTACT"
+                }
+              ],
+              "geoPoint": {
+                "lat": 32.36681,
+                "lon": -86.29997
+              }
+            },
+            {
+              "facility": "AKDHC Medical",
+              "status": "RECRUITING",
+              "city": "Glendale",
+              "state": "Arizona",
+              "zip": "85305",
+              "country": "United States",
+              "contacts": [
+                {
+                  "name": "Use Central Contact",
+                  "role": "CONTACT"
+                }
+              ],
+              "geoPoint": {
+                "lat": 33.53865,
+                "lon": -112.18599
+              }
+            },
+            {
+              "facility": "Kidney Disease Medical Group",
+              "status": "RECRUITING",
+              "city": "Glendale",
+              "state": "Arizona",
+              "zip": "91206",
+              "country": "United States",
+              "contacts": [
+                {
+                  "name": "Use Central Contact",
+                  "role": "CONTACT"
+                }
+              ],
+              "geoPoint": {
+                "lat": 33.53865,
+                "lon": -112.18599
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "protocolSection": {
+        "identificationModule": {
+          "nctId": "NCT04984226",
+          "orgStudyIdInfo": {
+            "id": "1785131"
+          },
+          "secondaryIdInfos": [
+            {
+              "id": "5R01DK129793",
+              "type": "NIH",
+              "link": "https://reporter.nih.gov/quickSearch/5R01DK129793"
+            }
+          ],
+          "organization": {
+            "fullName": "University of California, Davis",
+            "class": "OTHER"
+          },
+          "briefTitle": "Sodium Bicarbonate and Mitochondrial Energetics in Persons With CKD",
+          "officialTitle": "Randomized Cross-over Trial of Sodium Bicarbonate on Muscle Mitochondrial Energetics and Physical Endurance in Chronic Kidney Disease and Metabolic Acidosis",
+          "acronym": "Senergy-CKD"
+        },
+        "statusModule": {
+          "statusVerifiedDate": "2026-05",
+          "overallStatus": "RECRUITING",
+          "expandedAccessInfo": {
+            "hasExpandedAccess": false
+          },
+          "startDateStruct": {
+            "date": "2023-09-08",
+            "type": "ACTUAL"
+          },
+          "primaryCompletionDateStruct": {
+            "date": "2026-12-31",
+            "type": "ESTIMATED"
+          },
+          "completionDateStruct": {
+            "date": "2026-12-31",
+            "type": "ESTIMATED"
+          },
+          "studyFirstSubmitDate": "2021-07-08",
+          "studyFirstSubmitQcDate": "2021-07-20",
+          "studyFirstPostDateStruct": {
+            "date": "2021-07-30",
+            "type": "ACTUAL"
+          },
+          "lastUpdateSubmitDate": "2026-05-04",
+          "lastUpdatePostDateStruct": {
+            "date": "2026-05-06",
+            "type": "ACTUAL"
+          }
+        },
+        "designModule": {
+          "phases": [
+            "PHASE2"
+          ]
+        },
+        "eligibilityModule": {
+          "eligibilityCriteria": "Inclusion Criteria:\n\n* Moderate-severe CKD determined by eGFR \\<50ml/min per 1.73m2 by CKD EPI equation on at least 2 consecutive occasions.\n* Metabolic acidosis defined as bicarbonate level\\<24 on two consecutive occasions. Bicarbonate level of 24 or less allowed if eGFR\\<=45ml/min per 1.73m2\n* Age 21 to 85 years old\n\nExclusion Criteria:\n\n* Type 1 diabetes\n* Poorly controlled diabetes (HgbA1c\\>10%)\n* History of persistent hyperkalemia (K\\>5.4)\n* History of persistent hypokalemia (K\\<3.3)\n* Uncontrolled blood pressure (\\>170/100)\n* Chronic treatment with renal replacement therapy\n* History of aortic dissection or severe valvular heart disease\n* Exercise induced angina\n* Uncontrolled cardiac dysrhythmia\n* Oxygen dependent chronic obstructive pulmonary disease (COPD)\n* Symptomatic claudication\n* End stage liver disease\n* Mobility disability defined as inability to walk without human assistance\n* Dementia or psychosis\n* Patients who cannot consent\n* Active use of intraveneous drugs\n* Non-english speaking\n* History of transplant\n* Implants that prohibit MRI measurements or trauma involving metal fragments\n* Pacemaker\n* Expectation to start dialysis during the course of study.\n* Women who are breastfeeding, pregnant, or are wanting to become pregnant\n* Any condition which in the judgement of the clinical investigator places the participant at risk from participation in the study.\n\nExclusion criteria for optional muscle biopsy\n\n* Drugs- anticoagulants or antiplatelets:\n\n  * Anticoagulants, any 1 (coumadin, rivaroxaban, apixaban, dabigatran, edoxaban)\n  * Antiplatelets, any 2 (aspirin, cilostazol, clopidogrel, dipyridamole, prasugrel, ticragrelor, ticlopidine, vorapaxar)\n* Platelet count \\<100,000\n* International normalized ratio (INR)\\>1.4",
+          "healthyVolunteers": false,
+          "sex": "ALL",
+          "minimumAge": "21 Years",
+          "maximumAge": "85 Years",
+          "stdAges": [
+            "ADULT",
+            "OLDER_ADULT"
+          ]
+        },
+        "contactsLocationsModule": {
+          "centralContacts": [
+            {
+              "name": "Baback Roshanravan, MD",
+              "role": "CONTACT",
+              "phone": "530-754-0893",
+              "email": "broshanr@ucdavis.edu"
+            }
+          ],
+          "overallOfficials": [
+            {
+              "name": "Baback Roshanravan, MD",
+              "affiliation": "UC Davis",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            },
+            {
+              "name": "Jorge Gamboa, MD PhD",
+              "affiliation": "Vanderbilt University",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "locations": [
+            {
+              "facility": "University of California Davis Health",
+              "status": "RECRUITING",
+              "city": "Sacramento",
+              "state": "California",
+              "zip": "95817",
+              "country": "United States",
+              "contacts": [
+                {
+                  "name": "Amanda Lopez",
+                  "role": "CONTACT",
+                  "phone": "916-734-0898",
+                  "email": "aflopez@ucdavis.edu"
+                },
+                {
+                  "name": "Erica Goude",
+                  "role": "CONTACT",
+                  "phone": "(916) 734-0384",
+                  "email": "emgoude@ucdavis.edu"
+                },
+                {
+                  "name": "Baback Roshanravan, MD MS",
+                  "role": "PRINCIPAL_INVESTIGATOR"
+                }
+              ],
+              "geoPoint": {
+                "lat": 38.58157,
+                "lon": -121.4944
+              }
+            },
+            {
+              "facility": "Vanderbilt University Medical Center",
+              "status": "NOT_YET_RECRUITING",
+              "city": "Nashville",
+              "state": "Tennessee",
+              "zip": "37232",
+              "country": "United States",
+              "contacts": [
+                {
+                  "name": "Delia Woods, RN",
+                  "role": "CONTACT",
+                  "email": "delia.woods@vumc.org"
+                },
+                {
+                  "name": "Jorge Gamboa, MD PhD",
+                  "role": "PRINCIPAL_INVESTIGATOR"
+                }
+              ],
+              "geoPoint": {
+                "lat": 36.16589,
+                "lon": -86.78444
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "protocolSection": {
+        "identificationModule": {
+          "nctId": "NCT07662135",
+          "orgStudyIdInfo": {
+            "id": "D7261C00004"
+          },
+          "secondaryIdInfos": [
+            {
+              "id": "2025-523940-12-00",
+              "type": "CTIS"
+            },
+            {
+              "id": "2025",
+              "type": "NIH",
+              "link": "https://reporter.nih.gov/quickSearch/2025"
+            }
+          ],
+          "organization": {
+            "fullName": "AstraZeneca",
+            "class": "INDUSTRY"
+          },
+          "briefTitle": "A Phase III Study to Investigate the Efficacy and Safety of Elecoglipron Compared With Placebo in Adults With Type 2 Diabetes Mellitus and Impaired Renal Function on Background Dapagliflozin",
+          "officialTitle": "A Randomized, Double-blind, Parallel-group Phase III Study to Evaluate the Efficacy, Safety, and Tolerability of Elecoglipron Compared With Placebo in Adults With Type 2 Diabetes Mellitus and Impaired Renal Function on Background Dapagliflozin (Eluminate-4)",
+          "acronym": "Eluminate-4"
+        },
+        "statusModule": {
+          "statusVerifiedDate": "2026-09",
+          "overallStatus": "RECRUITING",
+          "expandedAccessInfo": {
+            "hasExpandedAccess": false
+          },
+          "startDateStruct": {
+            "date": "2026-07-06",
+            "type": "ACTUAL"
+          },
+          "primaryCompletionDateStruct": {
+            "date": "2028-07-13",
+            "type": "ESTIMATED"
+          },
+          "completionDateStruct": {
+            "date": "2028-07-13",
+            "type": "ESTIMATED"
+          },
+          "studyFirstSubmitDate": "2026-06-18",
+          "studyFirstSubmitQcDate": "2026-06-18",
+          "studyFirstPostDateStruct": {
+            "date": "2026-06-23",
+            "type": "ACTUAL"
+          },
+          "lastUpdateSubmitDate": "2026-09-01",
+          "lastUpdatePostDateStruct": {
+            "date": "2026-09-02",
+            "type": "ACTUAL"
+          }
+        },
+        "designModule": {
+          "phases": [
+            "PHASE3"
+          ]
+        },
+        "eligibilityModule": {
+          "eligibilityCriteria": "Inclusion Criteria:\n\n* Diagnosed with Type 2 Diabetes Mellitus for at least 90 days prior to screening\n* On SGTL2i or SGLT2i-naïve and other glucose lowering medication(s)\n* HbA1c value:\n\n  1. On stable dose of SGLT2i ≥ 7.0 % to ≤ 10.5% (53 to 91.3 mmol/mol)\n  2. SGLT2i-naive ≥ 7.5% to ≤ 10.5% (58 to 91.3 mmol/mol)\n* Impaired renal function\n* Body mass index (BMI) of ≥ 23 kg/m2 at screening\n* Stable body weight (self-reported or documented) for 90 days prior to screening\n\nExclusion Criteria:\n\n* Type 1 Diabetes, secondary forms of diabetes (including congenital forms), or history of ketoacidosis or hyperosmolar coma\n* Currently receiving or anticipated to receive, therapeutic intervention for diabetic retinopathy and/or macular edema\n* Have had more than one episode of severe hypoglycemia within 180 days prior to screening or has a history of hypoglycemia unawareness or poor recognition of hypoglycemic symptoms\n* Clinically significant condition affecting the upper GI tract or chronic use of any medication that affects gastric motility or gastric emptying\n* History of acute or chronic pancreatitis\n* Severe congestive heart failure (New York Heart Association IV)\n* History/family history of medullary thyroid cancer or multiple endocrine neoplasia type 2",
+          "healthyVolunteers": false,
+          "sex": "ALL",
+          "minimumAge": "18 Years",
+          "stdAges": [
+            "ADULT",
+            "OLDER_ADULT"
+          ]
+        },
+        "contactsLocationsModule": {
+          "centralContacts": [
+            {
+              "name": "AstraZeneca Clinical Study Information Center",
+              "role": "CONTACT",
+              "phone": "1-877-240-9479",
+              "email": "information.center@astrazeneca.com"
+            }
+          ],
+          "locations": [
+            {
+              "facility": "Research Site",
+              "status": "NOT_YET_RECRUITING",
+              "city": "Sun City",
+              "state": "Arizona",
+              "zip": "85373",
+              "country": "United States",
+              "geoPoint": {
+                "lat": 33.59754,
+                "lon": -112.27182
+              }
+            },
+            {
+              "facility": "Research Site",
+              "status": "NOT_YET_RECRUITING",
+              "city": "Surprise",
+              "state": "Arizona",
+              "zip": "85374",
+              "country": "United States",
+              "geoPoint": {
+                "lat": 33.63059,
+                "lon": -112.33322
+              }
+            },
+            {
+              "facility": "Research Site",
+              "status": "NOT_YET_RECRUITING",
+              "city": "Concord",
+              "state": "California",
+              "zip": "94520",
+              "country": "United States",
+              "geoPoint": {
+                "lat": 37.97798,
+                "lon": -122.03107
+              }
+            },
+            {
+              "facility": "Research Site",
+              "status": "RECRUITING",
+              "city": "Sacramento",
+              "state": "California",
+              "zip": "95821",
+              "country": "United States",
+              "geoPoint": {
+                "lat": 38.58157,
+                "lon": -121.4944
+              }
+            },
+            {
+              "facility": "Research Site",
+              "status": "NOT_YET_RECRUITING",
+              "city": "Victorville",
+              "state": "California",
+              "zip": "92392",
+              "country": "United States",
+              "geoPoint": {
+                "lat": 34.53611,
+                "lon": -117.29116
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "nextPageToken": "ZVNj7o2Elu8o3lpyXdC5577umpOQJJxtYvKt2_0ZkA"
+}

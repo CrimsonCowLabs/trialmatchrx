@@ -33,8 +33,10 @@ types:
 	cd api && uv run python -m scripts.export_openapi openapi.json
 	cd web && pnpm exec openapi-typescript ../api/openapi.json -o lib/api-types.ts
 
+# Pre-fetch T2D/CKD trials into the SQLite cache (network). Cohort loading lands in M5.
 seed:
-	@echo "make seed: no-op until M1 (seed_trials.py) and M5 (load_cohort.py)"  # HACK(demo): stub
+	cd api && uv run python -m scripts.seed_trials
+	@echo "make seed: cohort (load_cohort.py) not loaded until M5"  # HACK(demo): stub
 
 eval:
 	@echo "make eval: no-op until M4 (run_eval.py)"  # HACK(demo): stub

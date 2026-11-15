@@ -104,3 +104,17 @@ class TraceEventRow(SQLModel, table=True):
     seq: int = Field(primary_key=True)
     event_id: str = Field(index=True)
     data: dict[str, Any] = Field(sa_column=Column(JSON, nullable=False))
+
+
+class TrialCacheRow(SQLModel, table=True):
+    """Raw ClinicalTrials.gov v2 study JSON, keyed by (NCT ID, lastUpdatePostDate).
+
+    A re-fetch of a trial that changed upstream adds a new row; readers take the newest date.
+    """
+
+    __tablename__ = "trials_cache"
+
+    nct_id: str = Field(primary_key=True)
+    last_update_post_date: str = Field(primary_key=True)  # ISO "YYYY-MM-DD", sorts as text
+    fetched_at: dt.datetime = Field(default_factory=utcnow)
+    data: dict[str, Any] = Field(sa_column=Column(JSON, nullable=False))

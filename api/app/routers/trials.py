@@ -1,18 +1,32 @@
 """Trial summary + compiled criteria."""
 
-from fastapi import APIRouter, Response
+import httpx
+from fastapi import APIRouter, HTTPException, Response
 
 from app.schemas import CompileRequest, Criterion, TrialDetail
-from app.stub_data import STUB_CRITERIA, STUB_TRIAL
+from app.sources import ctgov
+from app.stub_data import STUB_CRITERIA
 from app.trace.runner import traced_run
 
 router = APIRouter(prefix="/api/trials", tags=["trials"])
 
 
 @router.get("/{nct}", response_model=TrialDetail)
-async def get_trial(nct: str) -> TrialDetail:
-    # HACK(demo): stub — same fake trial for every NCT id until the ctgov cache lands (M1).
-    return STUB_TRIAL.model_copy(update={"nct_id": nct})
+async def get_trial(nct: str, response: Response) -> TrialDetail:
+    """Cached trial summary (fetched once on a cache miss). Traced as a `trial` run whose id
+    comes back in the `X-Run-Id` header, on errors too."""
+    async with traced_run("trial", {"nct": nct}) as run:
+        response.headers["X-Run-Id"] = run.run_id
+        headers = {"X-Run-Id": run.run_id}
+        try:
+            study = await ctgov.get_study(nct, recorder=run.recorder)
+        except ctgov.StudyNotFoundError as exc:
+            raise HTTPException(404, f"{nct} not found on ClinicalTrials.gov", headers) from exc
+        except httpx.HTTPError as exc:
+            raise HTTPException(502, f"ClinicalTrials.gov: {exc}", headers) from exc
+        trial = ctgov.summarize(study)  # criteria=[] for now, see the HACK in summarize()
+        run.result = {"nct": nct}
+    return trial
 
 
 @router.post("/{nct}/compile", response_model=list[Criterion])
