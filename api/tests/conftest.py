@@ -10,6 +10,7 @@ from app.main import app
 from app.pipeline.fixture_model import FixtureChatModel, load_llm_fixture
 from app.pipeline.judge import JudgeModelUnavailable
 from app.routers.match import judge_model_factory, parse_model_factory
+from app.routers.trials import compile_model_factory
 from app.sources import ctgov
 
 PARSE_FIXTURES = Path(__file__).parent / "fixtures" / "parse_patient"
@@ -49,6 +50,17 @@ def fixture_parse_model() -> Iterator[FixtureChatModel]:
     app.dependency_overrides[parse_model_factory] = lambda: lambda: model
     yield model
     app.dependency_overrides.pop(parse_model_factory, None)
+
+
+@pytest.fixture
+def no_api_key() -> Iterator[None]:
+    """No ANTHROPIC_API_KEY: a compile-cache miss (or any real model factory) must not reach
+    Anthropic, because the real factories raise without a key."""
+    app.dependency_overrides.pop(compile_model_factory, None)
+    settings = get_settings()
+    original, settings.anthropic_api_key = settings.anthropic_api_key, None
+    yield
+    settings.anthropic_api_key = original
 
 
 def _no_judge_model() -> FixtureChatModel:

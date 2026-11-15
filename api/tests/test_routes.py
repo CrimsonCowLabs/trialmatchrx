@@ -29,15 +29,6 @@ DEMO_NOTE = (PARSE_FIXTURES / "demo_short.txt").read_text()
 MATCH_BODY = {"note": DEMO_NOTE, "condition": "t2d"}
 
 
-@pytest.fixture(autouse=True)
-def no_stub_delay() -> Iterator[None]:
-    settings = get_settings()
-    original = settings.stub_event_delay_s
-    settings.stub_event_delay_s = 0
-    yield
-    settings.stub_event_delay_s = original
-
-
 async def test_match_streams_trace_events_in_seq_order_then_done() -> None:
     async with client() as c:
         started = await c.post("/api/match", json=MATCH_BODY)
@@ -114,18 +105,6 @@ async def test_match_rejects_a_bundle_without_one_patient() -> None:
         response = await c.post("/api/match", json=body)
     assert response.status_code == 422
     assert "Patient" in response.json()["detail"]
-
-
-async def test_closer_starts_a_streamed_run() -> None:
-    async with client() as c:
-        match_id = (await c.post("/api/match", json=MATCH_BODY)).json()["run_id"]
-        closer = await c.post("/api/closer", json={"run_id": match_id, "nct_id": "NCT00000000"})
-        closer_id = closer.json()["run_id"]
-        messages = parse_sse((await c.get(f"/api/runs/{closer_id}/events")).text)
-
-    assert closer_id != match_id
-    assert messages[-1].data == {"run_id": closer_id, "status": "done"}
-    assert any(m.data.get("kind") == "tool" for m in messages if m.event == "trace")
 
 
 FIXTURE_NCT = "NCT07271186"

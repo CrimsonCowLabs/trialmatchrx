@@ -170,6 +170,41 @@ class RunTotals(BaseModel):
     wall_time_s: float | None
 
 
+class Followup(BaseModel):
+    """One follow-up: what resolves one `unknown` criterion."""
+
+    criterion_id: str = Field(description="Id of the unknown criterion this resolves, e.g. inc-7")
+    kind: Literal["test", "question"] = Field(
+        description="test = a lab or exam to order; question = something to ask the patient or "
+        "their clinician"
+    )
+    action: str = Field(description="The test to order or the question to ask, in one sentence")
+    why: str = Field(description="How the answer decides the criterion")
+
+
+class CoordinatorEmail(BaseModel):
+    to: str | None = Field(
+        description="The trial contact's email address from get_trial_contacts; null if none"
+    )
+    subject: str
+    body: str = Field(description="Plain text, under 200 words, no patient name or identifiers")
+
+
+class PatientSummary(BaseModel):
+    en: str = Field(description="English, 6th-grade reading level, under 120 words")
+    es: str = Field(description="The same summary in Spanish, 6th-grade reading level")
+
+
+class CloserOutput(BaseModel):
+    """Next steps for one patient and one trial: follow-ups for every unknown criterion, an
+    email to the study coordinator, and a plain-language summary for the patient."""
+
+    nct_id: str
+    followups: list[Followup] = Field(description="One per unknown criterion, in trial order")
+    coordinator_email: CoordinatorEmail
+    patient_summary: PatientSummary
+
+
 class RunSummary(BaseModel):
     run_id: str
     kind: RunKind
@@ -177,6 +212,7 @@ class RunSummary(BaseModel):
     patient: PatientFacts | None  # None until the patient has been parsed
     matches: list[TrialMatch]
     totals: RunTotals
+    closer: CloserOutput | None = None  # a closer run's answer, once it is done
 
 
 class RunDone(BaseModel):

@@ -37,9 +37,6 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
-    # HACK(demo): stub — gap between the stub match's fake trace events (SPEC.md: 300 ms).
-    stub_event_delay_s: float = 0.3
-
     # USD per million tokens, (input, output). Anthropic first-party list prices; a model id
     # matches an entry exactly or by prefix (dated ids like `claude-sonnet-4-5-20250929`).
     model_prices: dict[str, tuple[float, float]] = {

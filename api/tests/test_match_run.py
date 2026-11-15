@@ -3,20 +3,17 @@ trials come from saved fixtures in the ctgov cache, their criteria from the comp
 
 import asyncio
 import json
-from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from app.config import get_settings
 from app.main import app
 from app.pipeline import judge as judge_module
 from app.pipeline.compile_criteria import compile_study
 from app.pipeline.fixture_model import FixtureChatModel, load_llm_fixture
 from app.pipeline.study_source import load_fixture_study
 from app.routers.match import judge_model_factory
-from app.routers.trials import compile_model_factory
 from app.schemas import RunSummary, TraceEvent, Verdict
 from app.sources import ctgov
 from app.trace import store
@@ -41,16 +38,6 @@ async def cache_and_compile(ncts: list[str]) -> None:
         ctgov.cache_study(study)
         model = FixtureChatModel(output=load_llm_fixture(nct))
         await compile_study(study, rec, model_factory=lambda m=model: m)
-
-
-@pytest.fixture
-def no_api_key() -> Iterator[None]:
-    """A compile-cache miss must not reach Anthropic: the real factory raises without a key."""
-    app.dependency_overrides.pop(compile_model_factory, None)
-    settings = get_settings()
-    original, settings.anthropic_api_key = settings.anthropic_api_key, None
-    yield
-    settings.anthropic_api_key = original
 
 
 async def run(body: dict[str, object]) -> tuple[RunSummary, list[TraceEvent], list[str]]:
