@@ -10,7 +10,15 @@ import pytest
 from app.pipeline.fixture_model import FixtureChatModel
 from app.trace import store
 from app.trace.replay import RunFixture, load_fixtures
-from scripts.record_demo import record_closer, record_match, save_runs
+from scripts.record_demo import (
+    DEMO_PATIENTS,
+    describe,
+    llm_cost,
+    patient_for_note,
+    record_closer,
+    record_match,
+    save_runs,
+)
 from tests.scripted_model import ScriptedChatModel
 from tests.test_closer_agent import DEMO_OUTPUT, TRIAL, happy_script
 from tests.test_match_run import BODY, cache_and_compile
@@ -27,7 +35,7 @@ async def test_record_match_writes_the_whole_run_as_a_fixture(
 ) -> None:
     fixture = await record_demo_match(tmp_path, fixture_parse_model)
 
-    saved = RunFixture.model_validate(json.loads((tmp_path / "match.json").read_text()))
+    saved = RunFixture.model_validate(json.loads((tmp_path / "match-t2d.json").read_text()))
     assert saved == fixture
     assert saved.kind == "match" and saved.request["note"] == BODY["note"]
     assert [m["nct_id"] for m in (saved.result or {})["matches"]] == [TRIAL]
@@ -46,7 +54,7 @@ async def test_record_closer_writes_the_agent_run_for_one_trial(
 
     fixture = await record_closer(tmp_path, match.run_id, TRIAL, model=model)
 
-    assert (tmp_path / f"closer-{TRIAL}.json").exists()
+    assert (tmp_path / "closer-t2d.json").exists()
     assert fixture.kind == "closer"
     assert fixture.request == {"run_id": match.run_id, "nct_id": TRIAL}
     assert (fixture.result or {})["closer"] == DEMO_OUTPUT
@@ -61,7 +69,7 @@ async def test_a_failed_run_is_not_saved(
 
     with pytest.raises(RuntimeError, match="failed"):
         await record_closer(tmp_path, match.run_id, TRIAL, model=broken)
-    assert not (tmp_path / f"closer-{TRIAL}.json").exists()
+    assert not (tmp_path / "closer-t2d.json").exists()
 
 
 async def test_finished_runs_in_the_database_can_be_saved_offline(
@@ -72,8 +80,27 @@ async def test_finished_runs_in_the_database_can_be_saved_offline(
     model = ScriptedChatModel(replies=happy_script(match.run_id))
     closer = await record_closer(tmp_path / "live", match.run_id, TRIAL, model=model)
 
-    save_runs(tmp_path / "saved", match.run_id, closer.run_id)
+    with pytest.raises(RuntimeError, match="pass --patient"):  # BODY is no demo note
+        save_runs(tmp_path / "saved", match.run_id, closer.run_id)
+    save_runs(tmp_path / "saved", match.run_id, closer.run_id, patient="t2d")
 
     assert load_fixtures(tmp_path / "saved") == load_fixtures(tmp_path / "live")
     with pytest.raises(RuntimeError, match="expected a match run and a closer run"):
         save_runs(tmp_path / "bad", closer.run_id, match.run_id)
+
+
+def test_demo_patients_are_found_by_note() -> None:
+    assert sorted(DEMO_PATIENTS) == ["als", "ipf", "pah", "t2d"]
+    for patient, request in DEMO_PATIENTS.items():
+        assert patient_for_note("  " + request["note"].upper() + "\n") == patient
+    assert patient_for_note("someone else") is None
+
+
+async def test_the_llm_cost_comes_from_the_trace(
+    tmp_path: Path, no_api_key: None, fixture_parse_model: FixtureChatModel
+) -> None:
+    fixture = await record_demo_match(tmp_path, fixture_parse_model)
+    final = {e.id: e for e in fixture.events if e.kind == "llm"}.values()
+    costs = [e.cost_usd for e in final if e.cost_usd is not None]
+    assert llm_cost(fixture) == (sum(costs) if costs else None)
+    assert "LLM cost" in describe(fixture)

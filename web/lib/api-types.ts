@@ -265,8 +265,9 @@ export interface paths {
         };
         /**
          * Health
-         * @description `ok` is false in DEMO_MODE=replay until a match and a closer run have been recorded
-         *     (and every fixture file loads).
+         * @description In DEMO_MODE=replay `ok` is true once at least one demo patient is recorded, every
+         *     patient with a match recording also has its closer recording, and every fixture file
+         *     loads; `demo_patients` lists the fully recorded patient ids.
          */
         get: operations["health"];
         put?: never;
@@ -472,6 +473,11 @@ export interface components {
             model_ids: {
                 [key: string]: string;
             };
+            /**
+             * Demo Patients
+             * @default []
+             */
+            demo_patients: string[];
         };
         /** LeaveOneOut */
         LeaveOneOut: {

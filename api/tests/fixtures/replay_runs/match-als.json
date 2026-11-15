@@ -1,0 +1,1 @@
+{"run_id": "11111111-1111-4111-8111-111111111111", "kind": "match", "patient": "als", "request": {"note": "54-year-old man with ALS (limb onset). Lives in Davis, CA.", "condition": "amyotrophic lateral sclerosis", "radius_mi": 100}, "result": {"matches": []}, "recorded_at": "2026-11-15T10:00:00Z", "events": []}

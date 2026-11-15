@@ -338,3 +338,5 @@ class Health(BaseModel):
     ok: bool
     demo_mode: str
     model_ids: dict[str, str]
+    # DEMO_MODE=replay: the demo patient ids with both a match and a closer recording.
+    demo_patients: list[str] = []
