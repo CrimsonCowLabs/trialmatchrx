@@ -16,6 +16,14 @@ def test_compile_prompt_has_a_version_and_both_sections() -> None:
     assert "NCT1" in user and "* T2DM" in user
 
 
+def test_parse_patient_prompt_has_a_version_and_fills_the_note() -> None:
+    prompt = load_prompt("parse_patient")
+
+    assert prompt.version == "parse-patient-v1"
+    assert "{{" not in prompt.render_system(units="- labs: `egfr`")
+    assert "61M, T2D" in prompt.render_user(note="61M, T2D")
+
+
 def test_missing_placeholder_value_is_an_error() -> None:
     with pytest.raises(PromptError, match="vocabulary"):
         load_prompt("compile_criteria").render_system()
