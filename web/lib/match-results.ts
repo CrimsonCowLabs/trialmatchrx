@@ -46,22 +46,43 @@ export interface ResultsView {
   expanded: string | null;
 }
 
-/** The view a run's results open on: the first tier that has trials (likely when it has any),
- *  with the first likely trial expanded. Matches arrive in rank order. */
-export function initialView(matches: TrialMatch[]): ResultsView {
+/** The view a run's results open on. A deep link (`/match/[runId]?trial=<NCT>`, SPEC.md
+ *  "First-time user guide") naming one of the run's trials opens that trial's tier with only
+ *  its card expanded. Otherwise (no param, or an NCT the run doesn't have): the first tier that
+ *  has trials (likely when it has any), with the first likely trial expanded. Matches arrive
+ *  in rank order. */
+export function initialView(matches: TrialMatch[], linkedTrial: string | null = null): ResultsView {
+  const linked = locateTrial(matches, linkedTrial);
+  if (linked) return { tier: linked.tier, expanded: linked.nctId };
   const tier = TIERS.find(({ tier: t }) => matches.some((m) => m.tier === t))?.tier ?? "likely";
   const expanded = matches.find((m) => m.tier === "likely")?.nct_id ?? null;
   return { tier, expanded };
 }
 
+/** A trial card's place in the results: its NCT ID and the tier tab it sits under. */
+export interface TrialLocation {
+  tier: Tier;
+  nctId: string;
+}
+
+const locationOf = (m: TrialMatch | undefined): TrialLocation | null =>
+  m ? { tier: m.tier, nctId: m.nct_id } : null;
+
 /** Where the verdict a trace event produced sits: its trial and that trial's tier. */
 export function locateVerdict(
   matches: TrialMatch[],
   traceEventId: string | null,
-): { tier: Tier; nctId: string } | null {
+): TrialLocation | null {
   if (!traceEventId) return null;
-  const m = matches.find((x) => x.verdicts.some((v) => v.trace_event_id === traceEventId));
-  return m ? { tier: m.tier, nctId: m.nct_id } : null;
+  return locationOf(
+    matches.find((x) => x.verdicts.some((v) => v.trace_event_id === traceEventId)),
+  );
+}
+
+/** Where a trial sits, by NCT ID; null when the run has no such trial. */
+function locateTrial(matches: TrialMatch[], nctId: string | null): TrialLocation | null {
+  if (!nctId) return null;
+  return locationOf(matches.find((m) => m.nct_id === nctId));
 }
 
 /** "7 OK · 0 disqualifying · 1 unknown" from a trial's outcome counts. */
