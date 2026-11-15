@@ -25,25 +25,45 @@ A topic whose match run raises (a parse failure, or any other error) is reported
 the step it broke and is left out of the metrics; the other topics are still matched.
 """
 
+import asyncio
+from collections.abc import Coroutine
 from dataclasses import dataclass, field
+from typing import Any
 
 from langchain_core.caches import BaseCache
 
+from app.eval.fail_fast import FailFastStop, FailFastWatch
 from app.eval.llm_cache import PendingCache, SqliteLlmCache, with_cache
+from app.eval.offline import (
+    STEPS,
+    CacheMisses,
+    CacheOnly,
+    Step,
+    offline_compile_model,
+    offline_judge_model,
+    offline_parse_model,
+)
 from app.eval.runs import COMPILE_RATE, score_rankings, topic_labels
 from app.pipeline import criteria_cache
 from app.pipeline.compile_criteria import PROMPT_NAME as COMPILE_PROMPT
 from app.pipeline.compile_criteria import ModelFactory, anthropic_compile_model
+from app.pipeline.judge import STEP_PREFIX as JUDGE_STEP
 from app.pipeline.judge import anthropic_judge_model
-from app.pipeline.match_run import match_trials, rank_step
+from app.pipeline.match_run import TRIAL_CONCURRENCY, match_trials, rank_step
 from app.pipeline.parse_patient import anthropic_parse_model, parse_patient
 from app.pipeline.trial_search import CandidateTrial
 from app.prompts import load_prompt
+from app.schemas import Criterion
 from app.sources import ctgov
 from app.sources.trec import Topic, TrecSample
 from app.trace import store
+from app.trace.bus import EventBus
+from app.trace.bus import bus as default_bus
 from app.trace.recorder import describe_error
 from app.trace.runner import traced_run
+
+# --fail-fast stops after which the stopped topic's answers are cached (see `score_matcher`)
+KEEPS_ANSWERS = ("compile", "judge")
 
 
 @dataclass
@@ -64,12 +84,21 @@ class MatcherScore:
     judge_errors: int  # judge calls that errored (verdict fell back to unknown, not cached)
     run_ids: dict[int, str]  # topic id -> its traced match run
     failed: list[TopicFailure] = field(default_factory=list)  # topics whose match run raised
+    # --offline: per step, the calls that missed the cache (would have gone to the API)
+    cache_misses: dict[Step, int] = field(default_factory=dict)
+    stopped: FailFastStop | None = None  # --fail-fast: the failure the eval stopped at
 
     @property
     def complete(self) -> bool:
-        """Every topic matched, every trial compiled and every judge call answered, so a
-        re-run replays it all."""
-        return not self.failed and not self.uncompiled and not self.judge_errors
+        """Every topic matched, every trial compiled and every judge call answered (offline:
+        from the cache), so a re-run replays it all."""
+        return (
+            not self.failed
+            and not self.uncompiled
+            and not self.judge_errors
+            and not any(self.cache_misses.values())
+            and self.stopped is None
+        )
 
 
 @dataclass
@@ -88,9 +117,10 @@ def _candidate(nct: str, sample: TrecSample) -> CandidateTrial:
 
 
 def _judge_errors(run_id: str) -> int:
-    """`judge:<nct>:<id>:error` events: the judge's API call failed (see `judge.py`)."""
+    """`judge:<nct>:<id>:error` events: the judge's API call failed (see `judge.py`). Offline,
+    this includes the cache misses; `score_matcher` takes those out (`CacheMisses`)."""
     return sum(
-        e.kind == "error" and e.name.startswith("judge:") and e.name.endswith(":error")
+        e.kind == "error" and e.name.startswith(JUDGE_STEP) and e.name.endswith(":error")
         for e in store.latest_events(run_id)
     )
 
@@ -102,13 +132,16 @@ async def _match_topic(
     compile_model_factory: ModelFactory,
     parse_model_factory: ModelFactory,
     judge_model_factory: ModelFactory,
+    bus: EventBus = default_bus,
+    trial_concurrency: int = TRIAL_CONCURRENCY,
 ) -> _TopicResult | TopicFailure:
-    """The topic's match run, or how it failed: any error fails this topic, not the eval."""
+    """The topic's match run, or how it failed: any error fails this topic, not the eval.
+    `bus` gets the run's trace events (`--fail-fast` watches them)."""
     ncts = sorted(topic_labels(sample, topic.id))
     request = {"note": topic.text, "eval": {"topic": topic.id}}
     run_id = store.create_run("match", request)
     try:
-        async with traced_run("match", request, run_id=run_id) as run:
+        async with traced_run("match", request, run_id=run_id, bus=bus) as run:
             facts = await parse_patient(run.recorder, topic.text, model_factory=parse_model_factory)
             results = await match_trials(
                 run.recorder,
@@ -117,6 +150,7 @@ async def _match_topic(
                 note=topic.text,
                 model_factory=compile_model_factory,
                 judge_model_factory=judge_model_factory,
+                concurrency=trial_concurrency,
             )
             ranked = await rank_step(run.recorder, [m for m in results if m is not None])
             run.result = {
@@ -158,14 +192,22 @@ def _failed_steps(run_id: str, error: str) -> str:
     return " > ".join(path) or "match"
 
 
+def _cached_criteria(sample: TrecSample, nct: str) -> list[Criterion] | None:
+    eligibility = sample.trials[nct]["protocolSection"].get("eligibilityModule", {})
+    version = load_prompt(COMPILE_PROMPT).version
+    return criteria_cache.get(nct, criteria_cache.eligibility_hash(eligibility), version)
+
+
+def _not_compiled(sample: TrecSample) -> set[str]:
+    """The sample's judged trials that are not in the compile cache."""
+    return {j.nct_id for j in sample.judgments if _cached_criteria(sample, j.nct_id) is None}
+
+
 def compile_rate(sample: TrecSample, ncts: set[str]) -> float | None:
     """Pooled share of criteria with a predicate over `ncts`, from the compile cache."""
-    version = load_prompt(COMPILE_PROMPT).version
     total = with_predicate = 0
     for nct in sorted(ncts):
-        eligibility = sample.trials[nct]["protocolSection"].get("eligibilityModule", {})
-        criteria = criteria_cache.get(nct, criteria_cache.eligibility_hash(eligibility), version)
-        for c in criteria or []:
+        for c in _cached_criteria(sample, nct) or []:
             total += 1
             with_predicate += c.predicate is not None
     return with_predicate / total if total else None
@@ -174,29 +216,71 @@ def compile_rate(sample: TrecSample, ncts: set[str]) -> float | None:
 async def score_matcher(
     sample: TrecSample,
     *,
-    compile_model_factory: ModelFactory = anthropic_compile_model,
-    parse_model_factory: ModelFactory = anthropic_parse_model,
-    judge_model_factory: ModelFactory = anthropic_judge_model,
+    compile_model_factory: ModelFactory | None = None,
+    parse_model_factory: ModelFactory | None = None,
+    judge_model_factory: ModelFactory | None = None,
     llm_cache: BaseCache | None = None,
+    offline: bool = False,
+    fail_fast: bool = False,
 ) -> MatcherScore:
     """Run the matcher on every topic of the sample (one topic at a time) and score it.
-    Parse and judge answers go through `llm_cache` (default: the `llm_cache` table)."""
+    Parse and judge answers go through `llm_cache` (default: the `llm_cache` table). The model
+    factories default to the live Anthropic models.
+
+    `offline`: answer from the caches only (`app/eval/offline.py`). The compile model is never
+    built (a compile-cache miss leaves the trial uncompiled); parse and judge models are built
+    (offline defaults: the live models with a placeholder key) only to key the cache, and a miss
+    raises `NotCached` before any request. `cache_misses` counts the misses per step.
+
+    `fail_fast`: stop at the first model failure (`app/eval/fail_fast.py`): a failed parse,
+    a trial that can't compile, a judge error or malformed answer, or (offline) a cache miss.
+    Trials then run one at a time, so none starts after the failure, and no later topic runs.
+    `stopped` says where it broke. The stopped topic's answers so far are cached when it stopped
+    at a compile or judge failure (without the flag the topic would finish and cache them), not
+    when its parse failed (#59: that answer may be the bad one)."""
     cache = llm_cache or SqliteLlmCache()
+    misses = CacheMisses()
+    if offline:
+        compile_model_factory = offline_compile_model
+        parse_model_factory = parse_model_factory or offline_parse_model
+        judge_model_factory = judge_model_factory or offline_judge_model
+    compile_factory = compile_model_factory or anthropic_compile_model
+    parse_factory = parse_model_factory or anthropic_parse_model
+    judge_factory = judge_model_factory or anthropic_judge_model
     rankings: dict[int, list[str]] = {}
     called: dict[tuple[int, str], bool] = {}
     run_ids: dict[int, str] = {}
     uncompiled: set[str] = set()
     judge_errors = 0
     failed: list[TopicFailure] = []
+    stopped: FailFastStop | None = None
     for topic in sample.topics:
         pending = PendingCache(cache)  # a failed topic's answers are dropped, not cached
-        result = await _match_topic(
+        parse_cache: BaseCache = pending
+        judge_cache: BaseCache = pending
+        if offline:  # a miss raises (nothing is pending, so the commit below writes nothing)
+            parse_cache = CacheOnly(pending, "parse", misses)
+            judge_cache = CacheOnly(pending, "judge", misses)
+        watch = FailFastWatch(topic.id) if fail_fast else None
+        judge_misses = len(misses.keys["judge"])
+        match = _match_topic(
             topic,
             sample,
-            compile_model_factory=compile_model_factory,
-            parse_model_factory=with_cache(parse_model_factory, pending),
-            judge_model_factory=with_cache(judge_model_factory, pending),
+            compile_model_factory=compile_factory,
+            parse_model_factory=with_cache(parse_factory, parse_cache),
+            judge_model_factory=with_cache(judge_factory, judge_cache),
+            bus=watch or default_bus,
+            trial_concurrency=1 if fail_fast else TRIAL_CONCURRENCY,
         )
+        result = await (match if watch is None else _until_failure(match, watch))
+        if isinstance(result, FailFastStop):  # no later topic runs
+            stopped = result
+            run_ids[topic.id] = stopped.run_id
+            # The cause, not the cancel; and failed even if the run got to finish first.
+            store.finish_run(stopped.run_id, "failed", error=stopped.error)
+            if stopped.step in KEEPS_ANSWERS:
+                pending.commit()
+            break
         run_ids[topic.id] = result.run_id
         if isinstance(result, TopicFailure):
             failed.append(result)
@@ -204,7 +288,8 @@ async def score_matcher(
         pending.commit()
         rankings[topic.id] = result.ranking
         uncompiled.update(result.uncompiled)
-        judge_errors += result.judge_errors
+        # an offline judge miss is an error event too; it is counted as a miss instead
+        judge_errors += result.judge_errors - (len(misses.keys["judge"]) - judge_misses)
         called |= {(topic.id, nct): ok for nct, ok in result.called_eligible.items()}
 
     # Failed topics have no ranking: the metrics are over the matched topics only.
@@ -216,4 +301,25 @@ async def score_matcher(
     rate = compile_rate(matched, ncts)
     if rate is not None:
         metrics[COMPILE_RATE] = rate
-    return MatcherScore(metrics, rankings, sorted(uncompiled), judge_errors, run_ids, failed)
+    cache_misses: dict[Step, int] = {}
+    if offline:  # compile misses straight from the compile cache, reached by a topic or not
+        cache_misses = misses.counts() | {"compile": len(_not_compiled(sample))}
+        cache_misses = {step: cache_misses[step] for step in STEPS}
+    return MatcherScore(
+        metrics, rankings, sorted(uncompiled), judge_errors, run_ids, failed, cache_misses, stopped
+    )
+
+
+async def _until_failure[T](
+    match: Coroutine[Any, Any, T], watch: FailFastWatch
+) -> T | FailFastStop:
+    """`match`, run as a task that `watch` cancels at the first failure, or that failure."""
+    task = asyncio.create_task(match)
+    watch.watch(task)
+    try:
+        result = await task
+    except asyncio.CancelledError:
+        current = asyncio.current_task()
+        if watch.failure is None or (current is not None and current.cancelling()):
+            raise  # cancelled from outside (Ctrl-C), not by the watch
+    return watch.failure or result
