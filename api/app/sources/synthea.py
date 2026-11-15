@@ -130,6 +130,18 @@ def _location(patient: dict[str, Any]) -> tuple[float | None, float | None]:
     return None, None
 
 
+def _place(patient: dict[str, Any]) -> str | None:
+    """ "Sacramento, CA" from the Patient's first address with a city and / or state."""
+    for address in patient.get("address") or []:
+        if not isinstance(address, dict):
+            continue
+        parts = [address.get(k) for k in ("city", "state")]
+        text = ", ".join(p for p in parts if isinstance(p, str) and p)
+        if text:
+            return text
+    return None
+
+
 def _codes(concept: dict[str, Any] | None, system: str) -> list[str]:
     return [
         c["code"]
@@ -325,6 +337,7 @@ def map_bundle(bundle: dict[str, Any], *, as_of: dt.date) -> BundleMapping:
         smoker=_smoker(observations),
         lat=lat,
         lon=lon,
+        place=_place(patient),
     )
     present = {"labs": facts.labs, "vitals": facts.vitals}
     mapped = dict.fromkeys(SPEC_LOINC.values())  # (section, key) in table order, deduplicated

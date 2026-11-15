@@ -57,6 +57,7 @@ class PatientFacts(BaseModel):
     smoker: bool | None
     lat: float | None
     lon: float | None
+    place: str | None = None  # where the patient lives, e.g. "Sacramento, CA"; display only
 
 
 class Predicate(BaseModel):
@@ -216,6 +217,8 @@ class RunSummary(BaseModel):
     matches: list[TrialMatch]
     totals: RunTotals
     closer: CloserOutput | None = None  # a closer run's answer, once it is done
+    condition: str | None = None  # the match request's condition; None for a closer run
+    max_unknowns_for_likely: int  # the tier rule: "likely" = no fails, at most this many unknown
 
 
 class TierCounts(BaseModel):

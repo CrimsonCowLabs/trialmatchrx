@@ -9,6 +9,7 @@ import pytest
 from app.config import get_settings
 from app.main import app
 from app.pipeline.fixture_model import FixtureChatModel, load_llm_fixture
+from app.pipeline.rank import MAX_UNKNOWNS_FOR_LIKELY
 from app.pipeline.study_source import load_fixture_study
 from app.routers.trials import compile_model_factory
 from app.schemas import (
@@ -58,6 +59,9 @@ async def test_match_parses_the_note_into_the_run_result_and_trace(
     patient = summary.patient
     assert patient is not None and patient.age == 61 and patient.sex == "male"
     assert patient.labs["hba1c"].value == 8.4 and patient.labs["hba1c"].source_span in DEMO_NOTE
+    assert patient.place == "Sacramento, CA"
+    assert summary.condition == "t2d"
+    assert summary.max_unknowns_for_likely == MAX_UNKNOWNS_FOR_LIKELY
     (step,) = [e for e in trace if e.name == "parse_patient"]
     assert step.status == "ok" and step.kind == "step"
     assert any(e.kind == "llm" and e.parent_id == step.id for e in trace)

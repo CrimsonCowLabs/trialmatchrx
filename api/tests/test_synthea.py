@@ -30,6 +30,7 @@ def test_demographics_and_location() -> None:
     assert facts.age == 62  # born 1964-03-15
     assert facts.sex == "female"
     assert (facts.lat, facts.lon) == (38.5816, -121.4944)
+    assert facts.place == "Sacramento, CA"
 
 
 def test_most_recent_lab_wins_with_its_unit_and_date() -> None:

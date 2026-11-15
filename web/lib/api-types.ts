@@ -518,6 +518,8 @@ export interface components {
             lat: number | null;
             /** Lon */
             lon: number | null;
+            /** Place */
+            place?: string | null;
         };
         /** PatientSummary */
         PatientSummary: {
@@ -630,6 +632,10 @@ export interface components {
             matches: components["schemas"]["TrialMatch"][];
             totals: components["schemas"]["RunTotals"];
             closer?: components["schemas"]["CloserOutput"] | null;
+            /** Condition */
+            condition?: string | null;
+            /** Max Unknowns For Likely */
+            max_unknowns_for_likely: number;
         };
         /**
          * RunTotals

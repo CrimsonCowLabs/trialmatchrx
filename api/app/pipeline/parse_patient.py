@@ -223,13 +223,13 @@ class _Assembler:
         )
         smoker = draft.smoker.value if draft.smoker and kept("smoker", draft.smoker) else None
 
-        lat = lon = None
+        lat = lon = place = None
         loc = draft.location
         if loc is not None:
             if not (-90 <= loc.lat <= 90 and -180 <= loc.lon <= 180):
                 self._drop("range", "location", loc, "coordinates out of range")
             elif kept("location", loc):
-                lat, lon = loc.lat, loc.lon
+                lat, lon, place = loc.lat, loc.lon, loc.place
 
         facts = PatientFacts(
             age=age,
@@ -242,6 +242,7 @@ class _Assembler:
             smoker=smoker,
             lat=lat,
             lon=lon,
+            place=place,
         )
         return facts, spans
 

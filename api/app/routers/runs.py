@@ -8,6 +8,7 @@ from fastapi import APIRouter, Header, HTTPException, Query
 from sse_starlette import EventSourceResponse
 
 from app.db import RunRow
+from app.pipeline.rank import MAX_UNKNOWNS_FOR_LIKELY
 from app.schemas import (
     PatientFacts,
     RunKind,
@@ -127,6 +128,8 @@ async def get_run(run_id: str) -> RunSummary:
         matches=result.get("matches", []),
         totals=compute_totals(run, store.latest_events(run_id)),
         closer=result.get("closer"),
+        condition=run.request.get("condition") if run.kind == "match" else None,
+        max_unknowns_for_likely=MAX_UNKNOWNS_FOR_LIKELY,
     )
 
 
