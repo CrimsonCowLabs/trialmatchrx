@@ -1,9 +1,15 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
-import { Badge } from "@/components/ui/badge";
-import type { ReviewCriterion, WaterfallStep } from "@/lib/feasibility";
+import { formatCount } from "@/lib/format";
+import {
+  barWidths,
+  cohortShare,
+  ruleLabel,
+  type ReviewSummary,
+  type WaterfallStep,
+} from "@/lib/feasibility";
 
 // Bars are plain divs on one shared scale (the cohort size): one series, so one ink. Remaining
 // is solid, the patients a rule drops are the faint tail, and "needs review" is hatched so it
@@ -11,19 +17,18 @@ import type { ReviewCriterion, WaterfallStep } from "@/lib/feasibility";
 const HATCH =
   "repeating-linear-gradient(135deg, var(--color-muted-foreground) 0 2px, transparent 2px 6px)";
 
-const pct = (n: number, total: number) => `${total ? (100 * n) / total : 0}%`;
+// Criterion · bar (+ slider) · numbers, from sm up; stacked below sm.
+const COLUMNS = "sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)_12rem] sm:gap-6";
 
-function Bar({ kept, dropped, total }: { kept: number; dropped: number; total: number }) {
+function Bar({ step, cohortSize }: { step: WaterfallStep; cohortSize: number }) {
+  const { kept, dropped } = barWidths(step, cohortSize);
   return (
-    <div className="flex h-4 w-full gap-0.5" aria-hidden>
-      <div
-        className="rounded-r-sm bg-primary transition-[width] duration-200"
-        style={{ width: pct(kept, total) }}
-      />
-      {dropped > 0 && (
+    <div className="flex h-2.5 w-full gap-0.5 sm:h-3.5" aria-hidden>
+      <div className="rounded-r-sm bg-primary transition-[width] duration-200" style={{ width: kept }} />
+      {step.dropped > 0 && (
         <div
-          className="rounded-r-sm bg-primary/15 transition-[width] duration-200"
-          style={{ width: pct(dropped, total) }}
+          className="rounded-r-sm bg-primary/20 transition-[width] duration-200"
+          style={{ width: dropped }}
         />
       )}
     </div>
@@ -31,36 +36,83 @@ function Bar({ kept, dropped, total }: { kept: number; dropped: number; total: n
 }
 
 function Row({
-  label,
-  detail,
-  bar,
-  numbers,
+  step,
+  cohortSize,
+  eligible,
+  blocker,
   control,
-  tooltip,
 }: {
-  label: ReactNode;
-  detail?: ReactNode;
-  bar: ReactNode;
-  numbers: ReactNode;
-  control?: ReactNode;
-  tooltip: string;
+  step: WaterfallStep;
+  cohortSize: number;
+  eligible: number;
+  blocker: boolean;
+  control: ReactNode;
 }) {
+  // Below sm a numeric rule's slider is behind "Adjust"; from sm up it is always inline.
+  const [adjusting, setAdjusting] = useState(false);
+  const added = step.added_if_removed;
   return (
     <li
-      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 rounded-sm px-2 py-2 hover:bg-muted/60 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)_9rem]"
-      title={tooltip}
+      data-testid="waterfall-row"
+      data-criterion={step.criterion_id}
+      className={`flex flex-col gap-2 border-b border-line-soft px-4 py-3 sm:items-center sm:px-5 sm:py-3.5 ${COLUMNS} ${blocker ? "bg-teal-selected" : ""}`}
+      title={
+        `${step.before} in, ${step.dropped} dropped, ${step.remaining} remain. ` +
+        `Without this rule: ${eligible + added} pass every rule (+${added}).`
+      }
     >
-      <div className="min-w-0 text-sm">
-        <div className="truncate">{label}</div>
-        {detail && <div className="text-xs text-muted-foreground">{detail}</div>}
+      <div className="flex min-w-0 items-baseline justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-sm font-medium sm:text-[0.9375rem]">
+            <span className="mr-2 font-mono text-xs font-normal text-ink-5">{step.criterion_id}</span>
+            {step.text}
+          </div>
+          <div className="mt-0.5 hidden flex-wrap items-center gap-2 text-[0.8125rem] text-ink-4 sm:flex">
+            {step.type}
+            {step.missing > 0 &&
+              ` · ${step.missing} with no data ${step.type === "inclusion" ? "(dropped)" : "(kept)"}`}
+            {blocker && <BlockerTag />}
+          </div>
+        </div>
+        <span className="font-mono text-sm font-semibold tabular-nums sm:hidden">
+          {formatCount(step.remaining)}
+        </span>
       </div>
-      {/* Narrow screens: the bar and its slider take a full-width second row. */}
-      <div className="col-span-2 row-start-2 flex flex-col gap-1.5 sm:col-span-1 sm:row-start-auto">
-        {bar}
-        {control}
+      <div className="flex flex-col gap-2">
+        <Bar step={step} cohortSize={cohortSize} />
+        {step.numeric && (
+          <>
+            <div className="flex items-center justify-between font-mono text-xs text-ink-2 sm:hidden">
+              <span>{ruleLabel(step)}</span>
+              <button
+                type="button"
+                className="font-sans font-medium link"
+                aria-expanded={adjusting}
+                onClick={() => setAdjusting((a) => !a)}
+              >
+                {adjusting ? "Done" : "Adjust"}
+              </button>
+            </div>
+            <div className={`${adjusting ? "block" : "hidden"} sm:block`}>{control}</div>
+          </>
+        )}
       </div>
-      <div className="text-right text-xs tabular-nums">{numbers}</div>
+      <div className="hidden text-right font-mono text-[0.8125rem] tabular-nums sm:block">
+        <span className="text-base font-semibold">{formatCount(step.remaining)}</span>{" "}
+        <span className="text-ink-5">−{formatCount(step.dropped)}</span>{" "}
+        <span className={added > 0 ? "font-medium text-teal-strong" : "text-ink-5"}>
+          +{formatCount(added)}
+        </span>
+      </div>
     </li>
+  );
+}
+
+function BlockerTag() {
+  return (
+    <span className="rounded-full bg-teal-tint px-2 py-0.5 text-[0.6875rem] font-medium text-teal-strong">
+      biggest blocker
+    </span>
   );
 }
 
@@ -69,100 +121,78 @@ export function Waterfall({
   steps,
   eligible,
   blockerId,
-  needsReview,
-  reviewCriteria,
+  review,
   control,
 }: {
   cohortSize: number;
   steps: WaterfallStep[];
   eligible: number; // patients left after every rule
   blockerId: string | null;
-  needsReview: number;
-  reviewCriteria: ReviewCriterion[];
+  review: ReviewSummary | null;
   control: (step: WaterfallStep) => ReactNode; // the threshold slider for a numeric rule
 }) {
   return (
-    <div className="flex flex-col gap-4">
-      <ol className="flex flex-col">
-        <Row
-          label={<span className="font-medium">Synthetic cohort</span>}
-          bar={<Bar kept={cohortSize} dropped={0} total={cohortSize} />}
-          numbers={<span className="text-sm font-medium">{cohortSize}</span>}
-          tooltip={`${cohortSize} Synthea patients`}
-        />
+    <section
+      aria-label="Waterfall"
+      className="overflow-hidden rounded-card border bg-card"
+      data-testid="waterfall"
+    >
+      <div
+        className={`hidden border-b border-line-soft px-5 py-3 text-xs font-medium tracking-wider text-ink-4 uppercase ${COLUMNS}`}
+      >
+        <span>Criterion</span>
+        <span>Remaining of {formatCount(cohortSize)}</span>
+        <span className="text-right whitespace-nowrap">Remain · drop · if removed</span>
+      </div>
+      <ol>
         {steps.map((s) => (
           <Row
             key={s.criterion_id}
-            label={
-              <>
-                <span className="mr-1.5 font-mono text-xs text-muted-foreground">
-                  {s.criterion_id}
-                </span>
-                {s.text}
-              </>
-            }
-            detail={
-              <span className="flex flex-wrap items-center gap-1.5">
-                {s.type}
-                {s.missing > 0 && (
-                  <span>
-                    · {s.missing} with no data {s.type === "inclusion" ? "(dropped)" : "(kept)"}
-                  </span>
-                )}
-                {s.criterion_id === blockerId && <Badge variant="outline">biggest blocker</Badge>}
-              </span>
-            }
-            bar={<Bar kept={s.remaining} dropped={s.dropped} total={cohortSize} />}
-            control={s.numeric ? control(s) : undefined}
-            numbers={
-              <>
-                <div className="text-sm font-medium">{s.remaining}</div>
-                <div className="text-muted-foreground">−{s.dropped}</div>
-                <div className={s.added_if_removed > 0 ? "" : "text-muted-foreground"}>
-                  +{s.added_if_removed} if dropped
-                </div>
-              </>
-            }
-            tooltip={
-              `${s.before} in, ${s.dropped} dropped, ${s.remaining} remain. ` +
-              `Without this rule: ${eligible + s.added_if_removed} eligible (+${s.added_if_removed}).`
-            }
+            step={s}
+            cohortSize={cohortSize}
+            eligible={eligible}
+            blocker={s.criterion_id === blockerId}
+            control={s.numeric ? control(s) : null}
           />
         ))}
-        <Row
-          label={<span className="font-medium">Eligible on every rule</span>}
-          bar={<Bar kept={eligible} dropped={0} total={cohortSize} />}
-          numbers={<span className="text-sm font-semibold">{eligible}</span>}
-          tooltip={`${eligible} of ${cohortSize} pass every criterion that has a rule`}
-        />
       </ol>
-
-      <section className="flex flex-col gap-2 rounded-md border border-dashed p-2">
-        <Row
-          label={<span className="font-medium">Needs review</span>}
-          detail={`${reviewCriteria.length} criteria have no rule; never counted as passed`}
-          bar={
-            <div className="h-4 w-full" aria-hidden>
-              <div
-                className="h-full rounded-r-sm border border-muted-foreground/60"
-                style={{ width: pct(needsReview, cohortSize), backgroundImage: HATCH }}
-              />
+      {review && (
+        <div
+          className={`m-3 flex flex-col gap-2 rounded-lg border border-dashed border-line-strong px-4 py-3.5 sm:items-start ${COLUMNS}`}
+          data-testid="needs-review"
+          title={`${review.patients} pass every rule but still have to be checked by hand`}
+        >
+          <div className="flex items-baseline justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-sm font-medium sm:text-[0.9375rem]">Needs review</div>
+              <div className="mt-0.5 text-[0.8125rem] text-ink-4">Never counted as passed:</div>
+              <ul className="mt-1 flex flex-col gap-1 text-[0.8125rem] text-ink-3">
+                {review.criteria.map((r) => (
+                  <li key={r.criterion_id}>
+                    <span className="mr-1.5 font-mono text-ink-5">{r.criterion_id}</span>
+                    {r.text}
+                  </li>
+                ))}
+              </ul>
             </div>
-          }
-          numbers={<span className="text-sm font-medium">{needsReview}</span>}
-          tooltip={`${needsReview} patients pass every rule but still have to be checked by hand`}
-        />
-        {reviewCriteria.length > 0 && (
-          <ul className="flex flex-col gap-1 px-2 pb-1 text-xs text-muted-foreground">
-            {reviewCriteria.map((r) => (
-              <li key={r.criterion_id}>
-                <span className="mr-1.5 font-mono">{r.criterion_id}</span>
-                {r.text}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
+            <span className="font-mono text-sm font-semibold tabular-nums sm:hidden">
+              {formatCount(review.patients)}
+            </span>
+          </div>
+          <div className="h-2.5 sm:mt-1 sm:h-3.5" aria-hidden>
+            <div
+              className="h-full rounded-r-sm border border-muted-foreground/60 transition-[width] duration-200"
+              style={{
+                width: cohortShare(review.patients, cohortSize),
+                backgroundImage: HATCH,
+              }}
+            />
+          </div>
+          <div className="hidden text-right font-mono text-base font-semibold tabular-nums sm:block">
+            {formatCount(review.patients)}
+          </div>
+        </div>
+      )}
+    </section>
   );
 }

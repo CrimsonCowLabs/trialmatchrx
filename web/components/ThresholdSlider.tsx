@@ -33,7 +33,8 @@ export function ThresholdSlider({
         aria-valuetext={label}
         className="h-1.5 w-full min-w-24 cursor-pointer accent-primary"
       />
-      <span className="w-36 shrink-0 font-mono text-xs tabular-nums">{label}</span>
+      {/* Below sm the row prints the rule above its Adjust link. */}
+      <span className="hidden w-36 shrink-0 font-mono text-xs tabular-nums sm:inline">{label}</span>
       <Button
         variant="ghost"
         size="icon-xs"

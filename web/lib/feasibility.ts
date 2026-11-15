@@ -1,6 +1,8 @@
 // Pure helpers for the feasibility page: the waterfall joined with leave-one-out, and the
-// slider ranges. Only a type import from ./api.ts, so node:test can load this file directly.
+// slider ranges. Only a type import from ./api.ts (and ./format.ts), so node:test can load this
+// file directly.
 import type { FeasibilityResult, Schemas } from "./api.ts";
+import { countNoun } from "./format.ts";
 
 export type Overrides = NonNullable<Schemas["FeasibilityRequest"]["overrides"]>;
 export type ReviewCriterion = Schemas["ReviewCriterion"];
@@ -32,6 +34,22 @@ export function biggestBlocker(steps: WaterfallStep[]): WaterfallStep | null {
     (best, s) => (s.added_if_removed > (best?.added_if_removed ?? 0) ? s : best),
     null,
   );
+}
+
+/** `n` as a CSS width on the cohort scale: `7%` of 1,000 for 70. */
+export const cohortShare = (n: number, cohortSize: number) =>
+  `${cohortSize > 0 ? Math.round((10000 * n) / cohortSize) / 100 : 0}%`;
+
+/** CSS widths of a waterfall bar on the shared cohort scale: the patients a rule keeps, then
+ *  the faint tail it drops. */
+export function barWidths(
+  step: Pick<WaterfallStep, "remaining" | "dropped">,
+  cohortSize: number,
+): { kept: string; dropped: string } {
+  return {
+    kept: cohortShare(step.remaining, cohortSize),
+    dropped: cohortShare(step.dropped, cohortSize),
+  };
 }
 
 export interface SliderRange {
@@ -77,4 +95,49 @@ export function ruleLabel(step: WaterfallStep): string {
   const shown = Array.isArray(step.value) ? step.value.join(" / ") : String(step.value);
   const unit = step.unit && step.numeric ? ` ${step.unit}` : "";
   return `${field} ${step.op.replace("_", " ")} ${shown}${unit}`;
+}
+
+/** `overrides` with a numeric rule's threshold moved to `value`. Back at the compiled value, or
+ *  null, drops the override, so Reset all is just `{}` and "adjusted" means a key is present. */
+export function setThreshold(
+  overrides: Overrides,
+  step: WaterfallStep,
+  value: number | null,
+): Overrides {
+  const next = { ...overrides };
+  if (value === null || value === thresholdValue({}, step)) delete next[step.criterion_id];
+  else next[step.criterion_id] = value;
+  return next;
+}
+
+/** Where a numeric rule's slider sits: its override, else the compiled threshold. */
+export function thresholdValue(overrides: Overrides, step: WaterfallStep): number {
+  const current = overrides[step.criterion_id];
+  return typeof current === "number" ? current : Number(step.default_value);
+}
+
+/** "8 compiled criteria, 2 need review" for the page header. */
+export function criteriaSummary(result: FeasibilityResult): string {
+  const compiled = result.waterfall.length;
+  const review = result.review_criteria.length;
+  const rules = `${countNoun(compiled, "compiled criterion", "compiled criteria")}`;
+  if (review === 0) return `${rules}, none need review`;
+  return `${rules}, ${review} ${review === 1 ? "needs" : "need"} review`;
+}
+
+export interface ReviewSummary {
+  patients: number; // pass every rule but still face the criteria below by hand
+  allEligible: boolean; // every patient who passes the rules still needs review
+  criteria: ReviewCriterion[];
+}
+
+/** The criteria with no rule and the patients still facing them, or null when every criterion
+ *  compiled. Review is never counted as passed: these patients are not "eligible". */
+export function reviewSummary(result: FeasibilityResult): ReviewSummary | null {
+  if (result.review_criteria.length === 0) return null;
+  return {
+    patients: result.needs_review,
+    allEligible: result.needs_review > 0 && result.needs_review === eligibleCount(result),
+    criteria: result.review_criteria,
+  };
 }
