@@ -1,9 +1,32 @@
-"""Criteria compiler: a trial's eligibility module -> list[Criterion] (SPEC.md pipeline 3)."""
+"""Criteria compiler: a trial's eligibility module -> list[Criterion] (SPEC.md pipeline 3).
+
+    criteria = await compile_study(study, recorder, model_factory=anthropic_compile_model)
+
+`study` is a raw ClinicalTrials.gov v2 study dict; where it came from is the caller's business.
+Age and sex are built in code from the structured fields. The free text goes to the compile
+model once via `with_structured_output(CompiledCriteria)`; every predicate it writes is checked
+against PatientFacts and downgraded to `needs_judgment` if invalid. Results are cached per
+NCT id + eligibility hash + prompt version. Every step, LLM call and guardrail is traced.
+"""
 
 import re
-from typing import Any
+from collections.abc import Callable
+from typing import Any, Literal
 
+from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import HumanMessage, SystemMessage
+from pydantic import BaseModel, Field
+
+from app.config import get_settings
+from app.pipeline import criteria_cache
+from app.pipeline.predicate_fields import InvalidPredicate, describe_vocabulary, validate_predicate
+from app.prompts import load_prompt
 from app.schemas import Criterion, Predicate
+from app.trace.recorder import TraceRecorder
+
+PROMPT_NAME = "compile_criteria"
+
+ModelFactory = Callable[[], BaseChatModel]
 
 # --------------------------------------------------------------------------------------------
 # Age and sex: deterministic, from the structured fields
@@ -75,3 +98,215 @@ def structured_criteria(eligibility: dict[str, Any]) -> list[Criterion]:
             )
         )
     return out
+
+
+# --------------------------------------------------------------------------------------------
+# LLM output (what the compile model returns; validated and numbered in code)
+# --------------------------------------------------------------------------------------------
+
+Category = Literal["demographic", "diagnosis", "lab", "medication", "history", "procedure", "other"]
+
+
+class DraftPredicate(BaseModel):
+    """Looser than `Predicate` on purpose: a bad op or value is a downgrade, not a parse error."""
+
+    field: str = Field(description="PatientFacts path, e.g. labs.egfr, conditions, age")
+    op: str = Field(description=">=, <=, >, <, ==, in, has or not_has")
+    value: float | str | list[str] | bool
+    unit: str | None = Field(default=None, description="The canonical unit for the field")
+
+
+class DraftCriterion(BaseModel):
+    type: Literal["inclusion", "exclusion"]
+    text: str = Field(description="Verbatim span copied from the eligibility text")
+    category: Category
+    predicate: DraftPredicate | None = Field(
+        description="Null when the criterion can't be checked from the listed patient fields"
+    )
+
+
+class CompiledCriteria(BaseModel):
+    """Every atomic eligibility criterion of the trial, in the order they appear."""
+
+    criteria: list[DraftCriterion]
+
+
+# --------------------------------------------------------------------------------------------
+# Text helpers
+# --------------------------------------------------------------------------------------------
+
+_MD_ESCAPE = re.compile(r"\\([\\`*_{}\[\]()#+\-.!<>^~|=])")
+
+
+def clean_eligibility_text(text: str) -> str:
+    """ClinicalTrials.gov stores criteria as markdown with escapes (`\\>`, `\\[`); drop them so
+    the model quotes what a reader sees."""
+    return _MD_ESCAPE.sub(r"\1", text).strip()
+
+
+def _normalize(text: str) -> str:
+    return " ".join(text.lower().split())
+
+
+def compile_rate(criteria: list[Criterion]) -> float | None:
+    """Share of criteria with a predicate (SPEC.md target: ~60%)."""
+    return sum(c.predicate is not None for c in criteria) / len(criteria) if criteria else None
+
+
+def anthropic_compile_model() -> BaseChatModel:
+    """The real compile model (Sonnet, from settings). Built only on a cache miss."""
+    from langchain_anthropic import ChatAnthropic
+    from pydantic import SecretStr
+
+    settings = get_settings()
+    if not settings.anthropic_api_key:
+        raise RuntimeError("ANTHROPIC_API_KEY is not set; the compile cache missed")
+    return ChatAnthropic(
+        model=settings.model_compile,
+        api_key=SecretStr(settings.anthropic_api_key),
+        max_tokens=16000,
+        temperature=0,
+    )
+
+
+# --------------------------------------------------------------------------------------------
+# Orchestration
+# --------------------------------------------------------------------------------------------
+
+
+def _finalize(
+    drafts: list[DraftCriterion], source_text: str, rec: TraceRecorder
+) -> list[Criterion]:
+    """Number the drafts `inc-N` / `exc-N`, validate predicates, check quotes."""
+    counters = {"inclusion": 0, "exclusion": 0}
+    haystack = _normalize(source_text)
+    out: list[Criterion] = []
+    for draft in drafts:
+        counters[draft.type] += 1
+        crit_id = f"{draft.type[:3]}-{counters[draft.type]}"
+        predicate: Predicate | None = None
+        if draft.predicate is not None:
+            raw = draft.predicate.model_dump()
+            try:
+                predicate = validate_predicate(raw)
+            except InvalidPredicate as exc:
+                rec.event(
+                    f"predicate:{crit_id}",
+                    "guardrail",
+                    status="failed",
+                    input={"criterion_id": crit_id, "text": draft.text, "predicate": raw},
+                    output={"error": str(exc), "action": "predicate=null, needs_judgment=true"},
+                    note=f"{crit_id}: invalid predicate downgraded to needs_judgment",
+                )
+        if _normalize(draft.text) not in haystack:
+            rec.event(
+                f"quote:{crit_id}",
+                "guardrail",
+                status="failed",
+                input={"criterion_id": crit_id, "text": draft.text},
+                output={"error": "criterion text is not a verbatim span of the trial text"},
+                note=f"{crit_id}: quote not found in the eligibility text",
+            )
+        out.append(
+            Criterion(
+                id=crit_id,
+                type=draft.type,
+                text=draft.text,
+                category=draft.category,
+                predicate=predicate,
+                needs_judgment=predicate is None,
+            )
+        )
+    return out
+
+
+async def _llm_split(
+    nct_id: str, text: str, rec: TraceRecorder, model_factory: ModelFactory
+) -> list[Criterion]:
+    prompt = load_prompt(PROMPT_NAME)
+    messages = [
+        SystemMessage(prompt.render_system(vocabulary=describe_vocabulary())),
+        HumanMessage(prompt.render_user(nct_id=nct_id, eligibility_text=text)),
+    ]
+    async with rec.step(
+        "llm_split", "step", {"prompt": prompt.name, "prompt_version": prompt.version}
+    ) as s:
+        model = model_factory()
+        runnable = model.with_structured_output(CompiledCriteria)
+        result = await runnable.ainvoke(
+            messages,
+            config={
+                "callbacks": [rec.langchain_handler()],
+                "metadata": {"parent_id": s.id, "prompt_version": prompt.version},
+            },
+        )
+        if not isinstance(result, CompiledCriteria):
+            raise TypeError(f"compile model returned {type(result).__name__}")
+        criteria = _finalize(result.criteria, text, rec)
+        s.output = {
+            "criteria": len(criteria),
+            "invalid_predicates": sum(
+                d.predicate is not None and c.predicate is None
+                for d, c in zip(result.criteria, criteria, strict=True)
+            ),
+        }
+        return criteria
+
+
+async def compile_study(
+    study: dict[str, Any],
+    rec: TraceRecorder,
+    *,
+    model_factory: ModelFactory = anthropic_compile_model,
+    force: bool = False,
+) -> list[Criterion]:
+    """Compile one raw ClinicalTrials.gov v2 study into its criteria (cached, traced)."""
+    protocol = study.get("protocolSection", {})
+    nct_id: str = protocol["identificationModule"]["nctId"]
+    eligibility: dict[str, Any] = protocol.get("eligibilityModule", {})
+    prompt = load_prompt(PROMPT_NAME)
+    key = criteria_cache.eligibility_hash(eligibility)
+
+    async with rec.step(
+        "compile_criteria",
+        "step",
+        {"nct": nct_id, "criteria_hash": key, "prompt_version": prompt.version, "force": force},
+    ) as top:
+        lookup_input = {"nct": nct_id, "criteria_hash": key}
+        async with rec.step("cache_lookup", "step", lookup_input) as lookup:
+            if force:
+                cached = None
+                lookup.status = "skipped"
+                lookup.note = "force: cache bypassed"
+            else:
+                cached = criteria_cache.get(nct_id, key, prompt.version)
+                lookup.cache_hit = cached is not None
+                lookup.note = "cache hit" if cached is not None else "cache miss"
+            lookup.output = {"hit": cached is not None}
+
+        if cached is not None:
+            criteria = cached
+            top.cache_hit = True
+        else:
+            async with rec.step(
+                "structured_criteria",
+                "rule",
+                {k: eligibility.get(k) for k in ("minimumAge", "maximumAge", "sex")},
+            ) as s:
+                structured = structured_criteria(eligibility)
+                s.output = {"criteria": [c.model_dump(mode="json") for c in structured]}
+
+            text = clean_eligibility_text(eligibility.get("eligibilityCriteria") or "")
+            llm_criteria = await _llm_split(nct_id, text, rec, model_factory) if text else []
+            criteria = structured + llm_criteria
+            criteria_cache.put(nct_id, key, prompt.version, get_settings().model_compile, criteria)
+
+        rate = compile_rate(criteria)
+        top.output = {
+            "criteria": len(criteria),
+            "with_predicate": sum(c.predicate is not None for c in criteria),
+            "compile_rate": rate,
+        }
+        if rate is not None:
+            top.note = f"{len(criteria)} criteria, compile rate {rate:.0%}"
+    return criteria
