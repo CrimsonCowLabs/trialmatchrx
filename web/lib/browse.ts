@@ -9,14 +9,24 @@ const TIER_LABELS = {
   ineligible: "ineligible",
 } as const satisfies Record<Tier, string>;
 
+export type TierChip = { tier: Tier; label: string; count: number };
+
+/** Every tier with its label, in rank order. */
+export const TIERS = (Object.keys(TIER_LABELS) as Tier[]).map((tier) => ({
+  tier,
+  label: TIER_LABELS[tier],
+}));
+
+/** One chip per tier, in rank order, zero counts included. */
+export function tierChips(counts: TierCounts): TierChip[] {
+  return TIERS.map(({ tier, label }) => ({ tier, label, count: counts[tier] }));
+}
+
 /** "1 likely · 2 needs info · 4 ineligible", or "No matches" when every count is zero. */
 export function tierSummary(counts: TierCounts): string {
-  const parts = (Object.keys(TIER_LABELS) as Tier[]).map((tier) => ({
-    n: counts[tier],
-    label: TIER_LABELS[tier],
-  }));
-  if (parts.every(({ n }) => n === 0)) return "No matches";
-  return parts.map(({ n, label }) => `${n} ${label}`).join(" · ");
+  const chips = tierChips(counts);
+  if (chips.every(({ count }) => count === 0)) return "No matches";
+  return chips.map(({ count, label }) => `${count} ${label}`).join(" · ");
 }
 
 export type RunLinks = { view: string; replay: string | null };
@@ -26,4 +36,14 @@ export type RunLinks = { view: string; replay: string | null };
 export function runLinks(run: RunListItem): RunLinks {
   const id = encodeURIComponent(run.run_id);
   return { view: `/match/${id}`, replay: run.status === "done" ? `/runs/${id}` : null };
+}
+
+export type TrialStatusTone = "recruiting" | "not-yet" | "other";
+
+/** Colour of a trial's status dot, from its ClinicalTrials.gov overall status
+ *  (RECRUITING, NOT_YET_RECRUITING, ACTIVE_NOT_RECRUITING, ...). */
+export function trialStatusTone(status: string | null): TrialStatusTone {
+  if (status === "RECRUITING") return "recruiting";
+  if (status === "NOT_YET_RECRUITING") return "not-yet";
+  return "other";
 }

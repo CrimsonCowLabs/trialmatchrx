@@ -13,9 +13,9 @@ import type { Schemas } from "@/lib/api";
 export type Verdict = Schemas["Verdict"];
 
 const OUTCOME: Record<Verdict["outcome"], { icon: LucideIcon; label: string; color: string }> = {
-  pass: { icon: CircleCheck, label: "OK", color: "text-emerald-600" },
-  fail: { icon: CircleX, label: "Disqualifies", color: "text-red-600" },
-  unknown: { icon: CircleQuestionMark, label: "Unknown", color: "text-amber-500" },
+  pass: { icon: CircleCheck, label: "OK", color: "text-verdict-pass" },
+  fail: { icon: CircleX, label: "Disqualifies", color: "text-verdict-fail" },
+  unknown: { icon: CircleQuestionMark, label: "Unknown", color: "text-verdict-unknown" },
 };
 
 export function CriterionRow({
@@ -44,7 +44,7 @@ export function CriterionRow({
       data-outcome={verdict.outcome}
       data-trace-event-id={verdict.trace_event_id}
       data-highlighted={highlighted || undefined}
-      className={`flex gap-2 border-b py-1.5 last:border-b-0 ${highlighted ? "-mx-3 bg-sky-50 px-3 ring-1 ring-sky-400 ring-inset dark:bg-sky-950" : ""}`}
+      className={`flex gap-2 border-b py-1.5 last:border-b-0 ${highlighted ? "-mx-3 bg-teal-selected px-3 shadow-[inset_3px_0_0_var(--teal)]" : ""}`}
     >
       <Icon className={`mt-0.5 size-4 shrink-0 ${color}`} aria-label={label} role="img" />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -69,7 +69,7 @@ export function CriterionRow({
         <button
           type="button"
           onClick={() => onWhy(verdict.trace_event_id)}
-          className="self-start text-xs text-sky-700 underline-offset-2 hover:underline dark:text-sky-400"
+          className="self-start text-xs text-teal underline-offset-2 hover:text-teal-strong hover:underline"
           title="Show the trace event that produced this verdict"
         >
           Why?

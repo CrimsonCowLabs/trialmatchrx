@@ -60,9 +60,9 @@ function TrialCard({
           {match.distance_mi === null ? "distance n/a" : `${match.distance_mi} mi`}
         </span>
         <span className="text-xs tabular-nums">
-          <span className="text-emerald-600">{pass} ok</span> ·{" "}
-          <span className="text-red-600">{fail} disqualifying</span> ·{" "}
-          <span className="text-amber-500">{unknown} unknown</span>
+          <span className="text-verdict-pass">{pass} ok</span> ·{" "}
+          <span className="text-verdict-fail">{fail} disqualifying</span> ·{" "}
+          <span className="text-verdict-unknown">{unknown} unknown</span>
         </span>
       </button>
       {open && (

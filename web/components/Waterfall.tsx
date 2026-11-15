@@ -47,14 +47,15 @@ function Row({
 }) {
   return (
     <li
-      className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)_9rem] items-center gap-x-4 gap-y-1 rounded-sm px-2 py-2 hover:bg-muted/60"
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 rounded-sm px-2 py-2 hover:bg-muted/60 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)_9rem]"
       title={tooltip}
     >
       <div className="min-w-0 text-sm">
         <div className="truncate">{label}</div>
         {detail && <div className="text-xs text-muted-foreground">{detail}</div>}
       </div>
-      <div className="flex flex-col gap-1.5">
+      {/* Narrow screens: the bar and its slider take a full-width second row. */}
+      <div className="col-span-2 row-start-2 flex flex-col gap-1.5 sm:col-span-1 sm:row-start-auto">
         {bar}
         {control}
       </div>

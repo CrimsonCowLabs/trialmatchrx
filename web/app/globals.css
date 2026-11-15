@@ -6,6 +6,56 @@
 
 @theme inline {
   --color-background: var(--background);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+  --color-ink-5: var(--ink-5);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-line-soft: var(--line-soft);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-teal: var(--teal);
+  --color-teal-strong: var(--teal-strong);
+  --color-teal-tint: var(--teal-tint);
+  --color-teal-selected: var(--teal-selected);
+  --color-verdict-pass: var(--verdict-pass);
+  --color-verdict-pass-bg: var(--verdict-pass-bg);
+  --color-verdict-fail: var(--verdict-fail);
+  --color-verdict-fail-bg: var(--verdict-fail-bg);
+  --color-verdict-unknown: var(--verdict-unknown);
+  --color-verdict-unknown-bg: var(--verdict-unknown-bg);
+  --color-status-done: var(--status-done);
+  --color-status-done-bg: var(--status-done-bg);
+  --color-status-running: var(--status-running);
+  --color-status-running-bg: var(--status-running-bg);
+  --color-status-failed: var(--status-failed);
+  --color-status-failed-bg: var(--status-failed-bg);
+  --color-tier-likely: var(--tier-likely);
+  --color-tier-likely-bg: var(--tier-likely-bg);
+  --color-tier-needs-info: var(--tier-needs-info);
+  --color-tier-needs-info-bg: var(--tier-needs-info-bg);
+  --color-tier-ineligible: var(--tier-ineligible);
+  --color-tier-ineligible-bg: var(--tier-ineligible-bg);
+  --color-trial-recruiting: var(--trial-recruiting);
+  --color-trial-not-yet: var(--trial-not-yet);
+  --color-trial-other: var(--trial-other);
+  --color-kind-run: var(--kind-run);
+  --color-kind-run-bg: var(--kind-run-bg);
+  --color-kind-step: var(--kind-step);
+  --color-kind-step-bg: var(--kind-step-bg);
+  --color-kind-llm: var(--kind-llm);
+  --color-kind-llm-bg: var(--kind-llm-bg);
+  --color-kind-tool: var(--kind-tool);
+  --color-kind-tool-bg: var(--kind-tool-bg);
+  --color-kind-rule: var(--kind-rule);
+  --color-kind-rule-bg: var(--kind-rule-bg);
+  --color-kind-guardrail: var(--kind-guardrail);
+  --color-kind-guardrail-bg: var(--kind-guardrail-bg);
+  --color-kind-error: var(--kind-error);
+  --color-kind-error-bg: var(--kind-error-bg);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -46,41 +96,106 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-card: 12px;
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  /* Palette from the claude.ai/design project (SPEC.md, "UI design"). The only place raw colour
+     values live: components use the Tailwind classes these map to in @theme inline. */
+  --ink: #14171a;
+  --ink-2: #4a5057;
+  --ink-3: #5b6168;
+  --ink-4: #6b7178;
+  --ink-5: #80868d;
+  --line: #e6e9ec;
+  --line-strong: #d6dade;
+  --line-soft: #eef0f2;
+  --canvas: #f6f7f8;
+  --surface: #ffffff;
+  --surface-sunken: #f1f2f4;
+  --teal: #0f7c86;
+  --teal-strong: #0a5d65;
+  --teal-tint: #e3f1f2;
+  --teal-selected: #f0f8f9;
+
+  /* Criterion verdicts */
+  --verdict-pass: #1d7a4e;
+  --verdict-pass-bg: #e5f3eb;
+  --verdict-fail: #b23a30;
+  --verdict-fail-bg: #fbeae8;
+  --verdict-unknown: #8a6514;
+  --verdict-unknown-bg: #f7efda;
+
+  /* Run status (done / running / failed) */
+  --status-done: var(--verdict-pass);
+  --status-done-bg: var(--verdict-pass-bg);
+  --status-running: var(--teal-strong);
+  --status-running-bg: var(--teal-tint);
+  --status-failed: var(--verdict-fail);
+  --status-failed-bg: var(--verdict-fail-bg);
+
+  /* Match tiers (likely / needs info / ineligible) */
+  --tier-likely: var(--verdict-pass);
+  --tier-likely-bg: var(--verdict-pass-bg);
+  --tier-needs-info: #7a5c14;
+  --tier-needs-info-bg: var(--verdict-unknown-bg);
+  --tier-ineligible: var(--ink-4);
+  --tier-ineligible-bg: var(--line-soft);
+
+  /* Trial recruiting-status dots */
+  --trial-recruiting: #2e9e68;
+  --trial-not-yet: #e2b54a;
+  --trial-other: #9aa3ab;
+
+  /* Trace event kinds */
+  --kind-run: var(--ink);
+  --kind-run-bg: var(--line-soft);
+  --kind-step: var(--ink-2);
+  --kind-step-bg: #f2f4f5;
+  --kind-llm: #5b3fa8;
+  --kind-llm-bg: #efeafb;
+  --kind-tool: var(--teal-strong);
+  --kind-tool-bg: var(--teal-tint);
+  --kind-rule: var(--verdict-pass);
+  --kind-rule-bg: var(--verdict-pass-bg);
+  --kind-guardrail: var(--verdict-unknown);
+  --kind-guardrail-bg: var(--verdict-unknown-bg);
+  --kind-error: var(--verdict-fail);
+  --kind-error-bg: var(--verdict-fail-bg);
+
+  /* shadcn slots, mapped onto the palette */
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--teal);
+  --primary-foreground: #ffffff;
+  --secondary: var(--line-soft);
+  --secondary-foreground: var(--ink);
+  --muted: var(--surface-sunken);
+  --muted-foreground: var(--ink-4);
+  --accent: var(--teal-tint);
+  --accent-foreground: var(--teal-strong);
+  --destructive: var(--verdict-fail);
+  --border: var(--line);
+  --input: #e1e4e8;
+  --ring: var(--teal);
+  --chart-1: var(--teal);
+  --chart-2: var(--verdict-pass);
+  --chart-3: var(--verdict-unknown);
+  --chart-4: var(--kind-llm);
+  --chart-5: var(--ink-5);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--teal);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--teal-tint);
+  --sidebar-accent-foreground: var(--teal-strong);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--teal);
 }
 
 .dark {

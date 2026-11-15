@@ -36,6 +36,17 @@ const KIND_ICON: Record<TraceEvent["kind"], LucideIcon> = {
   error: TriangleAlert,
 };
 
+// Literal class names so Tailwind sees them; colours are the trace-kind tokens in globals.css.
+const KIND_COLOR: Record<TraceEvent["kind"], string> = {
+  run: "text-kind-run",
+  step: "text-kind-step",
+  llm: "text-kind-llm",
+  tool: "text-kind-tool",
+  rule: "text-kind-rule",
+  guardrail: "text-kind-guardrail",
+  error: "text-kind-error",
+};
+
 export type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
 
 /** The status badge of a live run page, by SSE stream state. */
@@ -241,7 +252,7 @@ function Row({
       data-testid="trace-row"
       data-event-id={event.id}
       data-selected={selected || undefined}
-      className={`border-b last:border-b-0 ${selected ? "bg-sky-50 ring-1 ring-sky-400 ring-inset dark:bg-sky-950" : ""}`}
+      className={`border-b last:border-b-0 ${selected ? "bg-teal-selected shadow-[inset_3px_0_0_var(--teal)]" : ""}`}
     >
       <div className="flex items-center" style={{ paddingLeft: indent }}>
         {hasChildren ? (
@@ -268,13 +279,13 @@ function Row({
           className="flex min-w-0 flex-1 items-center gap-2 py-1.5 pr-3 text-left text-sm hover:bg-muted"
         >
           <Icon
-            className="size-4 shrink-0 text-muted-foreground"
+            className={`size-4 shrink-0 ${KIND_COLOR[event.kind]}`}
             aria-label={event.kind}
             role="img"
           />
           <span className="flex-1 truncate font-mono text-xs" title={event.name}>
             {event.name}
-            {producesVerdict && <span className="ml-1 text-sky-600">· verdict</span>}
+            {producesVerdict && <span className="ml-1 text-teal">· verdict</span>}
           </span>
           <Badge variant={STATUS_VARIANT[event.status]}>{event.status}</Badge>
           <span className="w-14 text-right text-xs tabular-nums text-muted-foreground">

@@ -80,6 +80,16 @@ trialmatch/
   data/                    # synthea/, trec/, fixtures/ (gitignored except fixtures)
 ```
 
+## UI design
+
+The visual reference for every page is the claude.ai design project [TrialMatch Rx](https://claude.ai/design/p/aac54ca0-c646-4de6-bfba-526f38573c10):
+
+- `TrialMatch Rx.dc.html`: every page, desktop and 390px mobile frames.
+- `TM Sidebar.dc.html`: the desktop navigation sidebar.
+- `TM Tabbar.dc.html`: the mobile tab bar.
+
+The design's sample values (patients, trials, counts) are illustrative only; pages show real API data. Its colours live once, as tokens, in `web/app/globals.css` (teal accent, verdict pass / fail / unknown, run status, match tier, trial status and trace-event-kind colours, exposed as Tailwind classes such as `text-verdict-pass` or `bg-tier-likely-bg`); components use the tokens, never raw hex. Type is Geist and Geist Mono. Shared building blocks live in `web/components`: `PageHeader` (breadcrumb, title, description, actions), `StatusPill` (run status), `TierChips` (likely / needs info / ineligible counts) and the `Card` surface. Every page renders at 390px wide with 16px side gutters and no horizontal page scroll; wide tables scroll inside their card.
+
 ## Agent transparency
 
 Every LLM call, tool call, rule evaluation and guardrail check is written as a trace event, streamed to the UI as it happens, and kept in SQLite for replay. Each verdict on screen links to the event that produced it. It ships in milestone 0, before any feature, because retrofitting it later costs more.

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
+import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,8 +34,8 @@ export default function MatchPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-col gap-4 p-8">
-      <h1 className="text-2xl font-semibold">Match a patient</h1>
+    <main className="mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-4 px-4 py-6 sm:p-8">
+      <PageHeader breadcrumb={[{ label: "Home", href: "/" }]} title="Match a patient" />
       <form onSubmit={onSubmit} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
           Patient note

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import type { RunListItem } from "./api.ts";
-import { runLinks, tierSummary } from "./browse.ts";
+import { runLinks, tierChips, tierSummary, trialStatusTone } from "./browse.ts";
 
 function run(status: RunListItem["status"]): RunListItem {
   return {
@@ -49,4 +49,20 @@ test("run ids are URL-encoded", () => {
     view: "/match/a%2Fb",
     replay: "/runs/a%2Fb",
   });
+});
+
+test("tier chips list every tier in rank order with its label and count", () => {
+  assert.deepEqual(tierChips({ ineligible: 4, likely: 1, needs_info: 0 }), [
+    { tier: "likely", label: "likely", count: 1 },
+    { tier: "needs_info", label: "needs info", count: 0 },
+    { tier: "ineligible", label: "ineligible", count: 4 },
+  ]);
+});
+
+test("trial status tone: recruiting, not yet recruiting, and everything else", () => {
+  assert.equal(trialStatusTone("RECRUITING"), "recruiting");
+  assert.equal(trialStatusTone("NOT_YET_RECRUITING"), "not-yet");
+  assert.equal(trialStatusTone("ACTIVE_NOT_RECRUITING"), "other");
+  assert.equal(trialStatusTone("COMPLETED"), "other");
+  assert.equal(trialStatusTone(null), "other");
 });

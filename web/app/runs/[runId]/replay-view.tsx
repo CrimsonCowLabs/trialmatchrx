@@ -73,7 +73,7 @@ function Replay({ runId, trace, summary }: { runId: string } & Loaded) {
       }}
     >
       {stillRecording && (
-        <p className="text-sm text-amber-600">
+        <p className="text-sm text-verdict-unknown">
           This run is still running; the replay stops at what has been recorded so far.
         </p>
       )}
