@@ -74,11 +74,32 @@ export interface TraceRow {
   event: TraceEvent;
   depth: number;
   hasChildren: boolean;
-  /** Tokens (in + out) and cost of the llm calls in this event's subtree, itself included
-   *  (the same events `computeTotals` counts), so a collapsed trial still shows its spend. */
-  tokens: number;
+  /** The spend of this event's subtree, itself included, so a collapsed trial still shows
+   *  what its llm calls cost. */
+  spend: Spend;
+}
+
+/** Tokens and cost, as the run totals count them. */
+export interface Spend {
+  tokensIn: number;
+  tokensOut: number;
   costUsd: number;
 }
+
+const NO_SPEND: Spend = { tokensIn: 0, tokensOut: 0, costUsd: 0 };
+
+/** What one event adds to the run's tokens and cost: only `llm` events count (as in the
+ *  API's `compute_totals`). */
+function eventSpend(e: TraceEvent): Spend {
+  if (e.kind !== "llm") return NO_SPEND;
+  return { tokensIn: e.tokens_in ?? 0, tokensOut: e.tokens_out ?? 0, costUsd: e.cost_usd ?? 0 };
+}
+
+const addSpend = (a: Spend, b: Spend): Spend => ({
+  tokensIn: a.tokensIn + b.tokensIn,
+  tokensOut: a.tokensOut + b.tokensOut,
+  costUsd: a.costUsd + b.costUsd,
+});
 
 function parentOf(events: TraceEvent[]): Map<string, string | null> {
   const ids = new Set(events.map((e) => e.id));
@@ -100,29 +121,19 @@ export function traceRows(events: TraceEvent[], expanded: ReadonlySet<string>): 
     if (siblings) siblings.push(e);
     else children.set(p, [e]);
   }
-  const spend = new Map<string, { tokens: number; costUsd: number }>();
-  const spendOf = (e: TraceEvent, seen: Set<string>): { tokens: number; costUsd: number } => {
-    const cached = spend.get(e.id);
-    if (cached) return cached;
-    seen.add(e.id);
-    const own =
-      e.kind === "llm"
-        ? { tokens: (e.tokens_in ?? 0) + (e.tokens_out ?? 0), costUsd: e.cost_usd ?? 0 }
-        : { tokens: 0, costUsd: 0 };
-    for (const c of children.get(e.id) ?? []) {
-      if (seen.has(c.id)) continue; // a parent_id cycle
-      const s = spendOf(c, seen);
-      own.tokens += s.tokens;
-      own.costUsd += s.costUsd;
-    }
-    spend.set(e.id, own);
-    return own;
+  const subtreeSpend = new Map<string, Spend>();
+  const spendOf = (e: TraceEvent): Spend => {
+    let s = subtreeSpend.get(e.id);
+    if (s) return s;
+    s = (children.get(e.id) ?? []).map(spendOf).reduce(addSpend, eventSpend(e));
+    subtreeSpend.set(e.id, s);
+    return s;
   };
   const out: TraceRow[] = [];
   const walk = (parent: string | null, depth: number) => {
     for (const event of children.get(parent) ?? []) {
       const hasChildren = children.has(event.id);
-      out.push({ event, depth, hasChildren, ...spendOf(event, new Set()) });
+      out.push({ event, depth, hasChildren, spend: spendOf(event) });
       if (hasChildren && expanded.has(event.id)) walk(event.id, depth + 1);
     }
   };
@@ -172,7 +183,7 @@ export function replayDelays(emissions: TraceEvent[], capMs: number): number[] {
  *  first event's start to `now` (pass it while the run is live) or else to the last
  *  timestamp seen. */
 export function computeTotals(events: TraceEvent[], now?: number): RunTotals {
-  const llm = events.filter((e) => e.kind === "llm");
+  const spend = events.map(eventSpend).reduce(addSpend, NO_SPEND);
   let first = Infinity;
   let last = -Infinity;
   for (const e of events) {
@@ -180,10 +191,10 @@ export function computeTotals(events: TraceEvent[], now?: number): RunTotals {
     last = Math.max(last, ms(e.ended_at ?? e.started_at));
   }
   return {
-    llm_calls: llm.length,
-    tokens_in: llm.reduce((n, e) => n + (e.tokens_in ?? 0), 0),
-    tokens_out: llm.reduce((n, e) => n + (e.tokens_out ?? 0), 0),
-    cost_usd: llm.reduce((n, e) => n + (e.cost_usd ?? 0), 0),
+    llm_calls: events.filter((e) => e.kind === "llm").length,
+    tokens_in: spend.tokensIn,
+    tokens_out: spend.tokensOut,
+    cost_usd: spend.costUsd,
     cache_hits: events.filter((e) => e.cache_hit).length,
     guardrail_trips: events.filter((e) => e.kind === "guardrail" && e.status === "failed").length,
     wall_time_s: events.length ? (Math.max(last, now ?? -Infinity) - first) / 1000 : null,
@@ -206,6 +217,16 @@ const KIND_STYLE: Record<Kind, { label: string; className: string }> = {
 /** The kind chip on a trace row: a short label and its trace-kind colour tokens. */
 export const kindStyle = (kind: Kind) => KIND_STYLE[kind];
 
+const STATUS_STYLE: Record<TraceEvent["status"], { label: string; className: string } | null> = {
+  ok: null, // the normal case: no marker
+  started: { label: "running", className: "text-teal" },
+  failed: { label: "failed", className: "text-verdict-fail" },
+  skipped: { label: "skipped", className: "text-ink-5" },
+};
+
+/** A row's status marker, or null for `ok`. */
+export const statusStyle = (status: TraceEvent["status"]) => STATUS_STYLE[status];
+
 export interface PromptMessage {
   role?: string;
   content?: unknown;
@@ -218,12 +239,12 @@ export interface EventDetail {
   meta: string[];
   /** The headline output: an llm call's parsed tool-call args (or its text), else the
    *  event's output without its error keys. Null when there is none. */
-  primary: { title: string; value: unknown } | null;
+  headline: { title: string; value: unknown } | null;
   /** LangChain chat input `{messages: [[{role, content}, ...]]}`, flattened; else null. */
   messages: PromptMessage[] | null;
   /** The input when it isn't prompt messages. */
   input: Record<string, unknown> | null;
-  /** An llm call's raw model output (null for other kinds, shown as `primary` there). */
+  /** An llm call's raw model output (null for other kinds, shown as `headline` there). */
   raw: Record<string, unknown> | null;
   /** Whatever the output says went wrong: `error`, `errors`, or guardrail `failed`. */
   errors: unknown[];
@@ -261,23 +282,23 @@ export function eventDetail(event: TraceEvent): EventDetail {
     event.model && `model ${event.model}`,
     `seq ${event.seq}`,
     event.tokens_in !== null &&
-      `${count(event.tokens_in)} in / ${count(event.tokens_out ?? 0)} out tokens`,
+      `${formatCount(event.tokens_in)} in / ${formatCount(event.tokens_out ?? 0)} out tokens`,
     event.cost_usd !== null && formatUsd(event.cost_usd),
     event.cache_hit && "cache hit",
   ].filter((m): m is string => Boolean(m));
 
-  let primary: EventDetail["primary"] = null;
+  let headline: EventDetail["headline"] = null;
   if (event.kind === "llm") {
     const parsed = toolCallArgs(event.output);
     const text = typeof out.text === "string" ? out.text : "";
     if (parsed.length) {
-      primary = { title: "Parsed output", value: parsed.length === 1 ? parsed[0] : parsed };
-    } else if (text) primary = { title: "Model output", value: text };
-  } else if (rest) primary = { title: "Output", value: rest };
+      headline = { title: "Parsed output", value: parsed.length === 1 ? parsed[0] : parsed };
+    } else if (text) headline = { title: "Model output", value: text };
+  } else if (rest) headline = { title: "Output", value: rest };
 
   return {
     meta,
-    primary,
+    headline,
     messages,
     input: messages ? null : (event.input ?? null),
     raw: event.kind === "llm" ? rest : null,
@@ -300,7 +321,7 @@ export function formatTokens(n: number): string {
 /** `$0.0053` under a dollar (per-call costs are fractions of a cent), `$1.50` above. */
 export const formatUsd = (n: number) => `$${n.toFixed(n < 1 ? 4 : 2)}`;
 
-const count = (n: number) => n.toLocaleString("en-US");
+const formatCount = (n: number) => n.toLocaleString("en-US");
 
 export interface TotalsCell {
   label: string;
@@ -319,14 +340,14 @@ export function totalsStrip(
   const final = Boolean(runTotals);
   const t = runTotals ?? computeTotals(events, now);
   const cells: (TotalsCell | null)[] = [
-    { label: "LLM calls", value: count(t.llm_calls) },
-    { label: "Tokens", value: count(t.tokens_in + t.tokens_out) },
+    { label: "LLM calls", value: formatCount(t.llm_calls) },
+    { label: "Tokens", value: formatCount(t.tokens_in + t.tokens_out) },
     { label: "Cost", value: formatUsd(t.cost_usd) },
     t.wall_time_s === null
       ? null
       : { label: final ? "Wall time" : "Elapsed", value: `${t.wall_time_s.toFixed(1)} s` },
-    { label: "Cache hits", value: count(t.cache_hits) },
-    { label: "Guardrails", value: count(t.guardrail_trips) },
+    { label: "Cache hits", value: formatCount(t.cache_hits) },
+    { label: "Guardrails", value: formatCount(t.guardrail_trips) },
   ];
   return { final, cells: cells.filter((c) => c !== null) };
 }

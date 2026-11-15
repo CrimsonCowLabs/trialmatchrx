@@ -23,6 +23,7 @@ import {
   formatUsd,
   kindStyle,
   latencyMs,
+  statusStyle,
   totalsStrip,
   traceRows,
   type PromptMessage,
@@ -52,7 +53,7 @@ function useNow(active: boolean, ms = 500): number | undefined {
   return active ? now : undefined;
 }
 
-function TotalsGrid({
+function TotalsStrip({
   totals,
   events,
   live,
@@ -153,9 +154,9 @@ function Details({ event, indent }: { event: TraceEvent; indent: string }) {
           </div>
         </Section>
       )}
-      {d.primary && (
-        <Section title={d.primary.title}>
-          <Json value={d.primary.value} />
+      {d.headline && (
+        <Section title={d.headline.title}>
+          <Json value={d.headline.value} />
         </Section>
       )}
       {d.messages && (
@@ -189,8 +190,9 @@ function Row({
   selection: TraceSelection;
   producesVerdict: boolean;
 }) {
-  const { event, depth, hasChildren, tokens, costUsd } = row;
+  const { event, depth, hasChildren, spend } = row;
   const kind = kindStyle(event.kind);
+  const status = statusStyle(event.status);
   const expanded = selection.expanded.has(event.id);
   const open = selection.details.has(event.id);
   const selected = selection.selectedId === event.id;
@@ -239,21 +241,19 @@ function Row({
             </span>
             {producesVerdict && <span className="shrink-0 text-teal">· verdict</span>}
           </span>
-          {(event.status === "failed" || event.status === "skipped") && (
-            <span
-              className={`shrink-0 text-[0.6875rem] font-medium ${event.status === "failed" ? "text-verdict-fail" : "text-ink-5"}`}
-            >
-              {event.status}
+          {status && (
+            <span className={`shrink-0 text-[0.6875rem] font-medium ${status.className}`}>
+              {status.label}
             </span>
           )}
           <span className="w-14 shrink-0 text-right font-mono text-xs tabular-nums text-ink-4">
             {formatLatency(latencyMs(event))}
           </span>
           <span className="w-12 shrink-0 text-right font-mono text-xs tabular-nums text-ink-4">
-            {formatTokens(tokens)}
+            {formatTokens(spend.tokensIn + spend.tokensOut)}
           </span>
           <span className="w-14 shrink-0 text-right font-mono text-xs tabular-nums text-ink-4">
-            {costUsd ? formatUsd(costUsd) : ""}
+            {spend.costUsd ? formatUsd(spend.costUsd) : ""}
           </span>
         </button>
       </div>
@@ -349,7 +349,7 @@ export function TracePanel({
         <Badge variant={status.variant}>{status.label}</Badge>
         <ExportButton runId={runId} />
       </header>
-      <TotalsGrid totals={totals} events={events} live={live} />
+      <TotalsStrip totals={totals} events={events} live={live} />
       {rows.length === 0 ? (
         <p className="px-4 py-6 text-center text-sm text-ink-4">Waiting for events…</p>
       ) : (
