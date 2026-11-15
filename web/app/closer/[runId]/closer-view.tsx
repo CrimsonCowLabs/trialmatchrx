@@ -1,8 +1,9 @@
 "use client";
 
-// A closer agent run, live: the trace streams every thought, tool call and tool result on the
-// right; the follow-ups, coordinator email and EN/ES summary appear on the left when it's done.
-import Link from "next/link";
+// A closer agent run, live: the trace streams every thought, tool call and tool result while
+// the agent works; once it's done, the follow-ups, coordinator email and EN/ES summary take
+// the page and the trace folds behind "Show trace". The breadcrumb leads back to the match
+// results the run started from.
 import { useParams, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 
@@ -17,6 +18,8 @@ function CloserRun({ runId, matchRunId }: { runId: string; matchRunId: string | 
   const finished = runStatus !== null;
   const loadSummary = useCallback(() => api.getRun(runId), [runId]);
   const { data: summary, error } = useLoad(finished ? loadSummary : null);
+  // The summary names the match run once loaded; until then the `?match=` the match page set.
+  const sourceRunId = summary?.source_run_id ?? matchRunId;
   return (
     <RunWithTrace
       runId={runId}
@@ -31,16 +34,12 @@ function CloserRun({ runId, matchRunId }: { runId: string; matchRunId: string | 
       link={finished ? { href: `/runs/${encodeURIComponent(runId)}`, label: "Replay" } : undefined}
       title="Next steps"
       breadcrumb={
-        matchRunId
-          ? [{ label: "Runs", href: "/runs" }, { label: "Match run", href: `/match/${encodeURIComponent(matchRunId)}` }]
+        sourceRunId
+          ? [{ label: "Match results", href: `/match/${encodeURIComponent(sourceRunId)}` }]
           : [{ label: "Runs", href: "/runs" }]
       }
+      collapsibleTrace
     >
-      {matchRunId && (
-        <Link href={`/match/${encodeURIComponent(matchRunId)}`} className="text-sm underline">
-          Back to the match results
-        </Link>
-      )}
       {!finished && (
         <p className="text-sm text-muted-foreground">
           The agent is working; watch its thoughts and tool calls in the trace.
