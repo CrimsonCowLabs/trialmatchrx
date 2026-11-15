@@ -2,6 +2,7 @@
 
 // Ranked trials grouped by tier; each trial lists its criterion verdicts.
 // The API already returns matches in rank order, so grouping keeps that order within a tier.
+import Link from "next/link";
 import { useState } from "react";
 
 import { CriterionRow } from "@/components/CriterionRow";
@@ -65,6 +66,11 @@ function TrialCard({ match, highlightedEventId, onWhy }: { match: TrialMatch } &
               onWhy={onWhy}
             />
           ))}
+          <li className="py-2 text-xs">
+            <Link href={`/feasibility/${encodeURIComponent(match.nct_id)}`} className="underline">
+              Feasibility over the 1,000-patient cohort
+            </Link>
+          </li>
         </ul>
       )}
     </li>

@@ -14,6 +14,7 @@ from app.db import init_db
 from app.routers import eval as eval_routes
 from app.routers import feasibility, match, runs, trials
 from app.schemas import Health, RunDone
+from app.sources.cohort import get_cohort
 
 SSE_MODELS = [RunDone]  # TraceEvent is already referenced by /trace
 
@@ -21,6 +22,7 @@ SSE_MODELS = [RunDone]  # TraceEvent is already referenced by /trace
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     init_db()
+    get_cohort()  # SPEC.md: the feasibility cohort goes into a DataFrame once, at startup
     yield
 
 

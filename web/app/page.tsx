@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { OpenFeasibility } from "@/components/OpenFeasibility";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
@@ -12,6 +13,10 @@ export default function Home() {
       <Button render={<Link href="/match" />} className="self-start">
         Match a patient
       </Button>
+      <p className="text-muted-foreground">
+        Or see how many of 1,000 synthetic patients qualify for one trial, criterion by criterion.
+      </p>
+      <OpenFeasibility />
     </main>
   );
 }

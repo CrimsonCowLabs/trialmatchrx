@@ -1,4 +1,4 @@
-.PHONY: install dev api web check check-api check-web types seed eval compile-fixtures
+.PHONY: install dev api web check check-api check-web types seed cohort eval compile-fixtures
 
 API_PORT ?= 8000
 WEB_PORT ?= 3000
@@ -33,10 +33,32 @@ types:
 	cd api && uv run python -m scripts.export_openapi openapi.json
 	cd web && pnpm exec openapi-typescript ../api/openapi.json -o lib/api-types.ts
 
-# Pre-fetch T2D/CKD trials into the SQLite cache (network). Cohort loading lands in M5.
+# Pre-fetch T2D/CKD trials into the SQLite cache (network), then load the cohort.
 seed:
 	cd api && uv run python -m scripts.seed_trials
-	@echo "make seed: cohort (load_cohort.py) not loaded until M5"  # HACK(demo): stub
+	$(MAKE) cohort
+
+# 1,000 Synthea patients near Sacramento into the cohort table. Needs Java 11+; downloads the
+# pinned Synthea jar once and generates only when data/synthea/output/fhir doesn't exist yet.
+# Ages 40-85 (adult T2D/CKD trials) for a meaningful T2D/CKD pool. Pinned release, seeds and
+# reference date, so it reproduces; delete data/synthea/output to regenerate.
+SYNTHEA_DIR := data/synthea
+SYNTHEA_VERSION := v4.0.0
+SYNTHEA_JAR := synthea-with-dependencies-$(SYNTHEA_VERSION).jar
+SYNTHEA_DATE := 2026-11-12
+SYNTHEA_ARGS ?= -s 42 -cs 42 -p 1000 -a 40-85 -r $(subst -,,$(SYNTHEA_DATE))
+
+cohort:
+	@mkdir -p $(SYNTHEA_DIR)
+	@test -f $(SYNTHEA_DIR)/$(SYNTHEA_JAR) || curl -fL -o $(SYNTHEA_DIR)/$(SYNTHEA_JAR) \
+		https://github.com/synthetichealth/synthea/releases/download/$(SYNTHEA_VERSION)/synthea-with-dependencies.jar
+	@test -d $(SYNTHEA_DIR)/output/fhir || (cd $(SYNTHEA_DIR) && \
+		java -jar $(SYNTHEA_JAR) $(SYNTHEA_ARGS) \
+		--exporter.baseDirectory=./output/ --exporter.years_of_history=5 \
+		--exporter.fhir.export=true --exporter.hospital.fhir.export=false \
+		--exporter.practitioner.fhir.export=false --exporter.csv.export=false \
+		--generate.only_alive_patients=true California Sacramento)
+	cd api && uv run python -m scripts.load_cohort --as-of $(SYNTHEA_DATE)
 
 eval:
 	@echo "make eval: no-op until M4 (run_eval.py)"  # HACK(demo): stub

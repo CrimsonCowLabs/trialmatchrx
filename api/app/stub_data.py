@@ -2,7 +2,7 @@
 """Fixed, schema-valid payloads for routes whose pipelines don't exist yet.
 
 Every constant here is fake and synthetic. Each milestone replaces its piece:
-patient/matches (M2), trial + criteria (M1), feasibility (M5), eval (M4).
+patient/matches (M2), trial + criteria (M1), eval (M4).
 """
 
 import datetime as dt
@@ -11,7 +11,6 @@ from app.schemas import (
     Criterion,
     EvalLatest,
     EvalRunSummary,
-    FeasibilityResult,
     Predicate,
     TrialDetail,
     TrialMatch,
@@ -86,36 +85,6 @@ def stub_matches(trace_event_id: str) -> list[TrialMatch]:
             counts={"pass": 1, "fail": 0, "unknown": 1},
         )
     ]
-
-
-# HACK(demo): stub — fake waterfall; the eGFR threshold moves the count so the UI reacts.
-def stub_feasibility(nct_id: str, egfr_min: float) -> FeasibilityResult:
-    cohort = 1000
-    after_dx = 412
-    after_egfr = int(after_dx * max(0.0, min(1.0, (90 - egfr_min) / 60)))
-    return FeasibilityResult(
-        nct_id=nct_id,
-        cohort_size=cohort,
-        waterfall=[
-            {
-                "criterion_id": "dx",
-                "text": "Type 2 diabetes",
-                "remaining": after_dx,
-                "dropped": cohort - after_dx,
-            },
-            {
-                "criterion_id": "inc-1",
-                "text": f"eGFR >= {egfr_min:g}",
-                "remaining": after_egfr,
-                "dropped": after_dx - after_egfr,
-            },
-        ],
-        leave_one_out=[
-            {"criterion_id": "dx", "added_if_removed": 0},
-            {"criterion_id": "inc-1", "added_if_removed": after_dx - after_egfr},
-        ],
-        needs_review=1,
-    )
 
 
 # HACK(demo): stub — made-up eval numbers until `make eval` writes eval_runs (M4).
