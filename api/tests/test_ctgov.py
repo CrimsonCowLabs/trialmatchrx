@@ -88,6 +88,25 @@ async def test_cache_serves_the_newest_version_of_a_study() -> None:
     assert ctgov.cached_count() == 1
 
 
+def test_a_reseed_backfills_conditions_on_a_row_cached_without_them() -> None:
+    legacy = load("study.json")
+    legacy["protocolSection"].pop("conditionsModule", None)
+    nct = nct_ids([legacy])[0]
+    full = copy.deepcopy(legacy)
+    full["protocolSection"]["conditionsModule"] = {"conditions": ["Type 2 Diabetes"]}
+
+    assert ctgov.cache_study(legacy) is True
+    assert ctgov.cache_study(legacy) is False
+    assert ctgov.cache_study(full) is True  # same (nct, date), now with conditions
+    assert ctgov.cached_study(nct) == full
+    assert ctgov.cache_study(full) is False  # and only once
+    changed = copy.deepcopy(full)
+    changed["protocolSection"]["conditionsModule"] = {"conditions": ["Edited"]}
+    assert ctgov.cache_study(changed) is False  # a row that has conditions is never overwritten
+    assert ctgov.cached_study(nct) == full
+    assert ctgov.cached_count() == 1
+
+
 async def test_seed_caches_every_condition_and_dedupes() -> None:
     fake = FakeCtgov()
     async with fake.client() as client:

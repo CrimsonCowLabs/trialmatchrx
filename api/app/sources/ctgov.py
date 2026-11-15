@@ -134,14 +134,25 @@ def study_key(study: dict[str, Any]) -> tuple[str, str]:
 def cache_study(study: dict[str, Any]) -> bool:
     """Store a study under its key. Returns False if that exact version was already cached.
 
-    INSERT OR IGNORE, so two concurrent misses for the same trial can't collide on the key.
+    An upsert, so two concurrent misses for the same trial can't collide on the key. The one
+    overwrite: a row cached before FIELDS asked for ConditionsModule is replaced by a fetch of
+    the same version that has it (a re-seed backfills conditions; returns True).
     """
     nct, date = study_key(study)
-    stmt = (
-        sqlite_insert(TrialCacheRow)
-        .values(nct_id=nct, last_update_post_date=date, fetched_at=utcnow(), data=study)
-        .on_conflict_do_nothing()
+    insert = sqlite_insert(TrialCacheRow).values(
+        nct_id=nct, last_update_post_date=date, fetched_at=utcnow(), data=study
     )
+    if "conditionsModule" in study["protocolSection"]:
+        legacy = func.json_type(col(TrialCacheRow.data), "$.protocolSection.conditionsModule").is_(
+            None
+        )
+        stmt = insert.on_conflict_do_update(
+            index_elements=["nct_id", "last_update_post_date"],
+            set_={"data": insert.excluded.data, "fetched_at": insert.excluded.fetched_at},
+            where=legacy,
+        )
+    else:
+        stmt = insert.on_conflict_do_nothing()
     with session_scope() as s:
         result = s.connection().execute(stmt)
         return bool(result.rowcount)
@@ -217,7 +228,7 @@ async def get_study(nct: str, *, recorder: TraceRecorder | None = None) -> dict[
 @dataclass(frozen=True)
 class SeedStats:
     seen: int  # studies returned across every condition (with duplicates)
-    new: int  # (nct, lastUpdatePostDate) versions added to the cache by this seed
+    new: int  # (nct, lastUpdatePostDate) versions added (or conditions backfilled) by this seed
     cached_total: int  # distinct NCT IDs in the cache afterwards
 
 
