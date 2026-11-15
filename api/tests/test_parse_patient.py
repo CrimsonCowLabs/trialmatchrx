@@ -88,7 +88,7 @@ async def test_the_full_demo_note_parses_labs_vitals_and_dates() -> None:
     assert (facts.vitals["sbp"].value, facts.vitals["dbp"].value) == (138, 84)
     assert [m.value for m in facts.meds] == ["metformin", "lisinopril"]
     assert facts.smoker is False
-    assert facts.pregnant is False  # derived from sex == male
+    assert facts.pregnant is None  # not stated, so not inferred
 
 
 async def test_a_fact_whose_span_is_not_in_the_note_is_dropped_with_a_guardrail() -> None:
@@ -105,14 +105,28 @@ async def test_a_fact_whose_span_is_not_in_the_note_is_dropped_with_a_guardrail(
     assert all(e.status == "failed" for e in guards)
 
 
-async def test_a_lab_in_a_non_canonical_unit_is_dropped() -> None:
+@pytest.mark.parametrize("unit", ["mmol/mol", None])
+async def test_a_lab_in_a_missing_or_non_canonical_unit_is_dropped(unit: str | None) -> None:
     output = draft("demo_short")
-    output["labs"][0] = {"name": "hba1c", "value": 68, "unit": "mmol/mol", "source_span": "HbA1c"}
+    output["labs"][0] = {"name": "hba1c", "value": 68, "unit": unit, "source_span": "HbA1c"}
 
     facts, rec = await parse("demo_short", output)
 
     assert "hba1c" not in facts.labs
-    assert [e.name for e in events(rec) if e.kind == "guardrail"] == ["span:labs.hba1c"]
+    assert [e.name for e in events(rec) if e.kind == "guardrail"] == ["unit:labs.hba1c"]
+
+
+async def test_a_span_must_match_whole_words() -> None:
+    output = draft("demo_short")
+    output["sex"] = {"value": "female", "source_span": "F"}  # only inside "metformin"
+    output["conditions"].append({"value": "type 2 diabetes", "source_span": "T2"})
+
+    facts, rec = await parse("demo_short", output)
+
+    assert facts.sex is None
+    assert len(facts.conditions) == 1
+    guards = sorted(e.name for e in events(rec) if e.kind == "guardrail")
+    assert guards == ["span:conditions[1]", "span:sex"]
 
 
 async def test_spans_match_case_and_whitespace_insensitively_and_keep_the_note_text() -> None:
