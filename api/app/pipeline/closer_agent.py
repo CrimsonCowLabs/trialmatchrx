@@ -222,7 +222,7 @@ def anthropic_closer_model() -> BaseChatModel:
     return _JsonSchemaChatAnthropic(
         model=settings.model_closer,
         api_key=SecretStr(settings.anthropic_api_key),
-        max_tokens=4000,
+        max_tokens=16000,  # one follow-up per unknown criterion; ROC-101 has 67
     )
 
 
