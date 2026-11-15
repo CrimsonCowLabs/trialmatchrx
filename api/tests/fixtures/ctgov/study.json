@@ -1,0 +1,173 @@
+{
+  "protocolSection": {
+    "identificationModule": {
+      "nctId": "NCT05485961",
+      "orgStudyIdInfo": {
+        "id": "CSL300_2301"
+      },
+      "secondaryIdInfos": [
+        {
+          "id": "2022-500273-14-00",
+          "type": "OTHER",
+          "domain": "EU CT"
+        }
+      ],
+      "organization": {
+        "fullName": "CSL Behring",
+        "class": "INDUSTRY"
+      },
+      "briefTitle": "Combined Dose-Finding and CV Outcomes Study With CSL300 (Clazakizumab) in Adult Subjects With ESKD Undergoing Dialysis (POSIBIL6ESKD)",
+      "officialTitle": "A Phase 2b / 3, Multicenter, Randomized, Double-Blind, Placebo-Controlled, Combined Dose-Finding and Cardiovascular Outcome Study to Investigate the Efficacy and Safety of CSL300 (Clazakizumab) in Subjects With End Stage Kidney Disease Undergoing Dialysis",
+      "acronym": "POSIBIL6ESKD"
+    },
+    "statusModule": {
+      "statusVerifiedDate": "2026-09",
+      "overallStatus": "RECRUITING",
+      "expandedAccessInfo": {
+        "hasExpandedAccess": false
+      },
+      "startDateStruct": {
+        "date": "2024-04-27",
+        "type": "ACTUAL"
+      },
+      "primaryCompletionDateStruct": {
+        "date": "2029-05-22",
+        "type": "ESTIMATED"
+      },
+      "completionDateStruct": {
+        "date": "2029-05-22",
+        "type": "ESTIMATED"
+      },
+      "studyFirstSubmitDate": "2022-07-29",
+      "studyFirstSubmitQcDate": "2022-08-01",
+      "studyFirstPostDateStruct": {
+        "date": "2022-08-03",
+        "type": "ACTUAL"
+      },
+      "lastUpdateSubmitDate": "2026-09-18",
+      "lastUpdatePostDateStruct": {
+        "date": "2026-09-21",
+        "type": "ACTUAL"
+      }
+    },
+    "designModule": {
+      "phases": [
+        "PHASE2",
+        "PHASE3"
+      ]
+    },
+    "eligibilityModule": {
+      "eligibilityCriteria": "Inclusion Criteria:\n\n* Male or female at least 18 years of age.\n* A diagnosis of ESKD undergoing maintenance dialysis for at least 12 weeks.\n* Serum hs-CRP ≥ 2.0 mg/L.\n* A diagnosis of diabetes mellitus OR ASCVD.\n\nExclusion Criteria:\n\n* Subjects who participated in Part 1 (phase 2b) are not eligible to participate in Part 2 (phase 3).\n* Concomitant use of systemic immunosuppressant drugs.\n* Part 1 (Phase 2b) excludes subjects with a positive TB or a history of latent TB, whereas Part 2 (Phase 3) excludes active TB but allows inclusion of subjects with a latent TB and at least 4 weeks of prophylactic TB treatment.\n* Abnormal LFTs.\n* Any life-threatening disease expected to result in death within 12 months.\n* A history of GI perforation, inflammatory bowel disease (except fully excised. ulcerative colitis), or peptic ulcer disease.\n* Clinically significant active infection or history of opportunistic or invasive fungal infection.",
+      "healthyVolunteers": false,
+      "sex": "ALL",
+      "minimumAge": "18 Years",
+      "stdAges": [
+        "ADULT",
+        "OLDER_ADULT"
+      ]
+    },
+    "contactsLocationsModule": {
+      "centralContacts": [
+        {
+          "name": "Trial Registration Coordinator",
+          "role": "CONTACT",
+          "phone": "+1 610-878-4697",
+          "email": "clinicaltrials@cslbehring.com"
+        }
+      ],
+      "overallOfficials": [
+        {
+          "name": "Study Director",
+          "affiliation": "CSL Behring LLC",
+          "role": "STUDY_DIRECTOR"
+        }
+      ],
+      "locations": [
+        {
+          "facility": "Nephrology of North Alabama",
+          "status": "RECRUITING",
+          "city": "Decatur",
+          "state": "Alabama",
+          "zip": "35601",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 34.60593,
+            "lon": -86.98334
+          }
+        },
+        {
+          "facility": "Nephrology Consultants, LLC",
+          "status": "RECRUITING",
+          "city": "Huntsville",
+          "state": "Alabama",
+          "zip": "35805",
+          "country": "United States",
+          "contacts": [
+            {
+              "name": "Use Central Contact",
+              "role": "CONTACT"
+            }
+          ],
+          "geoPoint": {
+            "lat": 34.7304,
+            "lon": -86.58594
+          }
+        },
+        {
+          "facility": "DaVita Clinical Research Montgomery",
+          "status": "RECRUITING",
+          "city": "Montgomery",
+          "state": "Alabama",
+          "zip": "36117",
+          "country": "United States",
+          "contacts": [
+            {
+              "name": "Use Central Contact",
+              "role": "CONTACT"
+            }
+          ],
+          "geoPoint": {
+            "lat": 32.36681,
+            "lon": -86.29997
+          }
+        },
+        {
+          "facility": "AKDHC Medical",
+          "status": "RECRUITING",
+          "city": "Glendale",
+          "state": "Arizona",
+          "zip": "85305",
+          "country": "United States",
+          "contacts": [
+            {
+              "name": "Use Central Contact",
+              "role": "CONTACT"
+            }
+          ],
+          "geoPoint": {
+            "lat": 33.53865,
+            "lon": -112.18599
+          }
+        },
+        {
+          "facility": "Kidney Disease Medical Group",
+          "status": "RECRUITING",
+          "city": "Glendale",
+          "state": "Arizona",
+          "zip": "91206",
+          "country": "United States",
+          "contacts": [
+            {
+              "name": "Use Central Contact",
+              "role": "CONTACT"
+            }
+          ],
+          "geoPoint": {
+            "lat": 33.53865,
+            "lon": -112.18599
+          }
+        }
+      ]
+    }
+  }
+}

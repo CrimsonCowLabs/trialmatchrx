@@ -26,6 +26,12 @@ class Settings(BaseSettings):
     demo_mode: Literal["off", "replay"] = "off"
 
     database_url: str = f"sqlite:///{API_DIR / 'app.db'}"
+    # ClinicalTrials.gov search radius around Sacramento (SPEC.md: 50 mi).
+    ctgov_radius_mi: float = 50.0
+    # `make seed` radius. HACK(demo): wider than the spec's 50 mi because only ~53 recruiting
+    # T2D/CKD trials sit within 50 mi; 100 mi (adds the Bay Area) gives ~197. Set to 50 to revert.
+    ctgov_seed_radius_mi: float = 100.0
+
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
     # HACK(demo): stub — gap between the stub match's fake trace events (SPEC.md: 300 ms).

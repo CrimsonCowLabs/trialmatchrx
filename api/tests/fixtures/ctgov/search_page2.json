@@ -1,0 +1,434 @@
+{
+  "studies": [
+    {
+      "protocolSection": {
+        "identificationModule": {
+          "nctId": "NCT05422534",
+          "orgStudyIdInfo": {
+            "id": "221073"
+          },
+          "organization": {
+            "fullName": "Vanderbilt University Medical Center",
+            "class": "OTHER"
+          },
+          "briefTitle": "CoQ10 and Exercise for Mitochondrial Dysfunction in Advance Kidney Disease",
+          "officialTitle": "Role of Mitochondrial Dysfunction in the Response to Exercise in Patients With Advance Kidney Disease"
+        },
+        "statusModule": {
+          "statusVerifiedDate": "2025-12",
+          "overallStatus": "RECRUITING",
+          "expandedAccessInfo": {
+            "hasExpandedAccess": false
+          },
+          "startDateStruct": {
+            "date": "2023-06-01",
+            "type": "ACTUAL"
+          },
+          "primaryCompletionDateStruct": {
+            "date": "2027-06-20",
+            "type": "ESTIMATED"
+          },
+          "completionDateStruct": {
+            "date": "2027-10-01",
+            "type": "ESTIMATED"
+          },
+          "studyFirstSubmitDate": "2022-06-13",
+          "studyFirstSubmitQcDate": "2022-06-13",
+          "studyFirstPostDateStruct": {
+            "date": "2022-06-16",
+            "type": "ACTUAL"
+          },
+          "lastUpdateSubmitDate": "2025-12-30",
+          "lastUpdatePostDateStruct": {
+            "date": "2026-01-02",
+            "type": "ACTUAL"
+          }
+        },
+        "designModule": {
+          "phases": [
+            "PHASE3"
+          ]
+        },
+        "eligibilityModule": {
+          "eligibilityCriteria": "Inclusion Criteria:\n\n* Subjects age 18 to 75 years\n* On thrice-weekly chronic hemodialysis for at least 6 months (only applicable for patients with ESRD on maintenance hemodialysis).\n* Clinically stable, adequately dialyzed (single-pool Kt/V \\>1.2) thrice weekly, for at least 3 consecutive months prior to the study (only applicable for patients with ESRD on maintenance hemodialysis)\n\nExclusion Criteria:\n\n* Body mass index \\> 35 mg/kg2\n* History of functional transplant less than 6 months prior to study\n* Use of immunosuppressive drugs within 1 month prior to study\n* Active connective tissue disease\n* Acute infectious disease within 1 month prior to study\n* AIDS (HIV seropositivity is not an exclusion criterion)\n* Acute myocardial infarction or cerebrovascular event within 3 months\n* Uncontrolled blood pressure\n* New or worsening mitral regurgitation murmur\n* Hypotension, bradycardia, or tachycardia\n* Prolonged ongoing (greater than 20 minutes) angina at rest\n* Angina at rest with transient ST changes greater than 0.05 mV on ECG\n* Sustained ventricular tachycardia on ECG\n* Elevated cardiac enzymes (e.g., troponin Tor I greater than 0.1mg/ml)\n* Advanced liver disease, with a modified Child-Turcotte-Pugh score equal or greater than 10.\n* Gastrointestinal dysfunction requiring parental nutrition\n* Active malignancy excluding basal cell carcinoma of the skin\n* Ejection fraction less than 30%\n* Pre-dialysis potassium repeatedly higher than 5.5 mmol/L (confirmed on a repeated blood draw)\n* Anticipated live donor kidney transplant\n* History of poor adherence to hemodialysis or medical regimen\n* Inability to provide consent\n* Subjects with cardiac pacemaker, artificial heart valve, any metallic implant, permanent tattoo, or any retained foreign metallic bodies.\n* Inability to perform exercise\n* Contraindication for exercise such as electrolyte abnormalities, uncontrolled arrhythmias, or pulmonary congestion.",
+          "healthyVolunteers": false,
+          "sex": "ALL",
+          "minimumAge": "18 Years",
+          "maximumAge": "75 Years",
+          "stdAges": [
+            "ADULT",
+            "OLDER_ADULT"
+          ]
+        },
+        "contactsLocationsModule": {
+          "centralContacts": [
+            {
+              "name": "Delia M Woods, BSN/MSL",
+              "role": "CONTACT",
+              "phone": "615-322-1749",
+              "email": "delia.woods@vumc.org"
+            },
+            {
+              "name": "Patricia Wright, BSN",
+              "role": "CONTACT",
+              "phone": "615-322-8837",
+              "email": "patricia.wright@vumc.org"
+            }
+          ],
+          "overallOfficials": [
+            {
+              "name": "Jorge Gamboa, MD/PhD",
+              "affiliation": "VUMC",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            },
+            {
+              "name": "Talat Ikizler, MD",
+              "affiliation": "VUMC",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            },
+            {
+              "name": "Baback Roshanravan, MD/MPH",
+              "affiliation": "University of California, Davis",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "locations": [
+            {
+              "facility": "University of California Davis Health",
+              "status": "NOT_YET_RECRUITING",
+              "city": "Sacramento",
+              "state": "California",
+              "zip": "95817",
+              "country": "United States",
+              "contacts": [
+                {
+                  "name": "Geraldine Portillo",
+                  "role": "CONTACT",
+                  "email": "gbportillo@ucdavis.edu"
+                }
+              ],
+              "geoPoint": {
+                "lat": 38.58157,
+                "lon": -121.4944
+              }
+            },
+            {
+              "facility": "Vanderbilt University Medical Center-GCRC",
+              "status": "RECRUITING",
+              "city": "Nashville",
+              "state": "Tennessee",
+              "zip": "37232",
+              "country": "United States",
+              "contacts": [
+                {
+                  "name": "Delia Woods, RN",
+                  "role": "CONTACT",
+                  "email": "delia.woods@vumc.org"
+                }
+              ],
+              "geoPoint": {
+                "lat": 36.16589,
+                "lon": -86.78444
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "protocolSection": {
+        "identificationModule": {
+          "nctId": "NCT05334069",
+          "orgStudyIdInfo": {
+            "id": "A212102"
+          },
+          "secondaryIdInfos": [
+            {
+              "id": "NCI-2022-02477",
+              "type": "REGISTRY",
+              "domain": "NCI Clinical Trial Reporting Program"
+            },
+            {
+              "id": "UG1CA189823",
+              "type": "NIH",
+              "link": "https://reporter.nih.gov/quickSearch/UG1CA189823"
+            }
+          ],
+          "organization": {
+            "fullName": "Alliance for Clinical Trials in Oncology",
+            "class": "OTHER"
+          },
+          "briefTitle": "Collecting Blood Samples From Patients With and Without Cancer to Evaluate Tests for Early Cancer Detection",
+          "officialTitle": "Blinded Reference Set for Multicancer Early Detection Blood Tests"
+        },
+        "statusModule": {
+          "statusVerifiedDate": "2026-11",
+          "overallStatus": "RECRUITING",
+          "expandedAccessInfo": {
+            "hasExpandedAccess": false
+          },
+          "startDateStruct": {
+            "date": "2022-08-18",
+            "type": "ACTUAL"
+          },
+          "primaryCompletionDateStruct": {
+            "date": "2027-01-31",
+            "type": "ESTIMATED"
+          },
+          "completionDateStruct": {
+            "date": "2027-02-28",
+            "type": "ESTIMATED"
+          },
+          "studyFirstSubmitDate": "2022-04-12",
+          "studyFirstSubmitQcDate": "2022-04-12",
+          "studyFirstPostDateStruct": {
+            "date": "2022-04-19",
+            "type": "ACTUAL"
+          },
+          "lastUpdateSubmitDate": "2026-11-02",
+          "lastUpdatePostDateStruct": {
+            "date": "2026-11-04",
+            "type": "ACTUAL"
+          }
+        },
+        "designModule": {},
+        "eligibilityModule": {
+          "eligibilityCriteria": "Inclusion Criteria:\n\n* Participants with a cancer diagnosis: Documentation of disease:\n\n  * Histologic documentation: Histologically confirmed diagnosis of invasive cancer\n  * Stage: Stage I-IV per American Joint Committee on Cancer (AJCC) 7th edition, with the exception of patients with leukemia, lymphoma, and multiple myeloma\n\n    \\*\\* For leukemia: Type (chronic lymphocytic leukemia \\[CLL\\], chronic myeloid leukemia \\[CML\\], acute lymphoblastic lymphoma \\[ALL\\], acute myeloid leukemia \\[AML\\])\n    * For lymphoma (any type): Stage I-IV based on Ann Arbor staging\n    * For multiple myeloma: Stage I, II, III based on Revised International Staging System (RISS)\n  * One of the following tumor types (synchronous cancers are not allowed and all neuroendocrine tumors are excluded):\n\n    * Colorectal\n    * Bladder\n    * Head and neck\n    * Hepatobiliary\n\n      \\*\\*\\* For these specific cancer types only, patients may be enrolled prior to histologic confirmation of malignancy. Sites are required to contact the study chairs to review appropriateness for enrollment\n    * Lung\n    * Lymphoma\n    * Leukemia\n    * Ovary \\*\\*\\* For these specific cancer types only, patients may be enrolled prior to histologic confirmation of malignancy. Sites are required to contact the study chairs to review appropriateness for enrollment\n    * Pancreas\n\n      \\*\\*\\* For these specific cancer types only, patients may be enrolled prior to histologic confirmation of malignancy. Sites are required to contact the study chairs to review appropriateness for enrollment\n    * Multiple myeloma\n    * Gastric, esophageal or gastroesophageal\n    * Breast\n    * Thyroid\n    * Kidney\n\n      \\*\\*\\* For these specific cancer types only, patients may be enrolled prior to histologic confirmation of malignancy. Sites are required to contact the study chairs to review appropriateness for enrollment\n    * Endometrium\n\n      \\*\\*\\* For these specific cancer types only, patients may be enrolled prior to histologic confirmation of malignancy. Sites are required to contact the study chairs to review appropriateness for enrollment\n    * Prostate\n* Participants with a cancer diagnosis: No prior definitive systemic or local anti-cancer intervention (including surgical excision)\n* Participants with a cancer diagnosis: Age \\>= 40 and =\\< 75\n* Participants with a cancer diagnosis: No known current pregnancy by self-report\n* Participants with a cancer diagnosis: No known or prior history of in situ or invasive malignancy other than the current cancer diagnosis. Non-melanoma skin cancers (such as basal or squamous cell) are allowed.\n* Participants with a cancer diagnosis: Willingness to provide blood samples for research use\n* Participants with a cancer diagnosis: Absence of medical contraindications to a research blood draw volume of 60 mL\n* Participants with a cancer diagnosis: No history of organ transplantation\n* Participants with a cancer diagnosis: Ability to read and comprehend English or Spanish\n\n  \\* Eligibility is restricted to individuals who can comprehend and read English or Spanish given that participation in the study will require the ability to read and complete questionnaires that are available only in those two languages\n* Participants without a cancer diagnosis and without suspicion of cancer: Age \\>= 40 and =\\< 75\n* Participants without a cancer diagnosis and without suspicion of cancer: No known current pregnancy by self-report\n* Participants without a cancer diagnosis and without suspicion of cancer: No known or prior history of in situ or invasive malignancy (excluding in situ non-melanoma skin cancers)\n* Participants without a cancer diagnosis and without suspicion of cancer: Willingness to provide blood samples for research use\n* Participants without a cancer diagnosis and without suspicion of cancer: Absence of medical contraindications to a research blood draw volume of 60 mL\n* Participants without a cancer diagnosis and without suspicion of cancer: No history of organ transplantation\n* Participants without a cancer diagnosis and without suspicion of cancer: Ability to read and comprehend English or Spanish\n\n  \\* Eligibility is restricted to individuals who can comprehend and read English or Spanish given that participation in the study will require the ability to read and complete questionnaires that are available only in those two languages\n* Participants with a high suspicion of cancer: High suspicion of ovarian cancer, pancreatic cancer, kidney cancer, hepatobiliary cancer, endometrial cancer or melanoma by clinical and/or radiological assessment, with plans for histologic or cytologic confirmation within 28 days after study blood draw\n\n  \\* Examples of highly suspicious cases include: elevated CA125 and abnormal transvaginal ultrasound, suspicious renal or pancreatic mass on imaging, suspicious cutaneous lesion concerning for melanoma\n* Participants with a high suspicion of cancer: Central review of radiology reports and/or clinical documentation conducted by study chairs\n* Participants with a high suspicion of cancer: Age \\>= 40 and =\\< 75\n* Participants with a high suspicion of cancer: No known current pregnancy by self-report\n* Participants with a high suspicion of cancer: No known or prior history of in situ or invasive malignancy. Non-melanoma skin cancers (such as basal or squamous cell) are allowed.\n* Participants with a high suspicion of cancer: Willingness to provide blood samples for research use\n* Participants with a high suspicion of cancer: Absence of medical contraindications to a research blood draw volume of 60 mL\n* Participants with a high suspicion of cancer: No history or organ transplantation\n* Participants with a high suspicion of cancer: Ability to read and comprehend English or Spanish \\* Eligibility is restricted to individuals who can comprehend and read English and Spanish given that participation in the study will require the ability to read and complete questionnaires that are available only in those two languages",
+          "healthyVolunteers": true,
+          "sex": "ALL",
+          "minimumAge": "40 Years",
+          "maximumAge": "75 Years",
+          "stdAges": [
+            "ADULT",
+            "OLDER_ADULT"
+          ],
+          "studyPopulation": "Patients with a cancer diagnosis and participants without cancer and without suspicion of cancer and with a high suspicion of cancer",
+          "samplingMethod": "NON_PROBABILITY_SAMPLE"
+        },
+        "contactsLocationsModule": {
+          "centralContacts": [
+            {
+              "name": "Marie Wood, MD",
+              "role": "CONTACT",
+              "phone": "(720) 848-0300",
+              "email": "marie.wood@cuanschutz.edu"
+            }
+          ],
+          "overallOfficials": [
+            {
+              "name": "Marie Wood, MD",
+              "affiliation": "University of Colorado, Denver",
+              "role": "STUDY_CHAIR"
+            }
+          ],
+          "locations": [
+            {
+              "facility": "Anchorage Associates in Radiation Medicine",
+              "status": "RECRUITING",
+              "city": "Anchorage",
+              "state": "Alaska",
+              "zip": "98508",
+              "country": "United States",
+              "contacts": [
+                {
+                  "name": "Site Public Contact",
+                  "role": "CONTACT",
+                  "phone": "907-212-6871",
+                  "email": "AKPAMC.OncologyResearchSupport@providence.org"
+                },
+                {
+                  "name": "Alison K. Conlin",
+                  "role": "PRINCIPAL_INVESTIGATOR"
+                }
+              ],
+              "geoPoint": {
+                "lat": 61.21806,
+                "lon": -149.90028
+              }
+            },
+            {
+              "facility": "Anchorage Radiation Therapy Center",
+              "status": "SUSPENDED",
+              "city": "Anchorage",
+              "state": "Alaska",
+              "zip": "99504",
+              "country": "United States",
+              "geoPoint": {
+                "lat": 61.21806,
+                "lon": -149.90028
+              }
+            },
+            {
+              "facility": "Alaska Breast Care and Surgery LLC",
+              "status": "RECRUITING",
+              "city": "Anchorage",
+              "state": "Alaska",
+              "zip": "99508",
+              "country": "United States",
+              "contacts": [
+                {
+                  "name": "Site Public Contact",
+                  "role": "CONTACT",
+                  "phone": "907-212-6871",
+                  "email": "AKPAMC.OncologyResearchSupport@providence.org"
+                },
+                {
+                  "name": "Alison K. Conlin",
+                  "role": "PRINCIPAL_INVESTIGATOR"
+                }
+              ],
+              "geoPoint": {
+                "lat": 61.21806,
+                "lon": -149.90028
+              }
+            },
+            {
+              "facility": "Alaska Oncology and Hematology LLC",
+              "status": "RECRUITING",
+              "city": "Anchorage",
+              "state": "Alaska",
+              "zip": "99508",
+              "country": "United States",
+              "contacts": [
+                {
+                  "name": "Site Public Contact",
+                  "role": "CONTACT",
+                  "phone": "907-212-6871",
+                  "email": "AKPAMC.OncologyResearchSupport@providence.org"
+                },
+                {
+                  "name": "Alison K. Conlin",
+                  "role": "PRINCIPAL_INVESTIGATOR"
+                }
+              ],
+              "geoPoint": {
+                "lat": 61.21806,
+                "lon": -149.90028
+              }
+            },
+            {
+              "facility": "Alaska Women's Cancer Care",
+              "status": "RECRUITING",
+              "city": "Anchorage",
+              "state": "Alaska",
+              "zip": "99508",
+              "country": "United States",
+              "contacts": [
+                {
+                  "name": "Site Public Contact",
+                  "role": "CONTACT",
+                  "phone": "907-212-6871",
+                  "email": "AKPAMC.OncologyResearchSupport@providence.org"
+                },
+                {
+                  "name": "Alison K. Conlin",
+                  "role": "PRINCIPAL_INVESTIGATOR"
+                }
+              ],
+              "geoPoint": {
+                "lat": 61.21806,
+                "lon": -149.90028
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "protocolSection": {
+        "identificationModule": {
+          "nctId": "NCT07694544",
+          "orgStudyIdInfo": {
+            "id": "EC5026-1-06"
+          },
+          "organization": {
+            "fullName": "EicOsis Human Health Inc.",
+            "class": "INDUSTRY"
+          },
+          "briefTitle": "Renal Impairment Study for Oral EC5026",
+          "officialTitle": "Assessment of Single Dose Pharmacokinetics of Oral EC5026 in a Population With Chronic Kidney Disease"
+        },
+        "statusModule": {
+          "statusVerifiedDate": "2026-07",
+          "overallStatus": "RECRUITING",
+          "expandedAccessInfo": {
+            "hasExpandedAccess": false
+          },
+          "startDateStruct": {
+            "date": "2026-07-01",
+            "type": "ACTUAL"
+          },
+          "primaryCompletionDateStruct": {
+            "date": "2026-12-31",
+            "type": "ESTIMATED"
+          },
+          "completionDateStruct": {
+            "date": "2027-06-30",
+            "type": "ESTIMATED"
+          },
+          "studyFirstSubmitDate": "2026-07-03",
+          "studyFirstSubmitQcDate": "2026-07-03",
+          "studyFirstPostDateStruct": {
+            "date": "2026-07-10",
+            "type": "ACTUAL"
+          },
+          "lastUpdateSubmitDate": "2026-07-03",
+          "lastUpdatePostDateStruct": {
+            "date": "2026-07-10",
+            "type": "ACTUAL"
+          }
+        },
+        "designModule": {
+          "phases": [
+            "PHASE1"
+          ]
+        },
+        "eligibilityModule": {
+          "eligibilityCriteria": "Inclusion Criteria:\n\nEach study participant must meet all of the following criteria to be enrolled in this study:\n\n1. Male and female participants must be 55 and older.\n2. Study participants must be willing and able to provide written informed consent to participate in the study.\n3. Participants with CKD must be stage 3b-5 (estimated glomerular filtration rate (eGFR) ≤ 44 ml/min per 1.73m2) without dialysis. Control participants must have an eGFR of ≥90 ml/min per 1.73m2.\n4. Aside from the diagnosis of CKD, study participants must be in overall stable condition, as determined by pre-study medical history, physical examination, clinical laboratory tests, and 12-lead ECG measurements.\n5. Study participants must have a body mass index (BMI) of 19-40 kg/m2. Participants with a BMI below 19 kg/m2 may be enrolled at the Investigator's discretion.\n6. Study participants must have a systolic blood pressure (BP) of 90-170 mmHg, diastolic BP of 50-90 mmHg, and resting HR of 40-100 beats per min at Screening, with or without stable doses of anti-hypertensive medication.\n7. Study participants must be non-smokers or previous smokers who have not smoked within the previous 6 months prior to Screening.\n8. Participants taking non-study medications not explicitly listed in the exclusion criteria must be on stable doses of medications for at least 30 days prior to enrollment. Doses should be expected to remain stable for the duration of the study. Standard of care medications for the CKD population which will be allowed at stable doses include, but are not limited to: beta blockers, dihydropyridine calcium channel blockers (i.e. amlodipine), ACE-inhibitors (i.e. lisinopril), ARB (i.e. losartan, valsartan), aspirin, statins, SGLT2 inhibitor (empagliflozin, dapagliflozin), GLP1-RA or GLP-RA/GIP (i.e. semaglutide, tirzepatide), warfarin, direct-acting oral anticoagulants (DOACs - apixaban, rivaroxaban), clopidogrel, and ticagrelor. Study participants taking non-study medications will be included at the opinion of the Investigator and Medical monitor.\n9. Male participants must not donate sperm during the study and for 12 months after receiving the last dose of study drug.\n10. Male participants must use, from enrollment until at least 2 months after the last dose, a highly effective contraception method (less than 1 pregnancy per 100 people using the method for one year), e.g.: sterilization (e.g., vasectomy), and/or double barrier forms of contraception, including condoms (external or internal) and diaphragm ('cap').\n11. Female participants must be non-pregnant, non-lactating, and either postmenopausal for at least 1 year, or surgically sterile (bilateral tubal ligation ('clipping or tying tubes' or hysterectomy) for at least 3 months, or they must agree to use a highly effective double barrier contraception method (less than 1 pregnancy per 100 people using the method for one year), from 28 days and/or their last confirmed menstrual period prior to study enrollment (whichever is longer) until 2 months after the end of study. Postmenopausal status will be defined as follows: documented postmenopausal status as determined by a physician in medical record at least 1 year prior or amenorrhea duration of 12 consecutive months and a serum FSH value \\>40 IU/L (postmenopausal status must be confirmed at Screening). Highly effective double barrier contraception methods include: Intra-uterine device containing either copper or levonorgestrel (e.g., Mirena®), and/or barrier methods of contraception, including condoms (external or internal) and diaphragm ('cap'). Participants/Participant's partner(s) must also use a barrier form of contraception, from the first dose of study drug through until 2 months after the last dose. For all females of childbearing potential, the pregnancy test result must be negative prior to dosing.\n\nExclusion Criteria:\n\nStudy participants meeting any of the following criteria will be excluded from the study:\n\n1. Participants who have donated and/or received any blood or blood products (more than 450 mL) within 3 months prior to enrollment.\n2. Participants who have used any other investigational drug within 1 month prior to Screening. If the investigational drug is known to have a long half-life, a longer washout period will be done.\n3. Participants using opioid medications on a regular basis or pro re nata (PRN). Non-opioid pain medications will be allowed if at a fixed stable dose for more than 1 month prior to Screening with no anticipation of the dose changing during the study. Allowed non-opioid medications include gabapentin, pregabalin, duloxetine, acetaminophen, ibuprofen, celecoxib, meloxicam, other antidepressants including amitriptyline, and other antiepileptics, as well as topical capsaicin and topical lidocaine.\n4. Participants who have used (within 30 days of enrollment) or plan on using during the duration of the study any prescription or over-the-counter drugs that are cytochrome P450 3A4 (CYP3A4) inducers or inhibitors (e.g., verapamil, diltiazem, carbamazepine, oxcarbazepine, phenobarbital, phenytoin, cimetidine, paroxetine, fluoxetine, haloperidol, ketoconazole, itraconazole, fluconazole, erythromycin, or clarithromycin).\n5. Participants who have used (within 30 days of enrollment) or plan on using during the duration of the study any dietary aids, supplements, or foods that are known to modulate drug metabolizing enzymes (e.g., St. John's wort, grapefruit juice).\n6. Participants with difficulty in swallowing oral medications.\n7. Participants who have active cancer or have a high risk of cancer recurrence requiring active surveillance. Participants with a personal history of cancer or metastatic cancer in first degree relatives suggestive of elevated cancer risk in the opinion of the investigator.\n8. Participants with a history of disorders of the hypothalamic-pituitary-adrenal or hypothalamic-pituitary-gonadal axis\n9. Participants with a presence or history of active gastrointestinal disorder, including esophageal or gastroduodenal ulceration, or hepatic, or coagulant disorder within 1 month prior to enrollment\n10. Participants with any clinically unstable cardiovascular (including acute coronary syndrome within the 6 months prior to Screening), respiratory, hematological, endocrine disorder, as determined by the study physician.\n11. Participants with severe systolic heart failure (Ejection Fraction \\<35%).\n12. Participants with exercise-limiting cardiopulmonary disease including severe valvular heart disease, exertional angina, and/or major atherosclerotic cardiovascular event within last 6 months.\n13. Participants with a history of unstable arrhythmia.\n14. Participants with clinically significant and persistent electrolyte abnormalities including hypokalemia (K\\<3.4mEq/dL) or hyperkalemia (K\\>5.4mEq/dL).\n15. Participants with serious psychosocial comorbidities as determined by the Investigator.\n16. Participants with current cognitive or major psychiatric disorders, or any other condition that could interfere with compliance with study procedures.\n17. Participants with a history of bacterial, fungal, or viral infection requiring treatment with antibiotics, antifungal agents, or antivirals within 1 month prior to enrollment.\n18. Participants with confirmed COVID-19, or suspected COVID-19 (e.g., developed symptoms of a respiratory infection such as cough, sore throat, shortness of breath, or fever, but did not get tested for COVID-19) at the time of screening.\n19. Participants with confirmed moderate-severe COVID-19 within 2 months of enrollment or with confirmed asymptomatic or mild COVID-19 within 4 weeks of enrollment.\n20. Participants who have received a COVID-19 vaccine within 4 weeks of enrollment or are planning on receiving it during the study duration.\n21. Participants with medical history of active Hepatitis A, Hepatitis B, Hepatitis C, and/or HIV.\n22. Participants with a positive drug or alcohol test during Screening and/or admission (a positive THC test will be allowed as long as it consists of minimal social use, per discretion of Investigator).",
+          "healthyVolunteers": true,
+          "sex": "ALL",
+          "minimumAge": "55 Years",
+          "stdAges": [
+            "ADULT",
+            "OLDER_ADULT"
+          ]
+        },
+        "contactsLocationsModule": {
+          "centralContacts": [
+            {
+              "name": "EicOsis Senior Clinical Scientist",
+              "role": "CONTACT",
+              "phone": "301-821-5857",
+              "email": "icortespuch@eicosis.com"
+            }
+          ],
+          "locations": [
+            {
+              "facility": "UC Davis Medical Center",
+              "status": "RECRUITING",
+              "city": "Sacramento",
+              "state": "California",
+              "zip": "95817",
+              "country": "United States",
+              "contacts": [
+                {
+                  "name": "Jennifer Norman Project Scientist",
+                  "role": "CONTACT",
+                  "email": "jenorman@health.ucdavis.edu"
+                },
+                {
+                  "name": "Baback Roshanravan, MD",
+                  "role": "PRINCIPAL_INVESTIGATOR"
+                }
+              ],
+              "geoPoint": {
+                "lat": 38.58157,
+                "lon": -121.4944
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -110,7 +110,7 @@ class FeasibilityResult(BaseModel):
 # API request / response models (SPEC.md API table)
 # --------------------------------------------------------------------------------------------
 
-RunKind = Literal["match", "closer", "compile"]
+RunKind = Literal["match", "closer", "compile", "trial"]
 RunStatus = Literal["running", "done", "failed"]
 
 

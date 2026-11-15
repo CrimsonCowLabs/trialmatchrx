@@ -379,7 +379,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "match" | "closer" | "compile";
+            kind: "match" | "closer" | "compile" | "trial";
             /**
              * Status
              * @enum {string}
