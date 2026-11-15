@@ -41,7 +41,7 @@ def test_build_match_counts_every_outcome() -> None:
     assert m.distance_mi == 3.0
 
 
-def test_rank_by_tier_then_fewer_unknowns_then_distance() -> None:
+def test_rank_by_tier_then_confirmed_then_fewer_unknowns_then_distance() -> None:
     ranked = rank_matches(
         [
             match("ineligible-near", 1.0, fails=1),
@@ -60,3 +60,16 @@ def test_rank_by_tier_then_fewer_unknowns_then_distance() -> None:
         "needs-info",
         "ineligible-near",
     ]
+
+
+def test_within_a_tier_more_confirmed_criteria_rank_first() -> None:
+    # A 45-criterion treatment trial with 17 confirmed beats a 4-criterion registry with 2: a
+    # short note leaves most real criteria unknown, so fewer unknowns alone favours short lists.
+    ranked = rank_matches(
+        [
+            match("registry", 1.0, passes=2, unknowns=3),
+            match("treatment", 60.0, passes=17, unknowns=28),
+            match("treatment-fewer-unknowns", 60.0, passes=17, unknowns=20),
+        ]
+    )
+    assert [m.nct_id for m in ranked] == ["treatment-fewer-unknowns", "treatment", "registry"]

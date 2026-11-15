@@ -61,7 +61,7 @@ async def test_demo_patient_gets_ranked_tiered_matches(no_api_key: None) -> None
     assert summary.patient is not None and summary.patient.labs["egfr"].value == 48
     assert sorted(m.nct_id for m in summary.matches) == sorted(NEAR)
     order = {"likely": 0, "needs_info": 1, "ineligible": 2}
-    keys = [(order[m.tier], m.counts["unknown"]) for m in summary.matches]
+    keys = [(order[m.tier], -m.counts["pass"], m.counts["unknown"]) for m in summary.matches]
     assert keys == sorted(keys)
     for m in summary.matches:
         assert sum(m.counts.values()) == len(m.verdicts) > 0
