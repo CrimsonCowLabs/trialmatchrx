@@ -188,7 +188,7 @@ def simulate(
                 "value": c.predicate.value,
                 "default_value": default.value if default else None,
                 "unit": c.predicate.unit,
-                "numeric": c.predicate.op in NUMERIC_OPS,
+                "numeric": isinstance(c.predicate.value, float),  # a threshold: slider-able
                 "remaining": int((remaining & passed).sum()),
                 "dropped": int((remaining & ~passed).sum()),
                 "missing": int((remaining & ~known).sum()),

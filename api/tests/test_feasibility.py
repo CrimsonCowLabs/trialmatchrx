@@ -96,6 +96,8 @@ def test_overriding_a_threshold_reruns_the_waterfall() -> None:
     assert steps(result.waterfall)[1:3] == [("inc-2", 3, 2, 1), ("exc-1", 2, 1, 0)]
     egfr = result.waterfall[1]
     assert (egfr["value"], egfr["default_value"]) == (45, 60)
+    # Only thresholds get a slider: `pregnant == "true"` uses == but isn't a number.
+    assert [s["numeric"] for s in result.waterfall] == [False, True, False, False]
 
 
 def test_leave_one_out_counts_patients_each_rule_alone_removes() -> None:
