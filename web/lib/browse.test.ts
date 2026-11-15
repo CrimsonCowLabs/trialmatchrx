@@ -30,7 +30,6 @@ test("tier summary keeps zero tiers when a run has matches", () => {
 
 test("tier summary says so when a run has no matches", () => {
   assert.equal(tierSummary({ likely: 0, needs_info: 0, ineligible: 0 }), "No matches");
-  assert.equal(tierSummary({}), "No matches");
 });
 
 test("a finished match run opens its match view and offers its replay", () => {

@@ -567,10 +567,7 @@ export interface components {
             ended_at: string | null;
             /** Patient Label */
             patient_label: string | null;
-            /** Tier Counts */
-            tier_counts: {
-                [key: string]: number;
-            };
+            tier_counts: components["schemas"]["TierCounts"];
         };
         /** RunStarted */
         RunStarted: {
@@ -616,6 +613,27 @@ export interface components {
             guardrail_trips: number;
             /** Wall Time S */
             wall_time_s: number | null;
+        };
+        /**
+         * TierCounts
+         * @description How many of a run's matches landed in each tier.
+         */
+        TierCounts: {
+            /**
+             * Likely
+             * @default 0
+             */
+            likely: number;
+            /**
+             * Needs Info
+             * @default 0
+             */
+            needs_info: number;
+            /**
+             * Ineligible
+             * @default 0
+             */
+            ineligible: number;
         };
         /** TraceEvent */
         TraceEvent: {

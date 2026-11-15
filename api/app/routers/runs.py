@@ -1,5 +1,6 @@
 """Run status, trace export and the live SSE stream."""
 
+from collections import Counter
 from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Header, HTTPException, Query
@@ -13,6 +14,7 @@ from app.schemas import (
     RunStatus,
     RunSummary,
     RunTotals,
+    TierCounts,
     TraceEvent,
 )
 from app.trace import store
@@ -43,33 +45,34 @@ def compute_totals(run: RunRow, events: list[TraceEvent]) -> RunTotals:
     )
 
 
-TIERS = ("likely", "needs_info", "ineligible")
 SEX_LABEL = {"female": "F", "male": "M"}
 
 
-def patient_label(patient: dict[str, Any] | None) -> str | None:
+def _patient(result: dict[str, Any]) -> PatientFacts | None:
+    patient = result.get("patient")
+    return PatientFacts.model_validate(patient) if patient else None
+
+
+def patient_label(patient: PatientFacts | None) -> str | None:
     """ "58 F" from parsed patient facts; whichever of age / sex is known, None if neither."""
-    if not patient:
+    if patient is None:
         return None
-    parts = [str(patient["age"]) if patient.get("age") is not None else None]
-    parts.append(SEX_LABEL.get(patient.get("sex") or ""))
+    parts = [str(patient.age) if patient.age is not None else None]
+    parts.append(SEX_LABEL.get(patient.sex) if patient.sex else None)
     return " ".join(p for p in parts if p) or None
 
 
-def list_item(run: RunRow) -> RunListItem:
+def _run_list_item(run: RunRow) -> RunListItem:
     result: dict[str, Any] = run.result or {}
-    counts = dict.fromkeys(TIERS, 0)
-    for match in result.get("matches", []):
-        if match.get("tier") in counts:
-            counts[match["tier"]] += 1
+    tiers = Counter(str(m["tier"]) for m in result.get("matches", []) if m.get("tier"))
     return RunListItem(
         run_id=run.id,
         kind=cast(RunKind, run.kind),
         status=cast(RunStatus, run.status),
         created_at=run.created_at,
         ended_at=run.ended_at,
-        patient_label=patient_label(result.get("patient")),
-        tier_counts=counts,
+        patient_label=patient_label(_patient(result)),
+        tier_counts=TierCounts.model_validate(tiers),
     )
 
 
@@ -79,7 +82,7 @@ async def list_runs(
 ) -> list[RunListItem]:
     """Runs of one kind (default `match`), newest first. Reads the runs table only: no trace
     events, no totals, and not a traced run itself (browsing must not add runs)."""
-    return [list_item(run) for run in store.list_runs(kind, limit)]
+    return [_run_list_item(run) for run in store.list_runs(kind, limit)]
 
 
 @router.get("/{run_id}/events", response_class=EventSourceResponse)
@@ -96,12 +99,11 @@ async def stream_run_events(
 async def get_run(run_id: str) -> RunSummary:
     run = _require_run(run_id)
     result: dict[str, Any] = run.result or {}
-    patient = result.get("patient")
     return RunSummary(
         run_id=run.id,
         kind=cast(RunKind, run.kind),
         status=cast(RunStatus, run.status),
-        patient=PatientFacts.model_validate(patient) if patient else None,
+        patient=_patient(result),
         matches=result.get("matches", []),
         totals=compute_totals(run, store.latest_events(run_id)),
         closer=result.get("closer"),

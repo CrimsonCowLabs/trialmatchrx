@@ -1,16 +1,20 @@
 // Pure helpers for the /trials and /runs browse pages. Only a type import from ./api.ts, so
 // node:test can load this file directly.
-import type { RunListItem } from "./api.ts";
+import type { RunListItem, Tier, TierCounts } from "./api.ts";
 
-const TIERS = [
-  ["likely", "likely"],
-  ["needs_info", "needs info"],
-  ["ineligible", "ineligible"],
-] as const;
+// Every tier, in rank order; `satisfies` makes tsc flag a tier added to the API but not here.
+const TIER_LABELS = {
+  likely: "likely",
+  needs_info: "needs info",
+  ineligible: "ineligible",
+} as const satisfies Record<Tier, string>;
 
 /** "1 likely · 2 needs info · 4 ineligible", or "No matches" when every count is zero. */
-export function tierSummary(counts: Record<string, number>): string {
-  const parts = TIERS.map(([tier, label]) => ({ n: counts[tier] ?? 0, label }));
+export function tierSummary(counts: TierCounts): string {
+  const parts = (Object.keys(TIER_LABELS) as Tier[]).map((tier) => ({
+    n: counts[tier],
+    label: TIER_LABELS[tier],
+  }));
   if (parts.every(({ n }) => n === 0)) return "No matches";
   return parts.map(({ n, label }) => `${n} ${label}`).join(" · ");
 }

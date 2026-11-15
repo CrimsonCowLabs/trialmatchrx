@@ -7,7 +7,7 @@ in seq order without interleaving.
 import uuid
 from typing import Any
 
-from sqlalchemy import literal_column
+from sqlalchemy import ColumnClause, literal_column
 from sqlmodel import col, select
 
 from app.db import RunRow, TraceEventRow, session_scope, utcnow
@@ -46,13 +46,14 @@ def get_run(run_id: str) -> RunRow | None:
         return run
 
 
-def list_runs(kind: RunKind, limit: int = 50) -> list[RunRow]:
+def list_runs(kind: RunKind, limit: int) -> list[RunRow]:
     """Runs of one kind, newest first (insertion order breaks a created_at tie)."""
+    rowid: ColumnClause[int] = literal_column(f"{RunRow.__tablename__}.rowid")
     with session_scope() as s:
         rows = s.exec(
             select(RunRow)
             .where(RunRow.kind == kind)
-            .order_by(col(RunRow.created_at).desc(), literal_column("runs.rowid").desc())
+            .order_by(col(RunRow.created_at).desc(), rowid.desc())
             .limit(limit)
         ).all()
         for row in rows:

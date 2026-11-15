@@ -4,7 +4,7 @@ from typing import Any
 
 from pydantic import TypeAdapter
 
-from app.schemas import RunListItem, RunSummary
+from app.schemas import RunListItem, RunSummary, TierCounts
 from app.sources import ctgov
 from app.trace import store
 from tests.ctgov_fake import load
@@ -120,7 +120,7 @@ async def test_finished_run_gets_a_patient_label_and_tier_counts() -> None:
     [item] = await _list()
 
     assert item.patient_label == "58 F"
-    assert item.tier_counts == {"likely": 1, "needs_info": 2, "ineligible": 1}
+    assert item.tier_counts == TierCounts(likely=1, needs_info=2, ineligible=1)
 
 
 async def test_patient_label_uses_what_was_parsed() -> None:
@@ -138,7 +138,7 @@ async def test_running_run_has_no_label_and_zero_counts() -> None:
 
     assert item.status == "running"
     assert item.patient_label is None
-    assert item.tier_counts == {"likely": 0, "needs_info": 0, "ineligible": 0}
+    assert item.tier_counts == TierCounts()
 
 
 async def test_run_detail_still_resolves_beside_the_list() -> None:

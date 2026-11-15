@@ -14,12 +14,12 @@ const DEBOUNCE_MS = 250;
 
 export function TrialsView() {
   const [query, setQuery] = useState("");
-  const [q, setQ] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   useEffect(() => {
-    const timer = setTimeout(() => setQ(query.trim()), DEBOUNCE_MS);
+    const timer = setTimeout(() => setDebouncedQuery(query.trim()), DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [query]);
-  const load = useCallback(() => api.listTrials(q || undefined), [q]);
+  const load = useCallback(() => api.listTrials(debouncedQuery || undefined), [debouncedQuery]);
   const { data, error } = useLoad(load);
 
   return (
@@ -35,7 +35,7 @@ export function TrialsView() {
         <p className="text-sm text-destructive">{error}</p>
       ) : !data ? (
         <p className="text-sm text-muted-foreground">Loading trials…</p>
-      ) : data.length === 0 && !q ? (
+      ) : data.length === 0 && !debouncedQuery ? (
         <p className="text-sm text-muted-foreground">
           No trials cached yet. Run <code className="font-mono">make seed</code> to fetch the
           T2D/CKD trials.
@@ -45,7 +45,7 @@ export function TrialsView() {
           <p className="text-sm" data-testid="trials-count">
             <span className="font-semibold tabular-nums">{data.length}</span>{" "}
             {data.length === 1 ? "trial" : "trials"}
-            {q ? ` matching “${q}”` : " in the cache"}
+            {debouncedQuery ? ` matching “${debouncedQuery}”` : " in the cache"}
           </p>
           {data.length > 0 && (
             <Card>

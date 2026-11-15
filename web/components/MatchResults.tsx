@@ -10,10 +10,9 @@ import { CriterionRow } from "@/components/CriterionRow";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Schemas } from "@/lib/api";
+import type { Schemas, Tier } from "@/lib/api";
 
 type TrialMatch = Schemas["TrialMatch"];
-type Tier = TrialMatch["tier"];
 
 const TIERS: { tier: Tier; title: string; hint: string }[] = [
   { tier: "likely", title: "Likely eligible", hint: "No criterion fails, at most 2 unknown" },
