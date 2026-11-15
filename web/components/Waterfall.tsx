@@ -2,8 +2,10 @@
 
 import { useState, type ReactNode } from "react";
 
+import { formatCount } from "@/lib/format";
 import {
   barWidths,
+  cohortShare,
   ruleLabel,
   type ReviewSummary,
   type WaterfallStep,
@@ -17,8 +19,6 @@ const HATCH =
 
 // Criterion · bar (+ slider) · numbers, from sm up; stacked below sm.
 const COLUMNS = "sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)_12rem] sm:gap-6";
-
-export const formatCount = (n: number) => n.toLocaleString("en-US");
 
 function Bar({ step, cohortSize }: { step: WaterfallStep; cohortSize: number }) {
   const { kept, dropped } = barWidths(step, cohortSize);
@@ -183,7 +183,7 @@ export function Waterfall({
             <div
               className="h-full rounded-r-sm border border-muted-foreground/60 transition-[width] duration-200"
               style={{
-                width: barWidths({ remaining: review.patients, dropped: 0 }, cohortSize).kept,
+                width: cohortShare(review.patients, cohortSize),
                 backgroundImage: HATCH,
               }}
             />

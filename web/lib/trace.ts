@@ -1,6 +1,7 @@
 // Pure helpers over a run's trace events, shared by the live run page and the replay page.
 // No React here, so `lib/trace.test.ts` can run them under node:test.
 import type { Schemas, TraceEvent } from "./api.ts";
+import { formatCount } from "./format.ts";
 
 export type RunTotals = Schemas["RunTotals"];
 
@@ -320,8 +321,6 @@ export function formatTokens(n: number): string {
 
 /** `$0.0053` under a dollar (per-call costs are fractions of a cent), `$1.50` above. */
 export const formatUsd = (n: number) => `$${n.toFixed(n < 1 ? 4 : 2)}`;
-
-const formatCount = (n: number) => n.toLocaleString("en-US");
 
 export interface TotalsCell {
   label: string;

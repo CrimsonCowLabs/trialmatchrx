@@ -6,6 +6,7 @@ import type { FeasibilityResult } from "./api.ts";
 import {
   barWidths,
   biggestBlocker,
+  cohortShare,
   criteriaSummary,
   eligibleCount,
   reviewSummary,
@@ -163,4 +164,10 @@ test("criteria summary counts compiled rules and the criteria that need review",
     criteriaSummary({ ...RESULT, waterfall: RESULT.waterfall.slice(0, 1), review_criteria: [] }),
     "1 compiled criterion, none need review",
   );
+});
+
+test("a cohort share is a CSS width, 0% with no cohort", () => {
+  assert.equal(cohortShare(70, 1000), "7%");
+  assert.equal(cohortShare(1, 3), "33.33%");
+  assert.equal(cohortShare(5, 0), "0%");
 });

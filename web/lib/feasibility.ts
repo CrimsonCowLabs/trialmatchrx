@@ -1,6 +1,8 @@
 // Pure helpers for the feasibility page: the waterfall joined with leave-one-out, and the
-// slider ranges. Only a type import from ./api.ts, so node:test can load this file directly.
+// slider ranges. Only a type import from ./api.ts (and ./format.ts), so node:test can load this
+// file directly.
 import type { FeasibilityResult, Schemas } from "./api.ts";
+import { countNoun } from "./format.ts";
 
 export type Overrides = NonNullable<Schemas["FeasibilityRequest"]["overrides"]>;
 export type ReviewCriterion = Schemas["ReviewCriterion"];
@@ -34,16 +36,20 @@ export function biggestBlocker(steps: WaterfallStep[]): WaterfallStep | null {
   );
 }
 
-const share = (n: number, total: number) =>
-  `${total > 0 ? Math.round((10000 * n) / total) / 100 : 0}%`;
+/** `n` as a CSS width on the cohort scale: `7%` of 1,000 for 70. */
+export const cohortShare = (n: number, cohortSize: number) =>
+  `${cohortSize > 0 ? Math.round((10000 * n) / cohortSize) / 100 : 0}%`;
 
 /** CSS widths of a waterfall bar on the shared cohort scale: the patients a rule keeps, then
  *  the faint tail it drops. */
 export function barWidths(
-  counts: Pick<WaterfallStep, "remaining" | "dropped">,
+  step: Pick<WaterfallStep, "remaining" | "dropped">,
   cohortSize: number,
 ): { kept: string; dropped: string } {
-  return { kept: share(counts.remaining, cohortSize), dropped: share(counts.dropped, cohortSize) };
+  return {
+    kept: cohortShare(step.remaining, cohortSize),
+    dropped: cohortShare(step.dropped, cohortSize),
+  };
 }
 
 export interface SliderRange {
@@ -99,7 +105,7 @@ export function setThreshold(
   value: number | null,
 ): Overrides {
   const next = { ...overrides };
-  if (value === null || value === step.default_value) delete next[step.criterion_id];
+  if (value === null || value === thresholdValue({}, step)) delete next[step.criterion_id];
   else next[step.criterion_id] = value;
   return next;
 }
@@ -114,7 +120,7 @@ export function thresholdValue(overrides: Overrides, step: WaterfallStep): numbe
 export function criteriaSummary(result: FeasibilityResult): string {
   const compiled = result.waterfall.length;
   const review = result.review_criteria.length;
-  const rules = `${compiled} compiled ${compiled === 1 ? "criterion" : "criteria"}`;
+  const rules = `${countNoun(compiled, "compiled criterion", "compiled criteria")}`;
   if (review === 0) return `${rules}, none need review`;
   return `${rules}, ${review} ${review === 1 ? "needs" : "need"} review`;
 }

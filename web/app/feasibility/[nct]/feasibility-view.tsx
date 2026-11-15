@@ -6,9 +6,10 @@ import { useCallback, useState, type ReactNode } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { ThresholdSlider } from "@/components/ThresholdSlider";
 import { TrialStatus } from "@/components/TrialStatus";
-import { formatCount, Waterfall } from "@/components/Waterfall";
+import { Waterfall } from "@/components/Waterfall";
 import { Button } from "@/components/ui/button";
 import { api, errorMessage, type FeasibilityResult, type TrialDetail } from "@/lib/api";
+import { countNoun, formatCount } from "@/lib/format";
 import {
   biggestBlocker,
   criteriaSummary,
@@ -111,7 +112,7 @@ function Feasibility({ nct }: { nct: string }) {
               title="Round trip of the last feasibility request"
               data-testid="latency"
             >
-              {loading ? "updating…" : latencyMs !== null && `${latencyMs} ms`}
+              {loading ? "updating…" : !error && latencyMs !== null && `${latencyMs} ms`}
             </span>
             <Button
               variant="link"
@@ -154,100 +155,111 @@ function Feasibility({ nct }: { nct: string }) {
   const blocker = biggestBlocker(steps);
   const review = reviewSummary(result);
   const cohort = formatCount(result.cohort_size);
+  // A failed re-query leaves the previous answer up: dim it so it doesn't read as the answer
+  // for the thresholds now on the sliders.
+  const stale = error !== null && !loading;
 
   return (
     <>
       {header}
-      {error && <p className="text-sm text-destructive">{error.message}</p>}
-
-      {/* Desktop: three figures. */}
-      <div className="hidden gap-4 sm:grid sm:grid-cols-3">
-        <Figure label="Pass every rule" testId="figure-eligible">
-          <div className="mt-1 font-mono text-4xl font-semibold tracking-tight tabular-nums">
-            {formatCount(eligible)}
-            <span className="font-sans text-lg font-normal text-ink-5"> / {cohort}</span>
-          </div>
-        </Figure>
-        <Figure label="Biggest blocker" testId="figure-blocker">
-          {blocker ? (
-            <>
-              <div className="mt-2 text-xl font-semibold">
-                {blocker.criterion_id} · {ruleLabel(blocker)}
-              </div>
-              <div className="mt-1 text-sm text-ink-2">
-                Dropping it would add{" "}
-                <span className="font-semibold text-teal-strong">
-                  +{formatCount(blocker.added_if_removed)}
-                </span>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="mt-2 text-xl font-semibold">None</div>
-              <div className="mt-1 text-sm text-ink-2">Dropping any one rule adds nobody</div>
-            </>
-          )}
-        </Figure>
-        <Figure label="Still need review" dashed testId="figure-review">
-          {review ? (
-            <>
-              <div className="mt-2 text-xl font-semibold">
-                {review.allEligible ? `All ${formatCount(review.patients)}` : formatCount(review.patients)}
-              </div>
-              <div className="mt-1 text-sm text-ink-2">
-                on {review.criteria.length} {review.criteria.length === 1 ? "criterion" : "criteria"}{" "}
-                without a rule:{" "}
-                {review.criteria.map((r, i) => (
-                  <span key={r.criterion_id} className="font-mono whitespace-nowrap">
-                    {r.criterion_id}
-                    {i < review.criteria.length - 1 && ", "}
+      {error && (
+        <p className="text-sm text-destructive">
+          {error.message}
+          {stale && " (showing the last answer)"}
+        </p>
+      )}
+      <div
+        className={`flex flex-col gap-4 transition-opacity ${stale ? "opacity-50" : ""}`}
+        data-stale={stale || undefined}
+      >
+        {/* Desktop: three figures. */}
+        <div className="hidden gap-4 sm:grid sm:grid-cols-3">
+          <Figure label="Pass every rule" testId="figure-eligible">
+            <div className="mt-1 font-mono text-4xl font-semibold tracking-tight tabular-nums">
+              {formatCount(eligible)}
+              <span className="font-sans text-lg font-normal text-ink-5"> / {cohort}</span>
+            </div>
+          </Figure>
+          <Figure label="Biggest blocker" testId="figure-blocker">
+            {blocker ? (
+              <>
+                <div className="mt-2 text-xl font-semibold">
+                  {blocker.criterion_id} · {ruleLabel(blocker)}
+                </div>
+                <div className="mt-1 text-sm text-ink-2">
+                  Dropping it would add{" "}
+                  <span className="font-semibold text-teal-strong">
+                    +{formatCount(blocker.added_if_removed)}
                   </span>
-                ))}
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="mt-2 text-xl font-semibold">None</div>
-              <div className="mt-1 text-sm text-ink-2">Every criterion has a rule</div>
-            </>
-          )}
-        </Figure>
-      </div>
-
-      {/* Mobile: the count and the one rule worth dropping, side by side. */}
-      <div className="grid grid-cols-2 gap-3 rounded-card border bg-card p-4 sm:hidden" data-testid="figures-compact">
-        <div>
-          <div className="text-xs font-medium text-ink-4">Pass every rule</div>
-          <div className="font-mono text-3xl font-semibold tabular-nums">
-            {formatCount(eligible)}
-            <span className="font-sans text-[0.9375rem] font-normal text-ink-5"> / {cohort}</span>
-          </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="mt-2 text-xl font-semibold">None</div>
+                <div className="mt-1 text-sm text-ink-2">Dropping any one rule adds nobody</div>
+              </>
+            )}
+          </Figure>
+          <Figure label="Still need review" dashed testId="figure-review">
+            {review ? (
+              <>
+                <div className="mt-2 text-xl font-semibold">
+                  {review.allEligible ? `All ${formatCount(review.patients)}` : formatCount(review.patients)}
+                </div>
+                <div className="mt-1 text-sm text-ink-2">
+                  on {countNoun(review.criteria.length, "criterion", "criteria")} without a rule:{" "}
+                  {review.criteria.map((r, i) => (
+                    <span key={r.criterion_id} className="font-mono whitespace-nowrap">
+                      {r.criterion_id}
+                      {i < review.criteria.length - 1 && ", "}
+                    </span>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="mt-2 text-xl font-semibold">None</div>
+                <div className="mt-1 text-sm text-ink-2">Every criterion has a rule</div>
+              </>
+            )}
+          </Figure>
         </div>
-        {blocker && (
+
+        {/* Mobile: the count and the one rule worth dropping, side by side. */}
+        <div className="grid grid-cols-2 gap-3 rounded-card border bg-card p-4 sm:hidden" data-testid="figures-compact">
           <div>
-            <div className="text-xs font-medium text-ink-4">Drop {blocker.criterion_id}</div>
-            <div className="font-mono text-3xl font-semibold text-teal-strong tabular-nums">
-              +{formatCount(blocker.added_if_removed)}
+            <div className="text-xs font-medium text-ink-4">Pass every rule</div>
+            <div className="font-mono text-3xl font-semibold tabular-nums">
+              {formatCount(eligible)}
+              <span className="font-sans text-[0.9375rem] font-normal text-ink-5"> / {cohort}</span>
             </div>
           </div>
-        )}
-      </div>
+          {blocker && (
+            <div>
+              <div className="text-xs font-medium text-ink-4">Drop {blocker.criterion_id}</div>
+              <div className="font-mono text-3xl font-semibold text-teal-strong tabular-nums">
+                +{formatCount(blocker.added_if_removed)}
+              </div>
+            </div>
+          )}
+        </div>
 
-      <Waterfall
-        cohortSize={result.cohort_size}
-        steps={steps}
-        eligible={eligible}
-        blockerId={blocker?.criterion_id ?? null}
-        review={review}
-        control={(s) => (
-          <ThresholdSlider
-            step={s}
-            value={thresholdValue(overrides, s)}
-            onChange={(v) => setOverrides((o) => setThreshold(o, s, v))}
-            onReset={() => setOverrides((o) => setThreshold(o, s, null))}
-          />
-        )}
-      />
+        <Waterfall
+          cohortSize={result.cohort_size}
+          steps={steps}
+          eligible={eligible}
+          blockerId={blocker?.criterion_id ?? null}
+          review={review}
+          control={(s) => (
+            <ThresholdSlider
+              step={s}
+              value={thresholdValue(overrides, s)}
+              onChange={(v) => setOverrides((o) => setThreshold(o, s, v))}
+              onReset={() => setOverrides((o) => setThreshold(o, s, null))}
+            />
+          )}
+        />
+      </div>
     </>
   );
 }
