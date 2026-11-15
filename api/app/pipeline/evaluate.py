@@ -236,10 +236,13 @@ async def evaluate_criterion(
     *,
     judge: Judge = no_judge,
 ) -> Verdict:
-    """One Verdict for one criterion: its predicate if it has one, else the judge."""
+    """One Verdict for one criterion: its predicate if it has one, else the judge. The verdict
+    carries the criterion's access barrier flag."""
     if criterion.predicate is None:
-        return await judge(nct_id, criterion, facts, rec)
-    return rule_verdict(nct_id, criterion, criterion.predicate, facts, rec)
+        verdict = await judge(nct_id, criterion, facts, rec)
+    else:
+        verdict = rule_verdict(nct_id, criterion, criterion.predicate, facts, rec)
+    return verdict.model_copy(update={"access_barrier": criterion.access_barrier})
 
 
 async def evaluate_trial(

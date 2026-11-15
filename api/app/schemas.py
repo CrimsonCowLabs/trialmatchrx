@@ -67,6 +67,11 @@ class Predicate(BaseModel):
     unit: str | None = None
 
 
+# A criterion that shuts people out for a reason other than health (issue #53). Set by the
+# rule-based classifier in pipeline/access_barriers.py from the verbatim text; None = no barrier.
+AccessBarrier = Literal["language", "visit_burden", "technology", "support"]
+
+
 class Criterion(BaseModel):
     id: str  # "inc-3", "exc-7"
     type: Literal["inclusion", "exclusion"]
@@ -76,6 +81,7 @@ class Criterion(BaseModel):
     ]
     predicate: Predicate | None
     needs_judgment: bool
+    access_barrier: AccessBarrier | None = None
 
 
 class Verdict(BaseModel):
@@ -87,6 +93,7 @@ class Verdict(BaseModel):
     rationale: str
     verified: bool
     trace_event_id: str  # powers the "Why?" link
+    access_barrier: AccessBarrier | None = None  # the criterion's, copied for the results page
 
 
 Tier = Literal["likely", "needs_info", "ineligible"]
@@ -119,6 +126,7 @@ class WaterfallStep(BaseModel):
     remaining: int
     dropped: int
     missing: int  # patients with no data for it: dropped on an inclusion, kept on an exclusion
+    access_barrier: AccessBarrier | None = None
 
 
 class LeaveOneOut(BaseModel):
@@ -132,6 +140,7 @@ class ReviewCriterion(BaseModel):
     criterion_id: str
     text: str
     type: Literal["inclusion", "exclusion"]
+    access_barrier: AccessBarrier | None = None
 
 
 class FeasibilityResult(BaseModel):

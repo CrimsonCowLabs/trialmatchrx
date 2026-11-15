@@ -111,6 +111,7 @@ async def test_judge_returns_a_verified_llm_verdict_linked_to_its_step() -> None
         "patient_evidence": GOOD["patient_evidence"],
         "rationale": GOOD["rationale"],
         "verified": True,
+        "access_barrier": None,
     }
     (step,) = [e for e in events(rec) if e.name == f"judge:{NCT}:inc-1"]
     assert verdict.trace_event_id == step.id

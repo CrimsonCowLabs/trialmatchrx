@@ -126,6 +126,7 @@ def test_criteria_without_a_predicate_are_needs_review_not_passed() -> None:
             "criterion_id": "inc-3",
             "text": "Stable kidney function for 12 weeks",
             "type": "inclusion",
+            "access_barrier": None,
         }
     ]
     assert result.needs_review == 2  # p1 and p2 still have to be checked against inc-3
