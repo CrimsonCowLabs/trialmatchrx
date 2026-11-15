@@ -1,7 +1,7 @@
 # Build context for api/Dockerfile and web/Dockerfile is the repo root (the API image needs
 # data/fixtures). Secrets and local state never enter it: no .env, no SQLite files.
-.env
-.env.*
+**/.env
+**/.env.*
 !.env.example
 **/*.db
 **/*.db-shm

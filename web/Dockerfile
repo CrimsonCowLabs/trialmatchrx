@@ -9,8 +9,9 @@
 
 FROM node:22.22.0-slim AS build
 
-# pnpm at the version package.json names, so the lock is read the way it was written.
-RUN corepack enable && corepack prepare pnpm@9.12.2 --activate
+# corepack reads the pnpm version from package.json's packageManager, so the lock is read the way
+# it was written.
+RUN corepack enable
 
 WORKDIR /app/web
 
