@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { TracePanel } from "@/components/TracePanel";
+import { UnverifiedQuoteBadge } from "@/components/UnverifiedQuoteBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api, type RunSummary } from "@/lib/api";
 import { useRunEvents } from "@/lib/sse";
@@ -25,7 +26,7 @@ function Results({ runId }: { runId: string }) {
             <li key={m.nct_id}>
               <span className="font-mono">{m.nct_id}</span> · {m.title} · <b>{m.tier}</b> (
               {m.counts.pass ?? 0} pass / {m.counts.fail ?? 0} fail / {m.counts.unknown ?? 0}{" "}
-              unknown)
+              unknown) <UnverifiedQuoteBadge verified={m.verdicts.every((v) => v.verified)} />
             </li>
           ))}
         </ul>
