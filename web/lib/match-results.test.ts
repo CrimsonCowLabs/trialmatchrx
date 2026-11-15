@@ -36,14 +36,16 @@ function patient(over: Partial<PatientFacts> = {}): PatientFacts {
   };
 }
 
-test("the title is the patient's age and sex, then the run's condition", () => {
-  assert.equal(patientTitle(patient(), "type 2 diabetes"), "61 M · type 2 diabetes");
+test("the title is the run's patient label, then its condition", () => {
+  const title = patientTitle({ patient_label: "61 M", condition: "type 2 diabetes" });
+  assert.equal(title, "61 M · type 2 diabetes");
 });
 
 test("the title keeps whatever is known and is null when nothing is", () => {
-  assert.equal(patientTitle(patient({ sex: null }), null), "61");
-  assert.equal(patientTitle(null, "type 2 diabetes"), "type 2 diabetes");
-  assert.equal(patientTitle(patient({ age: null, sex: null }), null), null);
+  assert.equal(patientTitle({ patient_label: "61", condition: null }), "61");
+  assert.equal(patientTitle({ condition: "type 2 diabetes" }), "type 2 diabetes");
+  assert.equal(patientTitle({}), null);
+  assert.equal(patientTitle(null), null);
 });
 
 test("the facts strip shows age, HbA1c, eGFR, meds and place from the parsed facts", () => {
@@ -121,6 +123,6 @@ test("a selected trace event is located at the tier and trial of the verdict it 
   assert.equal(locateVerdict(matches, null), null);
 });
 
-test("a trial's outcome counts read OK / disqualify / unknown, zeros included", () => {
-  assert.equal(countLabel({ pass: 7, unknown: 1 }), "7 OK · 0 disqualify · 1 unknown");
+test("a trial's outcome counts read OK / disqualifying / unknown, zeros included", () => {
+  assert.equal(countLabel({ pass: 7, unknown: 1 }), "7 OK · 0 disqualifying · 1 unknown");
 });

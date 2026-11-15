@@ -61,6 +61,7 @@ async def test_match_parses_the_note_into_the_run_result_and_trace(
     assert patient.labs["hba1c"].value == 8.4 and patient.labs["hba1c"].source_span in DEMO_NOTE
     assert patient.place == "Sacramento, CA"
     assert summary.condition == "t2d"
+    assert summary.patient_label == "61 M"
     assert summary.max_unknowns_for_likely == MAX_UNKNOWNS_FOR_LIKELY
     (step,) = [e for e in trace if e.name == "parse_patient"]
     assert step.status == "ok" and step.kind == "step"

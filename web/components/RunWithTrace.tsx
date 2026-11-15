@@ -101,7 +101,7 @@ export function RunWithTrace({
             )}
           </>
         }
-        title={patientTitle(summary?.patient ?? null, summary?.condition ?? null) ?? title}
+        title={patientTitle(summary) ?? title}
         description={summary && <FactsStrip patient={summary.patient} />}
       />
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)]">

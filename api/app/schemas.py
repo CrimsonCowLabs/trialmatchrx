@@ -217,6 +217,7 @@ class RunSummary(BaseModel):
     matches: list[TrialMatch]
     totals: RunTotals
     closer: CloserOutput | None = None  # a closer run's answer, once it is done
+    patient_label: str | None = None  # "58 F", as on RunListItem; None until the patient is parsed
     condition: str | None = None  # the match request's condition; None for a closer run
     max_unknowns_for_likely: int  # the tier rule: "likely" = no fails, at most this many unknown
 

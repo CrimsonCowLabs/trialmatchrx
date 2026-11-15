@@ -632,6 +632,8 @@ export interface components {
             matches: components["schemas"]["TrialMatch"][];
             totals: components["schemas"]["RunTotals"];
             closer?: components["schemas"]["CloserOutput"] | null;
+            /** Patient Label */
+            patient_label?: string | null;
             /** Condition */
             condition?: string | null;
             /** Max Unknowns For Likely */

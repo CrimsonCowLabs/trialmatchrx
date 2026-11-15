@@ -4,6 +4,7 @@ import type { Schemas } from "./api.ts";
 import { TIERS } from "./browse.ts";
 
 type PatientFacts = Schemas["PatientFacts"];
+type RunSummary = Schemas["RunSummary"];
 type Fact = Schemas["Fact"];
 type TrialMatch = Schemas["TrialMatch"];
 type Tier = TrialMatch["tier"];
@@ -62,26 +63,20 @@ export function locateVerdict(
   return m ? { tier: m.tier, nctId: m.nct_id } : null;
 }
 
-/** "7 OK · 0 disqualify · 1 unknown" from a trial's outcome counts. */
+/** "7 OK · 0 disqualifying · 1 unknown" from a trial's outcome counts. */
 export function countLabel(counts: Record<string, number>): string {
   const { pass = 0, fail = 0, unknown = 0 } = counts;
-  return `${pass} OK · ${fail} disqualify · ${unknown} unknown`;
+  return `${pass} OK · ${fail} disqualifying · ${unknown} unknown`;
 }
 
 export type FactChip = { label: string; value: string };
 
-const SEX_LABEL = { female: "F", male: "M" } as const;
-
-/** "61 M · type 2 diabetes": the parsed age and sex, then the run's condition; whichever parts
- *  are known, null when none is. */
-export function patientTitle(patient: PatientFacts | null, condition: string | null): string | null {
-  const who = [
-    patient?.age != null ? String(patient.age) : null,
-    patient?.sex ? SEX_LABEL[patient.sex] : null,
-  ]
-    .filter(Boolean)
-    .join(" ");
-  return [who, condition].filter(Boolean).join(" · ") || null;
+/** "61 M · type 2 diabetes": the run's patient label, then its condition; whichever parts are
+ *  known, null when none is (or there is no summary yet). */
+export function patientTitle(
+  summary: Partial<Pick<RunSummary, "patient_label" | "condition">> | null,
+): string | null {
+  return [summary?.patient_label, summary?.condition].filter(Boolean).join(" · ") || null;
 }
 
 function factValue({ value, unit }: Fact): string {

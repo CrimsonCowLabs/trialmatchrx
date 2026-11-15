@@ -120,14 +120,16 @@ async def stream_run_events(
 async def get_run(run_id: str) -> RunSummary:
     run = _require_run(run_id)
     result: dict[str, Any] = run.result or {}
+    patient = _patient(result)
     return RunSummary(
         run_id=run.id,
         kind=cast(RunKind, run.kind),
         status=cast(RunStatus, run.status),
-        patient=_patient(result),
+        patient=patient,
         matches=result.get("matches", []),
         totals=compute_totals(run, store.latest_events(run_id)),
         closer=result.get("closer"),
+        patient_label=patient_label(patient),
         condition=run.request.get("condition") if run.kind == "match" else None,
         max_unknowns_for_likely=MAX_UNKNOWNS_FOR_LIKELY,
     )
