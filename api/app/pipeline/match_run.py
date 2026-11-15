@@ -20,6 +20,7 @@ from app.pipeline.compile_criteria import (
     compile_study,
 )
 from app.pipeline.evaluate import Judge, evaluate_trial, no_judge
+from app.pipeline.parse_patient import anthropic_parse_model, parse_patient
 from app.pipeline.rank import TIER_ORDER, build_match, rank_matches
 from app.pipeline.trial_search import CandidateTrial, search_cached_trials
 from app.schemas import MatchRequest, PatientFacts, TrialMatch
@@ -32,13 +33,16 @@ from app.trace.recorder import TraceRecorder, describe_error
 TRIAL_CONCURRENCY = 8
 
 
-async def _parse_patient(rec: TraceRecorder, note: str) -> PatientFacts:
-    # HACK(demo): swap for app.pipeline.parse_patient.parse_patient once #4 merges. Until then
-    # every note yields the SPEC demo patient (61M, T2D, HbA1c 8.4%, eGFR 48, metformin).
-    async with rec.step("parse_patient", "step", {"note_chars": len(note)}) as s:
+async def _parse_patient(
+    rec: TraceRecorder, req: MatchRequest, parse_model_factory: ModelFactory
+) -> PatientFacts:
+    if req.note:
+        return await parse_patient(rec, req.note, model_factory=parse_model_factory)
+    # HACK(demo): stub — the FHIR path (sources/synthea.py) doesn't exist yet.
+    async with rec.step("parse_patient", "step", {"fhir_bundle": True}) as s:
         facts = STUB_PATIENT.model_copy(deep=True)
         s.output = {"patient": facts.model_dump(mode="json")}
-        s.note = "demo patient facts (stub: the note parser lands in #4)"
+        s.note = "FHIR bundle parsing not implemented; stub patient (stub)"
     return facts
 
 
@@ -83,11 +87,14 @@ async def run_match(
     req: MatchRequest,
     *,
     model_factory: ModelFactory = anthropic_compile_model,
+    parse_model_factory: ModelFactory = anthropic_parse_model,
     judge: Judge = no_judge,
 ) -> dict[str, Any]:
     """The whole match. Returns the run result stored on the run row (read back by
-    `GET /api/runs/{run_id}`): `{"patient": PatientFacts, "matches": list[TrialMatch]}`."""
-    facts = await _parse_patient(rec, req.note or "")
+    `GET /api/runs/{run_id}`): `{"patient": PatientFacts, "matches": list[TrialMatch]}`.
+    `model_factory` builds the compile model (only on a cache miss), `parse_model_factory` the
+    note-parse model."""
+    facts = await _parse_patient(rec, req, parse_model_factory)
     trials = await search_cached_trials(
         rec,
         _origin(facts),

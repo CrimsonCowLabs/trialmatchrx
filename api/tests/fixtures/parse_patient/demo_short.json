@@ -1,0 +1,18 @@
+{
+  "age": {"value": 61, "source_span": "61M"},
+  "sex": {"value": "male", "source_span": "61M"},
+  "conditions": [
+    {"value": "type 2 diabetes", "source_span": "T2D"}
+  ],
+  "labs": [
+    {"name": "hba1c", "value": 8.4, "unit": "%", "source_span": "HbA1c 8.4%"},
+    {"name": "egfr", "value": 48, "unit": "mL/min/1.73m2", "source_span": "eGFR 48"}
+  ],
+  "vitals": [],
+  "meds": [
+    {"value": "metformin", "source_span": "on metformin"}
+  ],
+  "pregnant": null,
+  "smoker": null,
+  "location": {"place": "Sacramento, CA", "lat": 38.5816, "lon": -121.4944, "source_span": "Sacramento"}
+}

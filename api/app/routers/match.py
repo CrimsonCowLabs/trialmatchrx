@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.config import get_settings
 from app.pipeline.compile_criteria import ModelFactory
 from app.pipeline.match_run import run_match
+from app.pipeline.parse_patient import anthropic_parse_model
 from app.routers.trials import compile_model_factory
 from app.schemas import CloserRequest, MatchRequest, RunStarted
 from app.trace import store
@@ -17,10 +18,16 @@ from app.trace.runner import start_traced_run
 router = APIRouter(prefix="/api", tags=["match"])
 
 
+def parse_model_factory() -> ModelFactory:
+    """Dependency: how a match run builds its note-parse model (tests override it)."""
+    return anthropic_parse_model
+
+
 @router.post("/match", response_model=RunStarted)
 async def start_match(
     req: MatchRequest,
     model_factory: Annotated[ModelFactory, Depends(compile_model_factory)],
+    parse_model: Annotated[ModelFactory, Depends(parse_model_factory)],
 ) -> RunStarted:
     """Start a match run in the background; poll `GET /api/runs/{run_id}` or stream its
     events. The compile model is only built on a compile-cache miss."""
@@ -28,7 +35,9 @@ async def start_match(
         raise HTTPException(status_code=422, detail="provide note or fhir_bundle")
 
     async def work(rec: TraceRecorder) -> dict[str, Any]:
-        return await run_match(rec, req, model_factory=model_factory)
+        return await run_match(
+            rec, req, model_factory=model_factory, parse_model_factory=parse_model
+        )
 
     # HACK(demo): DEMO_MODE=replay is not implemented yet (M7); always runs the pipeline.
     return RunStarted(run_id=start_traced_run("match", req.model_dump(mode="json"), work))

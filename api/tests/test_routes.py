@@ -1,6 +1,7 @@
 """Every route in the SPEC API table answers with schema-valid data."""
 
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 
@@ -14,13 +15,17 @@ from app.schemas import (
     EvalLatest,
     FeasibilityResult,
     Health,
+    RunSummary,
+    TraceEvent,
     TrialDetail,
 )
 from app.sources import ctgov
 from tests.ctgov_fake import FakeCtgov
 from tests.sse import client, parse_sse
 
-MATCH_BODY = {"note": "61M, T2D, HbA1c 8.4%, eGFR 48, on metformin", "condition": "t2d"}
+PARSE_FIXTURES = Path(__file__).parent / "fixtures" / "parse_patient"
+DEMO_NOTE = (PARSE_FIXTURES / "demo_short.txt").read_text()
+MATCH_BODY = {"note": DEMO_NOTE, "condition": "t2d"}
 
 
 @pytest.fixture(autouse=True)
@@ -30,6 +35,40 @@ def no_stub_delay() -> Iterator[None]:
     settings.stub_event_delay_s = 0
     yield
     settings.stub_event_delay_s = original
+
+
+async def test_match_streams_trace_events_in_seq_order_then_done() -> None:
+    async with client() as c:
+        started = await c.post("/api/match", json=MATCH_BODY)
+        assert started.status_code == 200
+        run_id = started.json()["run_id"]
+
+        messages = parse_sse((await c.get(f"/api/runs/{run_id}/events")).text)
+
+    traces = [TraceEvent.model_validate(m.data) for m in messages if m.event == "trace"]
+    assert [e.seq for e in traces] == list(range(1, len(traces) + 1))
+    assert {e.run_id for e in traces} == {run_id}
+    assert messages[-1].event == "done"
+
+
+async def test_match_parses_the_note_into_the_run_result_and_trace(
+    fixture_parse_model: FixtureChatModel,
+) -> None:
+    async with client() as c:
+        run_id = (await c.post("/api/match", json=MATCH_BODY)).json()["run_id"]
+        await c.get(f"/api/runs/{run_id}/events")
+        summary = RunSummary.model_validate((await c.get(f"/api/runs/{run_id}")).json())
+        trace = [
+            TraceEvent.model_validate(e) for e in (await c.get(f"/api/runs/{run_id}/trace")).json()
+        ]
+
+    assert fixture_parse_model.calls == 1
+    patient = summary.patient
+    assert patient is not None and patient.age == 61 and patient.sex == "male"
+    assert patient.labs["hba1c"].value == 8.4 and patient.labs["hba1c"].source_span in DEMO_NOTE
+    (step,) = [e for e in trace if e.name == "parse_patient"]
+    assert step.status == "ok" and step.kind == "step"
+    assert any(e.kind == "llm" and e.parent_id == step.id for e in trace)
 
 
 async def test_match_needs_a_note_or_bundle() -> None:

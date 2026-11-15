@@ -70,9 +70,9 @@ async def test_demo_patient_gets_ranked_tiered_matches(no_api_key: None) -> None
     assert keys == sorted(keys)
     for m in summary.matches:
         assert sum(m.counts.values()) == len(m.verdicts) > 0
-    # Warm compile cache: no LLM calls; one cache hit per trial.
-    assert summary.totals.llm_calls == 0
-    names = [e.name for e in trace]
+    # Warm compile cache: the only LLM call is the (fixture) note parse.
+    assert summary.totals.llm_calls == 1
+    names = [e.name for e in trace if e.parent_id is None]
     assert names[:2] == ["parse_patient", "search_trials"]
     assert names[-1] == "rank"
 
