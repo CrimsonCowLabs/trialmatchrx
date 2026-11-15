@@ -22,7 +22,9 @@ Spec: SPEC.md is the source of truth. If something in it is wrong or missing, st
 - make check    # all linters + tests
 - make types    # regenerate TS types from OpenAPI
 - make seed     # fetch trials, load cohort
-- make eval     # run TREC eval, write eval_runs
+- make eval     # run TREC eval, fill the caches, write eval_runs
+- make eval-smoke # after a pipeline change: 1 topic live, never recorded
+- make eval-offline # re-score, no LLM calls; records only a full replay
 
 ## Agent skills
 
