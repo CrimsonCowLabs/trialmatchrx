@@ -38,6 +38,9 @@ class RunFixture(BaseModel):
 
     run_id: str  # the recorded run's id
     kind: RunKind
+    # The demo patient id (scripts/record_demo.py DEMO_PATIENTS); a fixture saved without one
+    # loads with its file stem instead.
+    patient: str | None = None
     request: dict[str, Any]
     result: dict[str, Any] | None
     recorded_at: dt.datetime
@@ -74,33 +77,72 @@ def write_fixture(path: Path, fixture: RunFixture) -> Path:
 
 def load_fixtures(directory: Path) -> list[RunFixture]:
     """Every run fixture in `directory` (`*.json`), by file name; [] if it doesn't exist."""
-    return [
-        RunFixture.model_validate_json(path.read_text())
-        for path in sorted(directory.glob("*.json"))
-    ]
+    fixtures = []
+    for path in sorted(directory.glob("*.json")):
+        fixture = RunFixture.model_validate_json(path.read_text())
+        fixture.patient = fixture.patient or path.stem
+        fixtures.append(fixture)
+    return fixtures
 
 
 class NoRecordedRun(LookupError):
     """Replay mode has no fixture for this request."""
 
 
-RECORD_HINT = "record one with `make record-demo` (scripts/record_demo.py)"
+RECORD_HINT = "record it with `make record-demo` (scripts/record_demo.py)"
 
 
-def find_fixture(directory: Path, kind: RunKind, nct_id: str | None = None) -> RunFixture:
-    """The recorded `kind` run to replay; for a closer run, the one on `nct_id`.
+def normalize_note(note: str | None) -> str:
+    """The note as replay compares it: whitespace collapsed, case folded."""
+    return " ".join((note or "").split()).casefold()
 
-    HACK(demo): a match replays the recorded demo run whatever the request says (record_demo
-    writes one `match.json`), so a reworded note on stage still gets the recording.
+
+def find_match_fixture(directory: Path, note: str | None) -> RunFixture:
+    """The recorded match run whose note is `note` (whitespace/case-normalized).
+
+    HACK(demo): replay only knows the demo patients' notes (web/lib/demo.ts); any other note,
+    or a FHIR bundle, has no recording and fails clearly instead of replaying another patient.
     """
-    fixtures = [f for f in load_fixtures(directory) if f.kind == kind]
-    if nct_id is not None:
-        nct = nct_id.strip().upper()
-        fixtures = [f for f in fixtures if str(f.request.get("nct_id", "")).upper() == nct]
+    fixtures = [f for f in load_fixtures(directory) if f.kind == "match"]
     if not fixtures:
-        what = f"{kind} run" + (f" on {nct_id}" if nct_id else "")
-        raise NoRecordedRun(f"DEMO_MODE=replay: no recorded {what} in {directory}; {RECORD_HINT}")
-    return fixtures[0]
+        raise NoRecordedRun(f"replay mode: no recorded match run in {directory}; {RECORD_HINT}")
+    wanted = normalize_note(note)
+    for fixture in fixtures:
+        if wanted and normalize_note(fixture.request.get("note")) == wanted:
+            return fixture
+    recorded = ", ".join(str(f.patient) for f in fixtures)
+    raise NoRecordedRun(
+        f"replay mode: no recording for this note (recorded patients: {recorded}); "
+        f"use a demo patient's note unchanged, or {RECORD_HINT}"
+    )
+
+
+def find_closer_fixture(directory: Path, match_note: str | None, nct_id: str) -> RunFixture:
+    """The closer run on `nct_id` recorded on the match run of the patient whose note is
+    `match_note` (the closer fixture's `request.run_id` is that recorded match run's id)."""
+    match = find_match_fixture(directory, match_note)
+    nct = nct_id.strip().upper()
+    for fixture in load_fixtures(directory):
+        if (
+            fixture.kind == "closer"
+            and fixture.request.get("run_id") == match.run_id
+            and str(fixture.request.get("nct_id", "")).upper() == nct
+        ):
+            return fixture
+    raise NoRecordedRun(
+        f"replay mode: no recorded closer run on {nct_id} for patient {match.patient} "
+        f"in {directory}; {RECORD_HINT}"
+    )
+
+
+def recorded_patients(directory: Path) -> tuple[list[str], bool]:
+    """The patients with both a match and a closer recording, and whether every recorded
+    match has its closer."""
+    fixtures = load_fixtures(directory)
+    closer_on = {str(f.request.get("run_id")) for f in fixtures if f.kind == "closer"}
+    matches = [f for f in fixtures if f.kind == "match"]
+    complete = [str(f.patient) for f in matches if f.run_id in closer_on]
+    return complete, len(complete) == len(matches)
 
 
 def _emitted_at(event: TraceEvent) -> dt.datetime:

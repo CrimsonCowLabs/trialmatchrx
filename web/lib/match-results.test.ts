@@ -63,6 +63,38 @@ test("the facts strip shows age, HbA1c, eGFR, meds and place from the parsed fac
   ]);
 });
 
+test("the facts strip shows whatever key labs the patient has, key ones first, at most four", () => {
+  const ipf = patient({
+    labs: {
+      fev1_fvc: { value: 0.66 },
+      dlco_pct: { value: 38, unit: "%" },
+      fvc_pct: { value: 62, unit: "%" },
+      ferritin: { value: 120, unit: "ng/mL" },
+      six_mwd: { value: 380, unit: "m" },
+      nt_probnp: { value: 900, unit: "pg/mL" },
+    },
+    meds: [],
+    place: null,
+  });
+  assert.deepEqual(patientFactChips(ipf), [
+    { label: "Age", value: "61" },
+    { label: "FVC (% pred)", value: "62%" },
+    { label: "DLCO (% pred)", value: "38%" },
+    { label: "FEV1/FVC", value: "0.66" },
+    { label: "6-minute walk", value: "380 m" },
+  ]);
+  // Unranked labs keep the patient's order after the ranked ones.
+  const other = patient({
+    labs: { ferritin: { value: 120 }, alsfrs_r: { value: 41 }, nt_probnp: { value: 900 } },
+    meds: [],
+    place: null,
+  });
+  assert.deepEqual(
+    patientFactChips(other).map((c) => c.label),
+    ["Age", "ALSFRS-R", "Ferritin", "Nt probnp"],
+  );
+});
+
 test("a fact the patient doesn't have is left out of the strip, not shown as a placeholder", () => {
   const sparse = patient({ age: null, labs: { egfr: { value: 48 } }, meds: [], place: null });
   assert.deepEqual(patientFactChips(sparse), [{ label: "eGFR", value: "48" }]);

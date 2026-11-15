@@ -168,7 +168,7 @@ Seven pipelines, of which only the criteria compiler, the judge and the closer a
 - `outcome` is relative to eligibility, so UI icons never need inverting: `pass` means the patient is fine on this criterion (an inclusion is met, or an exclusion doesn't apply), `fail` means it disqualifies them, and `unknown` means the data is missing.
 - A missing fact gives `unknown`, never `fail`.
 - Then `verify.py` checks every quote (see Agent transparency).
-- Ranking: tier first (Likely eligible = no fails and at most 2 unknowns; Needs info = no fails, more unknowns; Ineligible = any fail), then fewer unknowns, then distance.
+- Ranking: tier first (Likely eligible = no fails and at most 2 unknowns; Needs info = no fails, more unknowns; Ineligible = any fail), then more confirmed (pass) criteria, then fewer unknowns, then distance. Confirmed count comes first because a short note leaves most of a real trial's criteria unknown.
 - Concurrency: `asyncio.Semaphore(8)` across trials and criteria. Expect about 20 trials in under 30 seconds with a warm compile cache.
 
 **5. Closer agent** (`closer_agent.py`), the only real agent

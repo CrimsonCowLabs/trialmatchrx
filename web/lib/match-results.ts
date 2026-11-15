@@ -2,6 +2,7 @@
 // from ./api.ts and the pure ./browse.ts, so node:test can load this file directly.
 import type { Schemas } from "./api.ts";
 import { TIERS } from "./browse.ts";
+import { measureLabel } from "./measures.ts";
 
 type PatientFacts = Schemas["PatientFacts"];
 type RunSummary = Schemas["RunSummary"];
@@ -168,14 +169,43 @@ export function factValue({ value, unit }: Pick<Fact, "value" | "unit">): string
   return unit === "%" ? `${value}%` : `${value} ${unit}`;
 }
 
-/** The facts strip: age, HbA1c, eGFR, meds and place, each only when the patient has it. */
+// The labs that most often gate eligibility in the demo's four areas (ALS, IPF, PAH, T2D/CKD),
+// shown first in this order; any other lab follows in the patient's own order.
+const KEY_LABS = [
+  "alsfrs_r",
+  "fvc_pct",
+  "svc_pct",
+  "dlco_pct",
+  "fev1_pct",
+  "fev1_fvc",
+  "six_mwd",
+  "pvr",
+  "pcwp",
+  "hba1c",
+  "egfr",
+  "uacr",
+];
+const MAX_LAB_CHIPS = 4;
+
+/** The patient's labs for the strip: key labs first, then the rest, at most four. */
+function labChips(labs: PatientFacts["labs"]): FactChip[] {
+  const rank = (k: string) => {
+    const i = KEY_LABS.indexOf(k);
+    return i < 0 ? KEY_LABS.length : i;
+  };
+  return Object.entries(labs)
+    .map(([key, fact], order) => ({ key, fact, order }))
+    .sort((a, b) => rank(a.key) - rank(b.key) || a.order - b.order)
+    .slice(0, MAX_LAB_CHIPS)
+    .map(({ key, fact }) => ({ label: measureLabel(key), value: factValue(fact) }));
+}
+
+/** The facts strip: age, the patient's key labs, meds and place, each only when present. */
 export function patientFactChips(patient: PatientFacts | null): FactChip[] {
   if (!patient) return [];
-  const { hba1c, egfr } = patient.labs;
   const chips: (FactChip | null)[] = [
     patient.age != null ? { label: "Age", value: String(patient.age) } : null,
-    hba1c ? { label: "HbA1c", value: factValue(hba1c) } : null,
-    egfr ? { label: "eGFR", value: factValue(egfr) } : null,
+    ...labChips(patient.labs),
     patient.meds.length
       ? { label: "Meds", value: patient.meds.map((m) => String(m.value)).join(", ") }
       : null,

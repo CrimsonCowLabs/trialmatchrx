@@ -1,6 +1,7 @@
 """DEMO_MODE=replay end to end: /api/match and /api/closer replay the fixtures record_demo wrote,
 twice in a row, with no model at all; the replayed runs keep "Why?" links and export."""
 
+import shutil
 from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 from typing import Any
@@ -14,12 +15,14 @@ from app.routers.match import closer_model_factory, judge_model_factory, parse_m
 from app.routers.trials import compile_model_factory
 from app.schemas import CloserOutput, Health, RunSummary, TraceEvent
 from app.trace import store
-from app.trace.replay import RunFixture
+from app.trace.replay import NoRecordedRun, RunFixture, find_closer_fixture, find_match_fixture
 from scripts.record_demo import record_closer, record_match
 from tests.scripted_model import ScriptedChatModel
 from tests.sse import SSEMessage, client, parse_sse
 from tests.test_closer_agent import DEMO_OUTPUT, TRIAL, happy_script
 from tests.test_match_run import BODY, cache_and_compile
+
+HAND_MADE = Path(__file__).parent / "fixtures" / "replay_runs"
 
 
 def _no_model() -> Any:
@@ -110,14 +113,62 @@ async def test_the_demo_replays_twice_in_a_row_without_a_model(
         assert {e.input["run_id"] for e in tools if e.input} == {match.run_id}  # the replayed run
 
 
-async def test_any_match_request_replays_the_recorded_demo(
+async def test_the_recorded_note_replays_despite_whitespace_and_case(
     replay_mode: Path, recorded: tuple[RunFixture, RunFixture]
 ) -> None:
-    match, _, _ = await replayed("/api/match", {**BODY, "note": "61M, T2D, slightly reworded"})
+    note = "  " + str(BODY["note"]).upper().replace(" ", "  \n") + " "
+    match, _, _ = await replayed("/api/match", {**BODY, "note": note})
     assert [m.nct_id for m in match.matches] == [TRIAL]
     # The run keeps the request that was recorded, so its request, parse and trace agree.
     run = store.get_run(match.run_id)
     assert run is not None and run.request == recorded[0].request
+
+
+async def test_an_unrecorded_note_is_503_not_another_patient(
+    replay_mode: Path, recorded: tuple[RunFixture, RunFixture]
+) -> None:
+    async with client() as c:
+        response = await c.post("/api/match", json={**BODY, "note": "61M, T2D, reworded"})
+    assert response.status_code == 503
+    detail = response.json()["detail"]
+    assert "replay mode: no recording for this note" in detail and "t2d" in detail
+
+
+@pytest.fixture
+def hand_made(replay_mode: Path) -> Path:
+    """The tiny hand-made fixtures (two patients, als and ipf) copied into the replay dir."""
+    shutil.copytree(HAND_MADE, replay_mode)
+    return replay_mode
+
+
+def test_a_match_is_picked_by_its_note(hand_made: Path) -> None:
+    als = find_match_fixture(
+        hand_made, " 54-YEAR-OLD man with ALS (limb onset).\nLives in Davis, CA."
+    )
+    ipf = find_match_fixture(hand_made, "68-year-old man with IPF. Lives in Sacramento, CA.")
+    assert (als.patient, ipf.patient) == ("als", "ipf")
+    with pytest.raises(NoRecordedRun, match="no recording for this note.*als, ipf"):
+        find_match_fixture(hand_made, "a patient nobody recorded")
+    with pytest.raises(NoRecordedRun, match="no recording for this note"):
+        find_match_fixture(hand_made, None)  # a FHIR bundle has no note
+
+
+def test_the_closer_is_the_one_recorded_on_that_patients_match(hand_made: Path) -> None:
+    ipf_note = "68-year-old man with IPF. Lives in Sacramento, CA."
+    closer = find_closer_fixture(hand_made, ipf_note, "nct00000002")
+    assert closer.patient == "ipf" and closer.run_id.startswith("4444")
+    # The als patient's closer trial isn't recorded for ipf.
+    with pytest.raises(NoRecordedRun, match="NCT00000001 for patient ipf"):
+        find_closer_fixture(hand_made, ipf_note, "NCT00000001")
+
+
+async def test_health_lists_recorded_patients_and_needs_every_closer(hand_made: Path) -> None:
+    async with client() as c:
+        health = Health.model_validate((await c.get("/api/health")).json())
+        assert health.ok and health.demo_patients == ["als", "ipf"]
+        (hand_made / "closer-ipf.json").unlink()  # ipf has a match but no closer
+        health = Health.model_validate((await c.get("/api/health")).json())
+    assert not health.ok and health.demo_patients == ["als"]
 
 
 @pytest.fixture
@@ -146,7 +197,7 @@ async def test_closer_on_a_trial_with_no_recording_is_503(
     replay_mode: Path, recorded: tuple[RunFixture, RunFixture]
 ) -> None:
     match, _, _ = await replayed("/api/match", BODY)
-    (replay_mode / f"closer-{TRIAL}.json").unlink()
+    (replay_mode / "closer-t2d.json").unlink()
     async with client() as c:
         response = await c.post("/api/closer", json={"run_id": match.run_id, "nct_id": TRIAL})
     assert response.status_code == 503

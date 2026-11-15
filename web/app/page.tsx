@@ -10,9 +10,10 @@ export default function Home() {
         title="Match patients to recruiting trials, and see why."
         description={
           <p className="max-w-2xl">
-            Screen a patient against recruiting T2D/CKD trials, with every agent step in a live
-            trace. Then run the same criteria in reverse to see which ones shrink a trial&apos;s
-            eligible pool.
+            Screen a patient against recruiting trials near Sacramento in ALS, pulmonary fibrosis,
+            pulmonary arterial hypertension and diabetic kidney disease, with every agent step in a
+            live trace. Then run the same criteria in reverse to see which ones shrink a
+            trial&apos;s eligible pool.
           </p>
         }
       />

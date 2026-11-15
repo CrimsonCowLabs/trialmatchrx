@@ -8,7 +8,7 @@ Needs uv, Python 3.12, Node 22 and pnpm.
 2. `cp .env.example .env` and set `ANTHROPIC_API_KEY` (not needed for the M0 stubs).
 3. `make dev` starts the api on :8045 and the web app on :3045; open http://localhost:3045/match.
 4. `make check` runs ruff, mypy, pytest and the web typecheck + lint; `make types` regenerates `web/lib/api-types.ts`.
-5. Offline demo: `make seed`, then `make record-demo` (needs `ANTHROPIC_API_KEY`) records the demo patient's match and closer runs into `data/fixtures/runs/`. Start with `DEMO_MODE=replay` in `.env` and `/api/match` and `/api/closer` replay them with their original timing (gaps capped at 0.2 s), no network or key needed. `GET /api/health` shows `demo_mode` and is `ok: false` in replay mode until both runs are recorded.
+5. Offline demo: `make seed`, then `make record-demo` (needs `ANTHROPIC_API_KEY`) records a match run and a closer run for each demo patient (`als`, `ipf`, `pah`, `t2d`) into `data/fixtures/runs/` (`match-<id>.json`, `closer-<id>.json`) and prints each run's LLM cost. Record or re-record one patient at a time with `make record-demo ARGS="--patient als"` (repeatable). Start with `DEMO_MODE=replay` in `.env` and `/api/match` and `/api/closer` replay them with their original timing (gaps capped at 0.2 s), no network or key needed. Replay picks the patient from the note it is sent (whitespace and case are ignored); a note with no recording gets a 503 that says so. `GET /api/health` shows `demo_mode`, lists the recorded `demo_patients`, and is `ok: false` in replay mode until at least one patient is recorded and every recorded match has its closer run.
 
 ## Docker
 
