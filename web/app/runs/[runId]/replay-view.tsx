@@ -64,6 +64,7 @@ function Replay({ runId, trace, summary }: { runId: string } & Loaded) {
         label: finished ? "replayed" : `replay ${shown.index}/${emissions.length}`,
         variant: finished ? "secondary" : "outline",
       }}
+      summary={summary}
       matches={finished && summary.status === "done" && !isCloser ? summary.matches : null}
       closer={finished ? (summary.closer ?? null) : null}
       totals={finished ? summary.totals : null}
@@ -72,6 +73,8 @@ function Replay({ runId, trace, summary }: { runId: string } & Loaded) {
         href: `/${isCloser ? "closer" : "match"}/${encodeURIComponent(runId)}`,
         label: "Live view",
       }}
+      title={isCloser ? "Next steps replay" : "Run replay"}
+      breadcrumb={[{ label: "Runs", href: "/runs" }, { label: "Replay" }]}
     >
       {stillRecording && (
         <p className="text-sm text-verdict-unknown">

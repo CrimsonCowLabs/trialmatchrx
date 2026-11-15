@@ -63,6 +63,18 @@ async def test_demo_patient_parses_into_correct_facts() -> None:
     assert abs(facts.lat - 38.58) < 0.1 and abs(facts.lon + 121.49) < 0.1
 
 
+async def test_the_place_is_kept_as_written_once_its_span_is_verified() -> None:
+    facts, _ = await parse("demo_short")
+    assert facts.place == "Sacramento, CA"
+
+
+async def test_a_location_whose_span_is_not_in_the_note_leaves_no_place() -> None:
+    output = draft("demo_short")
+    output["location"]["source_span"] = "Fresno"
+    facts, _ = await parse("demo_short", output)
+    assert facts.place is None and facts.lat is None
+
+
 def all_spans(facts: PatientFacts) -> list[str | None]:
     listed = [*facts.conditions, *facts.meds, *facts.labs.values(), *facts.vitals.values()]
     return [f.source_span for f in listed]

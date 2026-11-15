@@ -341,7 +341,7 @@ export function TracePanel({
 
   return (
     <section
-      className="flex h-full max-h-[calc(100vh-2rem)] min-h-0 flex-col overflow-hidden rounded-card border border-line bg-surface md:sticky md:top-4"
+      className="flex h-full max-h-[calc(100vh-2rem)] min-h-0 flex-col overflow-hidden rounded-card border border-line bg-surface"
       aria-label="Trace"
     >
       <header className="flex shrink-0 items-center gap-2.5 border-b border-line-soft px-4 py-3">

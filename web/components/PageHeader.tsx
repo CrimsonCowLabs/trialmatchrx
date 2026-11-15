@@ -9,18 +9,21 @@ export function PageHeader({
   title,
   description,
   breadcrumb,
+  trail,
   actions,
 }: {
   title: ReactNode;
   description?: ReactNode;
   /** Parent pages, outermost first; the current page is the title, not a crumb. */
   breadcrumb?: Crumb[];
+  /** After the crumbs on the breadcrumb line, e.g. a run's id, status and Replay link. */
+  trail?: ReactNode;
   actions?: ReactNode;
 }) {
   return (
     <header className="flex flex-col gap-2">
       {breadcrumb && breadcrumb.length > 0 && (
-        <nav aria-label="Breadcrumb" className="text-sm text-ink-4">
+        <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-4">
           <ol className="flex flex-wrap items-center gap-1.5">
             {breadcrumb.map((crumb, i) => (
               <li key={i} className="flex items-center gap-1.5">
@@ -37,6 +40,7 @@ export function PageHeader({
               </li>
             ))}
           </ol>
+          {trail}
         </nav>
       )}
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">

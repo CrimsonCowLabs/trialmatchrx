@@ -1,10 +1,11 @@
-// One criterion's verdict: outcome icon, the trial's quote, the patient evidence and why.
+// One criterion's verdict: outcome icon, the criterion id and the trial's quote, the patient
+// evidence and why, how it was decided (rule or LLM) and "Why?".
 // Outcomes are relative to eligibility (an exclusion that applies is a `fail`), so the labels
 // say "OK" / "Disqualifies", never "met" / "not met", which would read backwards for exclusions.
 // Self-contained on purpose: badges (e.g. "unverified quote") and the "Why?" link go here.
 "use client";
 
-import { CircleCheck, CircleQuestionMark, CircleX, type LucideIcon } from "lucide-react";
+import { Check, type LucideIcon, QuestionMark, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import { UnverifiedQuoteBadge } from "@/components/UnverifiedQuoteBadge";
@@ -12,10 +13,16 @@ import type { Schemas } from "@/lib/api";
 
 export type Verdict = Schemas["Verdict"];
 
-const OUTCOME: Record<Verdict["outcome"], { icon: LucideIcon; label: string; color: string }> = {
-  pass: { icon: CircleCheck, label: "OK", color: "text-verdict-pass" },
-  fail: { icon: CircleX, label: "Disqualifies", color: "text-verdict-fail" },
-  unknown: { icon: CircleQuestionMark, label: "Unknown", color: "text-verdict-unknown" },
+// Literal class names so Tailwind sees them; colours are the verdict tokens in globals.css.
+const OUTCOME: Record<Verdict["outcome"], { icon: LucideIcon; label: string; tone: string }> = {
+  pass: { icon: Check, label: "OK", tone: "bg-verdict-pass-bg text-verdict-pass" },
+  fail: { icon: X, label: "Disqualifies", tone: "bg-verdict-fail-bg text-verdict-fail" },
+  unknown: { icon: QuestionMark, label: "Unknown", tone: "bg-verdict-unknown-bg text-verdict-unknown" },
+};
+
+const METHOD: Record<Verdict["method"], { label: string; title: string }> = {
+  rule: { label: "rule", title: "Decided by a compiled rule over the patient facts" },
+  llm: { label: "LLM", title: "Judged by the LLM from the note and facts" },
 };
 
 export function CriterionRow({
@@ -29,7 +36,8 @@ export function CriterionRow({
   /** "Why?": jump to the trace event that produced this verdict. */
   onWhy?: (traceEventId: string) => void;
 }) {
-  const { icon: Icon, label, color } = OUTCOME[verdict.outcome];
+  const { icon: Icon, label, tone } = OUTCOME[verdict.outcome];
+  const method = METHOD[verdict.method];
   const exclusion = verdict.criterion_id.startsWith("exc");
   const ref = useRef<HTMLLIElement>(null);
   useEffect(() => {
@@ -44,37 +52,48 @@ export function CriterionRow({
       data-outcome={verdict.outcome}
       data-trace-event-id={verdict.trace_event_id}
       data-highlighted={highlighted || undefined}
-      className={`flex gap-2 border-b py-1.5 last:border-b-0 ${highlighted ? "-mx-3 bg-teal-selected px-3 shadow-[inset_3px_0_0_var(--teal)]" : ""}`}
+      className={`grid grid-cols-[1.25rem_minmax(0,1fr)] gap-x-3 gap-y-1 border-b border-line-soft px-4 py-3 last:border-b-0 sm:grid-cols-[1.25rem_minmax(0,1fr)_auto] sm:px-5 ${highlighted ? "bg-teal-selected shadow-[inset_3px_0_0_var(--teal)]" : ""}`}
     >
-      <Icon className={`mt-0.5 size-4 shrink-0 ${color}`} aria-label={label} role="img" />
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <p className="text-sm">
-          <span className="mr-1.5 font-mono text-xs text-muted-foreground">
+      <span
+        role="img"
+        aria-label={label}
+        title={label}
+        className={`mt-0.5 flex size-5 items-center justify-center rounded-full ${tone}`}
+      >
+        <Icon className="size-3" strokeWidth={3} aria-hidden />
+      </span>
+      <div className="flex min-w-0 flex-col gap-1">
+        <p className="text-[0.9375rem] font-medium">
+          <span className="mr-2 font-mono text-xs font-normal text-ink-5">
             {verdict.criterion_id}
             {exclusion ? " (excl.)" : ""}
           </span>
-          {verdict.criterion_quote}{" "}
-          <UnverifiedQuoteBadge verified={verdict.verified} />
+          {verdict.criterion_quote} <UnverifiedQuoteBadge verified={verdict.verified} />
         </p>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[0.8125rem] text-ink-4">
           {verdict.patient_evidence && (
             <>
-              <span className="italic">“{verdict.patient_evidence}”</span> ·{" "}
+              <span className="text-ink-2 italic">“{verdict.patient_evidence}”</span>{" "}
             </>
           )}
           {verdict.rationale}
         </p>
       </div>
-      {onWhy && (
-        <button
-          type="button"
-          onClick={() => onWhy(verdict.trace_event_id)}
-          className="self-start text-xs link underline-offset-2 hover:underline"
-          title="Show the trace event that produced this verdict"
-        >
-          Why?
-        </button>
-      )}
+      <div className="col-start-2 flex items-center gap-2.5 self-start sm:col-start-3">
+        <span className="font-mono text-xs text-ink-5" title={method.title}>
+          {method.label}
+        </span>
+        {onWhy && (
+          <button
+            type="button"
+            onClick={() => onWhy(verdict.trace_event_id)}
+            className="text-[0.8125rem] font-medium link"
+            title="Show the trace event that produced this verdict"
+          >
+            Why?
+          </button>
+        )}
+      </div>
     </li>
   );
 }

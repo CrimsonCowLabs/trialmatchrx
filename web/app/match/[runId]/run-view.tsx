@@ -9,6 +9,8 @@ import { api, errorMessage } from "@/lib/api";
 import { useRunEvents } from "@/lib/sse";
 import { useLoad } from "@/lib/use-load";
 
+const RUN_BREADCRUMB = [{ label: "Runs", href: "/runs" }];
+
 function MatchRun({ runId }: { runId: string }) {
   const router = useRouter();
   const { events, state, runStatus } = useRunEvents(runId);
@@ -37,11 +39,14 @@ function MatchRun({ runId }: { runId: string }) {
       events={events}
       live={state !== "done" && state !== "error"}
       status={{ label: state, variant: STREAM_VARIANT[state] }}
+      summary={summary}
       matches={summary?.status === "done" ? summary.matches : null}
       totals={summary?.totals}
       onNextSteps={summary?.status === "done" ? startCloser : undefined}
       runStatus={runStatus ?? "running"}
       link={finished ? { href: `/runs/${encodeURIComponent(runId)}`, label: "Replay" } : undefined}
+      title="Match run"
+      breadcrumb={RUN_BREADCRUMB}
     >
       {error && <p className="text-sm text-destructive">{error}</p>}
       {finished && !summary && !error && (

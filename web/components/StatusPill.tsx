@@ -10,7 +10,8 @@ const TONE = {
   failed: "bg-status-failed-bg text-status-failed",
 } as const satisfies Record<RunStatus, string>;
 
-export function StatusPill({ status }: { status: RunStatus }) {
+/** `detail` follows the status, e.g. a finished run's duration: "done · 18.4 s". */
+export function StatusPill({ status, detail }: { status: RunStatus; detail?: string | null }) {
   return (
     <span
       data-slot="status-pill"
@@ -18,6 +19,7 @@ export function StatusPill({ status }: { status: RunStatus }) {
       className={`inline-flex h-6 w-fit shrink-0 items-center rounded-full px-2.5 text-xs font-medium whitespace-nowrap ${TONE[status]}`}
     >
       {status}
+      {detail ? ` · ${detail}` : null}
     </span>
   );
 }
