@@ -23,7 +23,9 @@ def saved_sample(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[No
     load = trec.load_sample  # its default path was bound before SAMPLE_PATH was patched
     monkeypatch.setattr(trec, "load_sample", lambda: load(path))
     monkeypatch.setattr(get_settings(), "anthropic_api_key", "test-key")
-    monkeypatch.setattr(run_eval, "score_matcher", lambda sample: Models().score(sample))
+    monkeypatch.setattr(
+        run_eval, "score_matcher", lambda sample, **kw: Models().score(sample, **kw)
+    )
     yield
 
 

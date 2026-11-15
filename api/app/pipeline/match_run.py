@@ -130,11 +130,13 @@ async def match_trials(
     note: str | None,
     model_factory: ModelFactory = anthropic_compile_model,
     judge_model_factory: ModelFactory = anthropic_judge_model,
+    concurrency: int = TRIAL_CONCURRENCY,
 ) -> list[TrialMatch | None]:
-    """`match_trial` on every trial (at most TRIAL_CONCURRENCY at once), one judge model and
-    semaphore for them all. Results line up with `trials`; None where compiling failed."""
+    """`match_trial` on every trial (at most `concurrency` at once, in order), one judge model
+    and semaphore for them all. Results line up with `trials`; None where compiling failed.
+    The eval's `--fail-fast` passes 1, so no trial starts after the one that failed."""
     judge_for = _judges(rec, judge_model_factory, note)
-    slots = asyncio.Semaphore(TRIAL_CONCURRENCY)
+    slots = asyncio.Semaphore(concurrency)
 
     async def bounded(trial: CandidateTrial) -> TrialMatch | None:
         async with slots:

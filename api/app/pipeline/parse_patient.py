@@ -115,14 +115,16 @@ class ParseFailed(RuntimeError):
     """The parse model's answer could not be parsed into DraftPatient."""
 
 
-def anthropic_parse_model() -> BaseChatModel:
-    """The real parse model (Haiku, `MODEL_PARSE`)."""
+def anthropic_parse_model(api_key: str | None = None) -> BaseChatModel:
+    """The real parse model (Haiku, `MODEL_PARSE`). `api_key` overrides the settings' key (the
+    eval's `--offline` passes a placeholder: the key is not part of the LLM cache key)."""
     settings = get_settings()
-    if not settings.anthropic_api_key:
+    api_key = api_key or settings.anthropic_api_key
+    if not api_key:
         raise ParseModelUnavailable("ANTHROPIC_API_KEY is not set; can't parse the patient note")
     return ChatAnthropic(
         model=settings.model_parse,
-        api_key=SecretStr(settings.anthropic_api_key),
+        api_key=SecretStr(api_key),
         max_tokens=4000,
     )
 
