@@ -88,12 +88,15 @@ class Verdict(BaseModel):
     trace_event_id: str  # powers the "Why?" link
 
 
+Tier = Literal["likely", "needs_info", "ineligible"]
+
+
 class TrialMatch(BaseModel):
     nct_id: str
     title: str
     phase: str | None
     distance_mi: float | None
-    tier: Literal["likely", "needs_info", "ineligible"]
+    tier: Tier
     verdicts: list[Verdict]
     counts: dict[str, int]  # pass / fail / unknown
 
@@ -215,6 +218,28 @@ class RunSummary(BaseModel):
     closer: CloserOutput | None = None  # a closer run's answer, once it is done
 
 
+class TierCounts(BaseModel):
+    """How many of a run's matches landed in each tier."""
+
+    likely: int = 0
+    needs_info: int = 0
+    ineligible: int = 0
+
+
+class RunListItem(BaseModel):
+    """One row of the runs browser. Derived from the run row alone (no trace events, so no
+    totals): `patient_label` is e.g. "58 F" once the patient is parsed, `tier_counts` has
+    likely / needs_info / ineligible (zeros until there are matches)."""
+
+    run_id: str
+    kind: RunKind
+    status: RunStatus
+    created_at: dt.datetime
+    ended_at: dt.datetime | None
+    patient_label: str | None
+    tier_counts: TierCounts
+
+
 class RunDone(BaseModel):
     """Payload of the final `done` SSE event."""
 
@@ -229,6 +254,17 @@ class TrialDetail(BaseModel):
     overall_status: str | None
     eligibility_text: str | None
     criteria: list[Criterion]
+
+
+class TrialListItem(BaseModel):
+    """One row of the trials browser: a cached trial and whether its criteria are compiled."""
+
+    nct_id: str
+    title: str
+    phase: str | None
+    overall_status: str | None
+    compiled: bool
+    criteria_count: int
 
 
 class CompileRequest(BaseModel):

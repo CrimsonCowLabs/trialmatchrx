@@ -73,7 +73,7 @@ trialmatch/
     tests/                 # pytest, fixtures/ holds saved API responses
     pyproject.toml
   web/
-    app/                   # /, /match/[runId], /feasibility/[nct], /eval, /runs/[runId]
+    app/                   # /, /match/[runId], /feasibility/[nct], /eval, /trials, /runs, /runs/[runId]
     components/            # TracePanel, VerdictTable, CriterionRow, Waterfall, ThresholdSlider
     lib/api.ts             # typed client from generated types
     lib/sse.ts             # EventSource hook
@@ -228,9 +228,11 @@ class Verdict(BaseModel):
     verified: bool
     trace_event_id: str                # powers the "Why?" link
 
+Tier = Literal["likely", "needs_info", "ineligible"]
+
 class TrialMatch(BaseModel):
     nct_id: str; title: str; phase: str | None; distance_mi: float | None
-    tier: Literal["likely", "needs_info", "ineligible"]
+    tier: Tier
     verdicts: list[Verdict]
     counts: dict[str, int]             # pass / fail / unknown
 
@@ -239,14 +241,29 @@ class FeasibilityResult(BaseModel):
     waterfall: list[dict]              # {criterion_id, text, remaining, dropped}
     leave_one_out: list[dict]          # {criterion_id, added_if_removed}
     needs_review: int
+
+class TrialListItem(BaseModel):        # one row of /trials
+    nct_id: str; title: str; phase: str | None; overall_status: str | None
+    compiled: bool; criteria_count: int
+
+class TierCounts(BaseModel):
+    likely: int = 0; needs_info: int = 0; ineligible: int = 0
+
+class RunListItem(BaseModel):          # one row of /runs; from the run row only, no totals
+    run_id: str; kind: RunKind; status: RunStatus
+    created_at: datetime; ended_at: datetime | None
+    patient_label: str | None          # e.g. "58 F", once the run has finished
+    tier_counts: TierCounts
 ```
 
 | Method | Path | Body / params | Returns |
 | --- | --- | --- | --- |
 | POST | `/api/match` | `{note?: str, fhir_bundle?: dict, condition: str, radius_mi: int = 50}` | `{run_id}`; work continues in a background task |
+| GET | `/api/runs` | `?kind: RunKind = match`, `?limit: int = 50` (max 200) | `list[RunListItem]`, newest first; read-only, not traced |
 | GET | `/api/runs/{run_id}/events` | SSE | `TraceEvent` stream, then `done` |
 | GET | `/api/runs/{run_id}` |  | `{status, patient: PatientFacts, matches: list[TrialMatch], totals}` |
 | GET | `/api/runs/{run_id}/trace` |  | `list[TraceEvent]` (export / replay) |
+| GET | `/api/trials` | `?q: str` (substring of NCT ID or title) | `list[TrialListItem]` from the trials cache, by NCT ID; no network, not traced |
 | GET | `/api/trials/{nct}` |  | trial summary + compiled `list[Criterion]` |
 | POST | `/api/trials/{nct}/compile` | `{force: bool}` | `list[Criterion]`, traced |
 | POST | `/api/feasibility/{nct}` | `{overrides: {criterion_id: value}}` | `FeasibilityResult` |

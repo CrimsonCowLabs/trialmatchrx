@@ -13,6 +13,11 @@ export type FeasibilityRequest = Schemas["FeasibilityRequest"];
 export type FeasibilityResult = Schemas["FeasibilityResult"];
 export type CloserRequest = Schemas["CloserRequest"];
 export type CloserOutput = Schemas["CloserOutput"];
+export type TrialListItem = Schemas["TrialListItem"];
+export type RunListItem = Schemas["RunListItem"];
+export type RunKind = RunListItem["kind"];
+export type Tier = Schemas["TrialMatch"]["tier"];
+export type TierCounts = Schemas["TierCounts"];
 
 // Called directly (not through a Next rewrite) so the SSE stream is never buffered.
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -58,6 +63,12 @@ export const api = {
   getRun: (runId: string) => request<RunSummary>(`/api/runs/${encodeURIComponent(runId)}`),
   getTrace: (runId: string) =>
     request<TraceEvent[]>(`/api/runs/${encodeURIComponent(runId)}/trace`),
+  listTrials: (q?: string) =>
+    request<TrialListItem[]>(`/api/trials${q ? `?${new URLSearchParams({ q })}` : ""}`),
+  listRuns: ({ kind = "match", limit }: { kind?: RunKind; limit?: number } = {}) =>
+    request<RunListItem[]>(
+      `/api/runs?${new URLSearchParams({ kind, ...(limit && { limit: String(limit) }) })}`,
+    ),
   getEvalLatest: () => request<EvalLatest>("/api/eval/latest"),
   eventsUrl: (runId: string) => `${API_URL}/api/runs/${encodeURIComponent(runId)}/events`,
   feasibility: (nct: string, body: FeasibilityRequest, signal?: AbortSignal) =>
