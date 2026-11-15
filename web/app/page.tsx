@@ -17,6 +17,9 @@ export default function Home() {
         Or see how many of 1,000 synthetic patients qualify for one trial, criterion by criterion.
       </p>
       <OpenFeasibility />
+      <Link href="/eval" className="text-sm underline">
+        Eval: scores against TREC expert labels
+      </Link>
     </main>
   );
 }

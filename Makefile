@@ -60,8 +60,10 @@ cohort:
 		--generate.only_alive_patients=true California Sacramento)
 	cd api && uv run python -m scripts.load_cohort --as-of $(SYNTHEA_DATE)
 
+# BM25 on the fixed TREC sample -> eval_runs. Builds data/fixtures/trec/sample.json on first run
+# (network); `make eval ARGS=--rebuild` redraws and refetches it.
 eval:
-	@echo "make eval: no-op until M4 (run_eval.py)"  # HACK(demo): stub
+	cd api && uv run python -m scripts.run_eval $(ARGS)
 
 # Compile the 10 fixture trials and print the compile rate. Real Sonnet needs ANTHROPIC_API_KEY;
 # `make compile-fixtures ARGS=--fixtures` replays the saved (hand-authored) LLM outputs instead.

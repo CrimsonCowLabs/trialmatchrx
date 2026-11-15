@@ -7,6 +7,7 @@ export type RunSummary = Schemas["RunSummary"];
 export type RunDone = Schemas["RunDone"];
 export type MatchRequest = Schemas["MatchRequest"];
 export type RunStarted = Schemas["RunStarted"];
+export type EvalLatest = Schemas["EvalLatest"];
 export type Criterion = Schemas["Criterion"];
 export type FeasibilityRequest = Schemas["FeasibilityRequest"];
 export type FeasibilityResult = Schemas["FeasibilityResult"];
@@ -53,6 +54,7 @@ export const api = {
   getRun: (runId: string) => request<RunSummary>(`/api/runs/${encodeURIComponent(runId)}`),
   getTrace: (runId: string) =>
     request<TraceEvent[]>(`/api/runs/${encodeURIComponent(runId)}/trace`),
+  getEvalLatest: () => request<EvalLatest>("/api/eval/latest"),
   eventsUrl: (runId: string) => `${API_URL}/api/runs/${encodeURIComponent(runId)}/events`,
   feasibility: (nct: string, body: FeasibilityRequest, signal?: AbortSignal) =>
     request<FeasibilityResult>(`/api/feasibility/${encodeURIComponent(nct)}`, {

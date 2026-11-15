@@ -2,15 +2,12 @@
 """Fixed, schema-valid payloads for routes whose pipelines don't exist yet.
 
 Every constant here is fake and synthetic. Each milestone replaces its piece:
-patient/matches (M2), trial + criteria (M1), eval (M4).
+patient/matches (M2), trial + criteria (M1). Eval (M4) reads eval_runs; feasibility (M5)
+runs over the cohort.
 """
-
-import datetime as dt
 
 from app.schemas import (
     Criterion,
-    EvalLatest,
-    EvalRunSummary,
     Predicate,
     TrialDetail,
     TrialMatch,
@@ -85,21 +82,3 @@ def stub_matches(trace_event_id: str) -> list[TrialMatch]:
             counts={"pass": 1, "fail": 0, "unknown": 1},
         )
     ]
-
-
-# HACK(demo): stub — made-up eval numbers until `make eval` writes eval_runs (M4).
-STUB_EVAL = EvalLatest(
-    metrics={"ndcg@10": 0.0, "p@10": 0.0, "accuracy": 0.0},
-    baseline={"ndcg@10": 0.0, "p@10": 0.0, "accuracy": 0.0},
-    compile_rate=None,
-    sample_size=0,
-    history=[
-        EvalRunSummary(
-            id="stub",
-            created_at=dt.datetime(2026, 11, 11, tzinfo=dt.UTC),
-            git_sha=None,
-            prompt_version=None,
-            metrics={"ndcg@10": 0.0, "p@10": 0.0, "accuracy": 0.0},
-        )
-    ],
-)

@@ -173,7 +173,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Eval Latest */
+        /**
+         * Get Eval Latest
+         * @description Latest matcher + BM25 scores on the fixed TREC sample, and every run (`make eval`).
+         */
         get: operations["get_eval_latest"];
         put?: never;
         post?: never;
@@ -253,6 +256,10 @@ export interface components {
             compile_rate: number | null;
             /** Sample Size */
             sample_size: number;
+            /** Topics */
+            topics: number;
+            /** Dropped */
+            dropped: number;
             /** History */
             history: components["schemas"]["EvalRunSummary"][];
         };
@@ -265,10 +272,17 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /**
+             * System
+             * @enum {string}
+             */
+            system: "bm25" | "matcher";
             /** Git Sha */
             git_sha: string | null;
             /** Prompt Version */
             prompt_version: string | null;
+            /** Sample Size */
+            sample_size: number;
             /** Metrics */
             metrics: {
                 [key: string]: number;
