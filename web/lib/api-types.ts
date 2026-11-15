@@ -13,7 +13,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Start Match */
+        /**
+         * Start Match
+         * @description Start a match run in the background; poll `GET /api/runs/{run_id}` or stream its
+         *     events. The compile model is only built on a compile-cache miss.
+         */
         post: operations["start_match"];
         delete?: never;
         options?: never;

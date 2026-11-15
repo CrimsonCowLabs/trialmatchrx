@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     # T2D/CKD trials sit within 50 mi; 100 mi (adds the Bay Area) gives ~197. Set to 50 to revert.
     ctgov_seed_radius_mi: float = 100.0
 
+    # Nearest cached trials a match run compiles and evaluates (SPEC.md: "about 20 trials").
+    match_max_trials: int = 20
+
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
     # HACK(demo): stub — gap between the stub match's fake trace events (SPEC.md: 300 ms).

@@ -52,7 +52,8 @@ class InvalidPredicate(ValueError):
     """The predicate names a field, op, value or unit PatientFacts can't answer."""
 
 
-def _norm_unit(unit: str) -> str:
+def normalize_unit(unit: str) -> str:
+    """`mL/min/1.73 m²` and `ml/min/1.73m2` compare equal."""
     return unit.replace("²", "2").replace(" ", "").lower()
 
 
@@ -72,7 +73,7 @@ def _numeric(field: str, op: str, value: Any, unit: str | None, canonical: str) 
     if op not in NUMERIC_OPS:
         raise InvalidPredicate(f"op {op!r} not allowed on {field}; use one of {NUMERIC_OPS}")
     number = _number(value)
-    if unit is not None and _norm_unit(unit) != _norm_unit(canonical):
+    if unit is not None and normalize_unit(unit) != normalize_unit(canonical):
         raise InvalidPredicate(f"unit {unit!r} on {field} must be {canonical!r}")
     return Predicate(field=field, op=op, value=number, unit=canonical)
 

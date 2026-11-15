@@ -40,6 +40,14 @@ def test_retry_section_is_optional() -> None:
         load_prompt("compile_criteria").render_retry(error="x")
 
 
+def test_parse_patient_prompt_has_a_version_and_fills_the_note() -> None:
+    prompt = load_prompt("parse_patient")
+
+    assert prompt.version == "parse-patient-v1"
+    assert "{{" not in prompt.render_system(units="- labs: `egfr`")
+    assert "61M, T2D" in prompt.render_user(note="61M, T2D")
+
+
 def test_missing_placeholder_value_is_an_error() -> None:
     with pytest.raises(PromptError, match="vocabulary"):
         load_prompt("compile_criteria").render_system()

@@ -1,0 +1,26 @@
+{
+  "age": {"value": 61, "source_span": "61-year-old man"},
+  "sex": {"value": "male", "source_span": "61-year-old man"},
+  "conditions": [
+    {"value": "type 2 diabetes", "source_span": "type 2 diabetes diagnosed 2014"},
+    {"value": "hypertension", "source_span": "hypertension"},
+    {"value": "chronic kidney disease", "source_span": "stage 3a CKD"}
+  ],
+  "labs": [
+    {"name": "hba1c", "value": 8.4, "unit": "%", "date": "2026-10-02", "source_span": "HbA1c 8.4%"},
+    {"name": "egfr", "value": 48, "unit": "mL/min/1.73m2", "date": "2026-10-02", "source_span": "eGFR 48 mL/min/1.73m2"},
+    {"name": "uacr", "value": 120, "unit": "mg/g", "date": "2026-10-02", "source_span": "UACR 120 mg/g"}
+  ],
+  "vitals": [
+    {"name": "sbp", "value": 138, "unit": "mmHg", "source_span": "BP 138/84"},
+    {"name": "dbp", "value": 84, "unit": "mmHg", "source_span": "BP 138/84"},
+    {"name": "bmi", "value": 31.2, "unit": "kg/m2", "source_span": "BMI 31.2"}
+  ],
+  "meds": [
+    {"value": "metformin", "source_span": "metformin 1000 mg twice daily"},
+    {"value": "lisinopril", "source_span": "lisinopril 20 mg daily"}
+  ],
+  "pregnant": null,
+  "smoker": {"value": false, "source_span": "Former smoker, quit 2009"},
+  "location": {"place": "Sacramento, CA", "lat": 38.5816, "lon": -121.4944, "source_span": "Sacramento, CA"}
+}
