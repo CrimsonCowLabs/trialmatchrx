@@ -6,5 +6,5 @@ import type { MatchRequest } from "./api";
 export const DEMO_MATCH = {
   note: "61-year-old man with type 2 diabetes, HbA1c 8.4%, eGFR 48, on metformin. Lives in Sacramento.",
   condition: "type 2 diabetes",
-  radius_mi: 50,
+  radius_mi: 100,
 } satisfies MatchRequest;

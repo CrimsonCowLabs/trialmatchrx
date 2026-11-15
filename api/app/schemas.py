@@ -164,7 +164,10 @@ class MatchRequest(BaseModel):
     note: str | None = None
     fhir_bundle: dict[str, Any] | None = None
     condition: str
-    radius_mi: int = 50
+    # HACK(demo): 100 mi, the radius `make seed` caches (config.ctgov_seed_radius_mi), not
+    # SPEC.md's 50 mi. SPEC's 50 mi stays the meaning of "near": the UI warns on trials whose
+    # nearest site is farther (web/lib/match-results.ts NEAR_RADIUS_MI) instead of dropping them.
+    radius_mi: int = 100
 
 
 class RunStarted(BaseModel):
