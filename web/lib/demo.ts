@@ -48,7 +48,7 @@ export const DEMO_PATIENTS: readonly DemoPatient[] = [
     name: "Lucía Ramírez",
     age: 47,
     sex: "F",
-    condition: "Pulmonary arterial hypertension (rare disease)",
+    condition: "Pulmonary arterial hypertension",
     searchCondition: "pulmonary arterial hypertension",
     summary: "Idiopathic PAH, WHO FC III, PVR 7 WU, 6MWD 380 m; speaks Spanish only.",
     note: "47-year-old woman with idiopathic pulmonary arterial hypertension (WHO Group 1), WHO functional class III. Speaks Spanish only. Right heart catheterization last year: PVR 7 Wood units. 6-minute walk distance 380 m. On ambrisentan and tadalafil, stable for 6 months. BMI 27. Lives in Rancho Cordova, CA.",
