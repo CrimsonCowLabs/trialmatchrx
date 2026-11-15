@@ -70,7 +70,10 @@ def test_offline_on_a_cold_cache_reports_the_misses_records_nothing_and_exits_1(
     # Both topics' parses miss; the compile cache is checked for every trial even so. The
     # judge calls depend on the parsed facts, so they can't be counted.
     assert "cache misses (would call the API): parse 2, compile 4, judge 0" in out
-    assert "matcher: incomplete, NOT recorded: 2 topics failed" in out
+    assert (
+        "matcher: incomplete, NOT recorded (offline, see the cache misses above): 2 topics" in out
+    )
+    assert "topic 1 failed at parse_patient: NotCached: not cached" in out
     assert _systems() == []
 
 

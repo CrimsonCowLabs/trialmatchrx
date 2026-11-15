@@ -37,6 +37,7 @@ from app.schemas import Fact, PatientFacts
 from app.trace.recorder import TraceRecorder
 
 PROMPT_NAME = "parse_patient"
+STEP_NAME = "parse_patient"  # the traced step (the eval's --fail-fast reads it)
 
 ModelFactory = Callable[[], BaseChatModel]
 
@@ -286,7 +287,7 @@ async def parse_patient(
         HumanMessage(prompt.render_user(note=note.strip())),
     ]
     async with rec.step(
-        "parse_patient",
+        STEP_NAME,
         "step",
         {"note_chars": len(note), "prompt": prompt.name, "prompt_version": prompt.version},
     ) as s:

@@ -29,6 +29,9 @@ from app.schemas import Criterion, Predicate
 from app.trace.recorder import TraceRecorder
 
 PROMPT_NAME = "compile_criteria"
+# The traced steps (the eval's --fail-fast reads them)
+STEP_NAME = "compile_criteria"
+LLM_SPLIT_STEP = "llm_split"
 
 ModelFactory = Callable[[], BaseChatModel]
 
@@ -240,7 +243,7 @@ async def _llm_split(
         HumanMessage(prompt.render_user(nct_id=nct_id, eligibility_text=text)),
     ]
     async with rec.step(
-        "llm_split", "step", {"prompt": prompt.name, "prompt_version": prompt.version}
+        LLM_SPLIT_STEP, "step", {"prompt": prompt.name, "prompt_version": prompt.version}
     ) as s:
         model = model_factory()
         model_id = getattr(model, "model", None) or getattr(model, "model_name", None)
@@ -284,7 +287,7 @@ async def compile_study(
     key = criteria_cache.eligibility_hash(eligibility)
 
     async with rec.step(
-        "compile_criteria",
+        STEP_NAME,
         "step",
         {"nct": nct_id, "criteria_hash": key, "prompt_version": prompt.version, "force": force},
     ) as top:

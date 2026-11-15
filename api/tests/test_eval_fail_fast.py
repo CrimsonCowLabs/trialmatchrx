@@ -62,7 +62,7 @@ async def test_fail_fast_stops_at_a_judge_error_before_any_later_trial_or_topic(
     assert stop.run_id == score.run_ids[1]
     run = store.get_run(stop.run_id)
     assert run is not None and run.status == "failed"
-    assert run.error == "CancelledError: --fail-fast: stopped at ConnectionError: api unreachable"
+    assert run.error == "ConnectionError: api unreachable"  # the cause, not the cancel
     assert not score.complete
     # NCT04 (after NCT03) was never compiled or started, and topic 2 never ran.
     assert models.compile.asked == ["NCT01", "NCT02", "NCT03"]  # type: ignore[attr-defined]
