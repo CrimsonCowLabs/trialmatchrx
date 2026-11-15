@@ -1,0 +1,23 @@
+{
+  "age": {"value": 58, "source_span": "58F"},
+  "sex": {"value": "female", "source_span": "58F"},
+  "conditions": [
+    {"value": "amyotrophic lateral sclerosis", "source_span": "ALS"},
+    {"value": "pulmonary arterial hypertension", "source_span": "PAH"}
+  ],
+  "labs": [
+    {"name": "alsfrs_r", "value": 41, "unit": "points", "source_span": "ALSFRS-R 41"},
+    {"name": "fvc_pct", "value": 82, "unit": "% predicted", "source_span": "FVC 82% predicted"},
+    {"name": "fev1_fvc", "value": 0.66, "unit": null, "source_span": "FEV1/FVC 0.66"},
+    {"name": "svc_pct", "value": 79, "unit": "% pred", "source_span": "SVC 79% pred"},
+    {"name": "dlco_pct", "value": 61, "unit": "%", "source_span": "DLCO 61% predicted"},
+    {"name": "six_mwd", "value": 380, "unit": "m", "source_span": "6MWD 380 m"},
+    {"name": "pvr", "value": 7, "unit": "WU", "source_span": "PVR 7 WU"},
+    {"name": "pcwp", "value": 12, "unit": "mmHg", "source_span": "PCWP 12 mmHg"}
+  ],
+  "vitals": [],
+  "meds": [{"value": "riluzole", "source_span": "riluzole"}],
+  "pregnant": null,
+  "smoker": {"value": false, "source_span": "Never smoker"},
+  "location": {"place": "Davis, CA", "lat": 38.5449, "lon": -121.7405, "source_span": "Davis, CA"}
+}
