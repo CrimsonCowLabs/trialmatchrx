@@ -5,6 +5,7 @@
     picked = draw_sample(qrels, n_topics=15, per_topic=20, seed=SAMPLE_SEED)
     sample = await build_sample(topics, qrels, client=client)   # fetches each trial by NCT
     save_sample(sample)                            # data/fixtures/trec/sample.json (committed)
+    partial = first_topics(sample, 3)              # the first 3 topics only (run_eval --topics)
 
 The sample is built once (`make eval` builds it when the file is missing) and every eval reads
 the saved file, trial text included, so scores never move because a record changed upstream.
@@ -128,6 +129,33 @@ class TrecSample(BaseModel):
     def sample_size(self) -> int:
         """Judged (topic, trial) pairs that made it into the sample."""
         return len(self.judgments)
+
+    @property
+    def partial(self) -> bool:
+        """Fewer topics than were drawn: a `first_topics` subset, never comparable with (or
+        recorded as) a full score."""
+        return len(self.topics) < self.n_topics
+
+
+def first_topics(sample: TrecSample, n: int) -> TrecSample:
+    """The sample cut to its first `n` topics (sample order), their judgments and the trials
+    those judge, for a small partial eval (`run_eval --topics N`). `n_topics` keeps the drawn
+    count, so the subset knows it is `partial`."""
+    if not 1 <= n <= len(sample.topics):
+        raise ValueError(
+            f"must be between 1 and {len(sample.topics)} (the sample's topics), got {n}"
+        )
+    topics = sample.topics[:n]
+    ids = {t.id for t in topics}
+    judgments = [j for j in sample.judgments if j.topic_id in ids]
+    ncts = {j.nct_id for j in judgments}
+    return sample.model_copy(
+        update={
+            "topics": topics,
+            "judgments": judgments,
+            "trials": {nct: s for nct, s in sample.trials.items() if nct in ncts},
+        }
+    )
 
 
 def eligibility_text(study: dict[str, Any]) -> str:

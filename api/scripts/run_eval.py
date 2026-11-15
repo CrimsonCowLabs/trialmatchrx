@@ -3,6 +3,7 @@
     make eval                                   # or: cd api && uv run python -m scripts.run_eval
     uv run python -m scripts.run_eval --rebuild # redraw + refetch the sample (network)
     uv run python -m scripts.run_eval --bm25-only
+    uv run python -m scripts.run_eval --topics 2  # partial: first 2 topics only, not recorded
 
 The matcher runs the full pipeline (parse -> compile -> evaluate -> judge -> verify -> rank) on
 each topic as a traced match run, so it needs ANTHROPIC_API_KEY. The first run is slow and
@@ -17,6 +18,13 @@ The first run builds the sample (network): downloads the TREC 2021 topics + qrel
 data/trec/, draws 15 topics x 20 judged trials, fetches each trial from ClinicalTrials.gov and
 saves data/fixtures/trec/sample.json. Every later run reads that file and never touches the
 network.
+
+`--topics N` scores the matcher and BM25 on only the first N topics of the sample (sample order),
+so only their judged trials (about 20 each) are compiled and judged: a bounded-cost live check
+after a pipeline change. A partial score can't be compared with a full one, so it is labelled
+partial and never written to `eval_runs`, even when complete, and even when N is every topic.
+Its answers still land in the compile cache and `llm_cache`, so a later full run replays them.
+N must be between 1 and the sample's topic count.
 """
 
 import argparse
@@ -36,6 +44,7 @@ from app.eval.runs import (
     MATCHER,
     K,
     current_git_sha,
+    current_prompt_version,
     record_eval_run,
     score_bm25,
 )
@@ -100,11 +109,18 @@ def _report(matcher: dict[str, float] | None, bm25: dict[str, float]) -> None:
     print("matcher vs BM25: " + "  ".join(f"{lb} {matcher[k] - bm25[k]:+.4f}" for k, lb in both))
 
 
-def _score_matcher(sample: trec.TrecSample, git_sha: str | None) -> MatcherScore:
-    """Score the matcher; record it only when complete (a re-run would replay every answer)."""
+def _partial_label(sample: trec.TrecSample) -> str:
+    return f"partial run: {len(sample.topics)} of {sample.n_topics} topics"
+
+
+def _score_matcher(sample: trec.TrecSample, git_sha: str | None, *, partial: bool) -> MatcherScore:
+    """Score the matcher; record it only when complete (a re-run would replay every answer)
+    and not a --topics run."""
     print(f"matcher: {len(sample.topics)} topics, one traced match run each ...")
     score = asyncio.run(score_matcher(sample))
-    if score.complete:
+    if score.complete and partial:
+        print(f"matcher: {_partial_label(sample)}, NOT recorded")
+    elif score.complete:
         row = record_eval_run(MATCHER, score.metrics, sample=sample, git_sha=git_sha)
         print(f"matcher: eval_runs {row.id[:8]}, git {row.git_sha}")
     else:
@@ -120,7 +136,35 @@ def _score_matcher(sample: trec.TrecSample, git_sha: str | None) -> MatcherScore
     return score
 
 
-def main(rebuild: bool, bm25_only: bool) -> None:
+def _topic_count(value: str) -> int:
+    """--topics N: at least 1, checked before a --rebuild fetches anything (the upper bound
+    needs the sample, see `trec.first_topics`)."""
+    try:
+        n = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"must be a whole number, got {value!r}") from None
+    if n < 1:
+        raise argparse.ArgumentTypeError(f"must be at least 1, got {n}")
+    return n
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--rebuild", action="store_true", help="redraw and refetch the sample")
+    parser.add_argument("--bm25-only", action="store_true", help="skip the matcher (no LLM)")
+    parser.add_argument(
+        "--topics",
+        type=_topic_count,
+        metavar="N",
+        help="score only the first N topics (partial run, never recorded)",
+    )
+    return parser.parse_args(argv)
+
+
+def main(rebuild: bool, bm25_only: bool, topics: int | None = None) -> None:
+    """`topics`: score only the first N topics; such a run is partial and never recorded, even
+    when N is every topic of the sample (issue #61)."""
+    partial = topics is not None
     init_db()
     git_sha = current_git_sha()  # before a first run writes sample.json into the tree
     if rebuild or not trec.SAMPLE_PATH.exists():
@@ -131,9 +175,17 @@ def main(rebuild: bool, bm25_only: bool) -> None:
         f"sample: {sample.sample_size} judged (topic, trial) pairs, {len(sample.trials)} trials, "
         f"{len(sample.topics)} topics; {len(sample.dropped)} trials dropped ({_reasons(sample)})"
     )
+    if topics is not None:
+        try:
+            sample = trec.first_topics(sample, topics)
+        except ValueError as e:
+            sys.exit(f"run_eval: --topics {e}")
     bm25 = score_bm25(sample)
-    bm25_row = record_eval_run(BM25, bm25, sample=sample, git_sha=git_sha)
-    print(f"bm25: eval_runs {bm25_row.id[:8]}, git {bm25_row.git_sha}")
+    if partial:
+        print(f"bm25: {_partial_label(sample)}, NOT recorded")
+    else:
+        bm25_row = record_eval_run(BM25, bm25, sample=sample, git_sha=git_sha)
+        print(f"bm25: eval_runs {bm25_row.id[:8]}, git {bm25_row.git_sha}")
 
     score: MatcherScore | None = None
     if bm25_only:
@@ -141,17 +193,19 @@ def main(rebuild: bool, bm25_only: bool) -> None:
     elif not get_settings().anthropic_api_key:
         print("matcher: skipped, ANTHROPIC_API_KEY is not set (it parses and judges with the LLM)")
     else:
-        score = _score_matcher(sample, git_sha)
+        score = _score_matcher(sample, git_sha, partial=partial)
 
+    if partial:
+        print(
+            f"\n{_partial_label(sample)}: metrics over those topics only, "
+            "not comparable with a full run"
+        )
     _report(score.metrics if score else None, bm25)
-    print(f"prompts: {bm25_row.prompt_version}")
+    print(f"prompts: {current_prompt_version()}")
     if score is not None and not score.complete:
         sys.exit(1)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--rebuild", action="store_true", help="redraw and refetch the sample")
-    parser.add_argument("--bm25-only", action="store_true", help="skip the matcher (no LLM)")
-    args = parser.parse_args()
-    main(args.rebuild, args.bm25_only)
+    args = parse_args()
+    main(args.rebuild, args.bm25_only, args.topics)

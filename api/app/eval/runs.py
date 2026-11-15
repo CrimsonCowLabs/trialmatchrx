@@ -94,6 +94,12 @@ def record_eval_run(
     sample: TrecSample,
     git_sha: str | None,
 ) -> EvalRunRow:
+    """One `eval_runs` row. A partial sample (`first_topics`) is refused: its score covers only
+    some topics, so it would sit in the history as if comparable with a full one."""
+    if sample.partial:
+        raise ValueError(
+            f"not recording a partial sample ({len(sample.topics)} of {sample.n_topics} topics)"
+        )
     row = EvalRunRow(
         id=uuid.uuid4().hex,
         system=system,
