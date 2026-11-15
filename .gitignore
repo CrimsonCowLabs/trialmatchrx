@@ -1,0 +1,26 @@
+# python
+.venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# local state
+*.db
+*.db-shm
+*.db-wal
+.env
+api/openapi.json
+
+# node
+node_modules/
+web/.next/
+web/out/
+web/next-env.d.ts
+*.tsbuildinfo
+
+# data (fixtures are committed)
+data/*
+!data/fixtures/
+.DS_Store
