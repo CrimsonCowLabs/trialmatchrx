@@ -1,7 +1,9 @@
 """Tiering and ranking (SPEC.md pipeline 4).
 
 Tier: likely = no fails and at most 2 unknowns; needs_info = no fails, more unknowns;
-ineligible = any fail. Order: tier, then fewer unknowns, then distance (unknown distance last).
+ineligible = any fail. Order: tier, then more confirmed (pass) criteria, then fewer unknowns, then
+distance (unknown distance last). Confirmed count comes before unknowns because a short note leaves
+most of a real trial's criteria unknown, so fewer unknowns alone ranks short registries first.
 """
 
 from typing import Literal
@@ -42,10 +44,11 @@ def build_match(
     )
 
 
-def _sort_key(m: TrialMatch) -> tuple[int, int, bool, float, str]:
+def _sort_key(m: TrialMatch) -> tuple[int, int, int, bool, float, str]:
     distance = m.distance_mi
     return (
         TIER_ORDER.index(m.tier),
+        -m.counts.get("pass", 0),
         m.counts.get("unknown", 0),
         distance is None,
         distance or 0.0,

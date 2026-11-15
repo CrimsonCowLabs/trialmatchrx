@@ -34,7 +34,7 @@ export const AGENT_STEPS = [
   },
   {
     title: "Rank",
-    detail: "Orders trials by tier, then fewer unknowns, then distance.",
+    detail: "Orders trials by tier, then most criteria confirmed, then fewer unknowns, then distance.",
   },
 ] as const;
 

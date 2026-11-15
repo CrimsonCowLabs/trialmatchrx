@@ -1,10 +1,14 @@
-"""Pre-fetch recruiting T2D/CKD trials near Sacramento into the trials cache (hits the network).
+"""Pre-fetch recruiting demo-condition trials near Sacramento into the trials cache (network).
 
     make seed                                   # or: cd api && uv run python -m scripts.seed_trials
     uv run python -m scripts.seed_trials --radius 50
 
 Overlapping conditions dedupe on (NCT ID, lastUpdatePostDate); re-running only adds trials that
-are new or changed upstream.
+are new or changed upstream, and backfills the conditions module on rows cached before
+ctgov.FIELDS asked for it.
+
+The demo conditions: ALS, idiopathic pulmonary fibrosis, pulmonary arterial hypertension, and
+T2D / CKD.
 """
 
 import argparse
@@ -15,6 +19,10 @@ from app.db import init_db
 from app.sources import ctgov
 
 CONDITIONS = [
+    "amyotrophic lateral sclerosis",
+    "pulmonary fibrosis",
+    "idiopathic pulmonary fibrosis",
+    "pulmonary arterial hypertension",
     "type 2 diabetes",
     "diabetes mellitus",
     "chronic kidney disease",

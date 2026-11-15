@@ -83,7 +83,7 @@ def current_git_sha() -> str | None:
 
 
 def current_prompt_version() -> str:
-    """e.g. `parse-patient-v3+compile-criteria-v2+judge-v2`."""
+    """e.g. `parse-patient-v4+compile-criteria-v2+judge-v2`."""
     return "+".join(load_prompt(name).version for name in EVAL_PROMPTS)
 
 
