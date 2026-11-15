@@ -1,16 +1,21 @@
 import Link from "next/link";
 
+import { PageHeader } from "@/components/PageHeader";
+
 import { EvalView } from "./eval-view";
 
 export default function EvalPage() {
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-4 p-8">
-      <div className="flex items-baseline justify-between">
-        <h1 className="text-2xl font-semibold">Eval</h1>
-        <Link href="/match" className="text-sm underline">
-          Match a patient
-        </Link>
-      </div>
+    <main className="mx-auto flex w-full min-w-0 max-w-5xl flex-col gap-4 px-4 py-6 sm:p-8">
+      <PageHeader
+        breadcrumb={[{ label: "Home", href: "/" }]}
+        title="Eval"
+        actions={
+          <Link href="/match" className="text-sm font-medium text-teal hover:text-teal-strong">
+            Match a patient
+          </Link>
+        }
+      />
       <p className="text-sm text-muted-foreground">
         TREC 2021 Clinical Trials topics against expert qrels, on a fixed sample. Relevant means
         label 2 (eligible); excluded and not-relevant trials both count as misses. Each topic

@@ -3,19 +3,14 @@
 // GET /api/runs: the most recent match runs, newest first.
 import Link from "next/link";
 
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { api, type RunListItem } from "@/lib/api";
-import { runLinks, tierSummary } from "@/lib/browse";
+import { StatusPill } from "@/components/StatusPill";
+import { TierChips, TierLegend } from "@/components/TierChips";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { api } from "@/lib/api";
+import { runLinks } from "@/lib/browse";
 import { useLoad } from "@/lib/use-load";
 
 const LIMIT = 50;
-
-const STATUS_VARIANT = {
-  running: "secondary",
-  done: "default",
-  failed: "destructive",
-} as const satisfies Record<RunListItem["status"], string>;
 
 const loadRuns = () => api.listRuns({ kind: "match", limit: LIMIT });
 
@@ -27,7 +22,7 @@ export function RunsView() {
     return (
       <p className="text-sm text-muted-foreground">
         No match runs yet.{" "}
-        <Link href="/match" className="underline">
+        <Link href="/match" className="text-teal underline">
           Match a patient
         </Link>{" "}
         to start one.
@@ -42,33 +37,45 @@ export function RunsView() {
       <Card>
         <CardContent className="overflow-x-auto">
           <table className="w-full text-sm" data-testid="runs-table">
-            <thead className="text-left text-xs text-muted-foreground">
+            <thead className="text-left text-xs tracking-wide text-muted-foreground uppercase">
               <tr>
-                <th className="py-1 pr-4 font-normal">Started</th>
-                <th className="py-1 pr-4 font-normal">Status</th>
-                <th className="py-1 pr-4 font-normal">Patient</th>
-                <th className="py-1 pr-4 font-normal">Matches</th>
-                <th className="py-1 font-normal" />
+                <th className="py-2 pr-4 font-medium">Started</th>
+                <th className="py-2 pr-4 font-medium">Status</th>
+                <th className="py-2 pr-4 font-medium">Patient</th>
+                <th className="py-2 pr-4 font-medium">Matches</th>
+                <th className="py-2 font-medium" />
               </tr>
             </thead>
             <tbody>
               {data.map((run) => {
                 const links = runLinks(run);
                 return (
-                  <tr key={run.run_id} className="border-t">
-                    <td className="py-1 pr-4 whitespace-nowrap tabular-nums">
-                      <Link href={links.view} className="underline">
+                  <tr key={run.run_id} className="border-t border-line-soft">
+                    <td className="py-2.5 pr-4 font-mono whitespace-nowrap tabular-nums">
+                      <Link href={links.view} className="hover:text-teal hover:underline">
                         {new Date(run.created_at).toLocaleString()}
                       </Link>
                     </td>
-                    <td className="py-1 pr-4">
-                      <Badge variant={STATUS_VARIANT[run.status]}>{run.status}</Badge>
+                    <td className="py-2.5 pr-4">
+                      <StatusPill status={run.status} />
                     </td>
-                    <td className="py-1 pr-4 whitespace-nowrap">{run.patient_label ?? "–"}</td>
-                    <td className="py-1 pr-4 tabular-nums">{tierSummary(run.tier_counts)}</td>
-                    <td className="py-1 text-right whitespace-nowrap">
+                    <td className="py-2.5 pr-4 font-medium whitespace-nowrap">
+                      {run.patient_label ?? "–"}
+                    </td>
+                    <td className="py-2.5 pr-4">
+                      {/* Counts mean nothing until the run is done; the status pill says why. */}
+                      {run.status === "done" ? (
+                        <TierChips counts={run.tier_counts} />
+                      ) : (
+                        <span className="text-ink-4">–</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 text-right whitespace-nowrap">
                       {links.replay && (
-                        <Link href={links.replay} className="text-xs underline">
+                        <Link
+                          href={links.replay}
+                          className="font-medium text-teal hover:text-teal-strong"
+                        >
                           Replay
                         </Link>
                       )}
@@ -79,6 +86,9 @@ export function RunsView() {
             </tbody>
           </table>
         </CardContent>
+        <CardFooter className="bg-card">
+          <TierLegend />
+        </CardFooter>
       </Card>
     </div>
   );

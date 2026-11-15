@@ -50,10 +50,10 @@ export function RunWithTrace({
   const highlighted = verdictEventFor(events, selection.selectedId, verdictEventIds);
 
   return (
-    <div className="grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,32rem)]">
+    <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,32rem)]">
       <div className="flex min-w-0 flex-col gap-2">
         <p className="text-sm text-muted-foreground">
-          Run <span className="font-mono">{runId}</span> · {runStatus}
+          Run <span className="font-mono break-all">{runId}</span> · {runStatus}
           {link && (
             <>
               {" · "}

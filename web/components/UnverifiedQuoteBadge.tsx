@@ -12,7 +12,7 @@ export function UnverifiedQuoteBadge({ verified }: { verified: boolean }) {
   return (
     <Badge
       variant="outline"
-      className="border-amber-500/50 text-amber-700 dark:text-amber-400"
+      className="border-verdict-unknown/40 bg-verdict-unknown-bg text-verdict-unknown"
       title="A judge quote was not found in the trial text or the patient record, so that verdict was downgraded to unknown. The guardrail event in the trace says which quote failed."
     >
       <ShieldAlert data-icon="inline-start" />

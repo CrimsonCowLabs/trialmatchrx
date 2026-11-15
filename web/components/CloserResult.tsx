@@ -55,7 +55,7 @@ export function CloserResult({ output }: { output: CloserOutput }) {
               const { icon: Icon, label } = KIND[f.kind];
               return (
                 <li key={f.criterion_id} className="flex gap-3 py-2" data-testid="followup">
-                  <Icon className="mt-0.5 size-4 shrink-0 text-amber-500" aria-hidden />
+                  <Icon className="mt-0.5 size-4 shrink-0 text-verdict-unknown" aria-hidden />
                   <div className="flex min-w-0 flex-col gap-0.5">
                     <p className="text-sm">
                       <span className="font-mono text-xs text-muted-foreground">
@@ -78,7 +78,7 @@ export function CloserResult({ output }: { output: CloserOutput }) {
             Email to the study coordinator <CopyButton text={emailText} />
           </CardTitle>
           <p className="text-xs text-muted-foreground">
-            To <span className="font-mono">{email.to ?? "(no contact email listed)"}</span>
+            To <span className="font-mono break-all">{email.to ?? "(no contact email listed)"}</span>
           </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
