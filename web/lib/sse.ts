@@ -2,11 +2,11 @@
 
 // useRunEvents(runId): one EventSource per run page.
 // The server sends stored events first, then live ones, then `done`, so a refresh or a late
-// open catches up on its own. A step arrives twice (started, then final) under one id, so
-// events are upserted by id and kept in order of first appearance.
+// open catches up on its own. Emissions are folded with `upsertEvent` (lib/trace.ts).
 import { useEffect, useState } from "react";
 
 import { api, type RunDone, type TraceEvent } from "./api";
+import { upsertEvent } from "./trace";
 
 export type StreamState = "connecting" | "open" | "done" | "error";
 
@@ -14,15 +14,6 @@ export interface RunEvents {
   events: TraceEvent[];
   state: StreamState;
   runStatus: RunDone["status"] | null;
-}
-
-function upsert(events: TraceEvent[], next: TraceEvent): TraceEvent[] {
-  const i = events.findIndex((e) => e.id === next.id);
-  if (i === -1) return [...events, next];
-  if (events[i].seq >= next.seq) return events; // duplicate or stale
-  const copy = events.slice();
-  copy[i] = next;
-  return copy;
 }
 
 /** Mount with `key={runId}` so a new run starts from empty state. */
@@ -38,7 +29,7 @@ export function useRunEvents(runId: string | null): RunEvents {
     source.onopen = () => setState("open");
     source.addEventListener("trace", (msg) => {
       const event = JSON.parse((msg as MessageEvent<string>).data) as TraceEvent;
-      setEvents((prev) => upsert(prev, event));
+      setEvents((prev) => upsertEvent(prev, event));
     });
     source.addEventListener("done", (msg) => {
       const done = JSON.parse((msg as MessageEvent<string>).data) as RunDone;

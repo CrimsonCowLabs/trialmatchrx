@@ -243,6 +243,8 @@ async def judge_criterion(
             "verified": verdict.verified,
             "attempts": len(problems) + 1,
         }
+        if problems:  # validation errors of the attempts the retry recovered from
+            s.output["errors"] = problems
         s.note = f"{label}: {verdict.outcome}" + ("" if verdict.verified else " (unverified)")
         return verdict
 
