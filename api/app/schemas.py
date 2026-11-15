@@ -315,6 +315,7 @@ class EvalLatest(BaseModel):
     metrics: dict[str, float]  # ndcg@10, p@10, accuracy, compile_rate (latest matcher run, or {})
     baseline: dict[str, float]  # BM25: ndcg@10, p@10, accuracy ({} until `make eval`)
     compile_rate: float | None  # latest matcher run: share of criteria with a predicate
+    compile_rate_target: float  # share the compiler aims for (settings: SPEC.md "about 60%")
     sample_size: int  # judged (topic, trial) pairs in the fixed TREC sample
     topics: int  # TREC topics in the sample
     dropped: int  # sampled trials dropped (gone, merged into another record, or no criteria)

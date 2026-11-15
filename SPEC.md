@@ -160,7 +160,7 @@ Seven pipelines, of which only the criteria compiler, the judge and the closer a
 - Sonnet splits the text into atomic criteria. Each gets `id`, `type` (inclusion / exclusion), `text` (a verbatim quote), `category`, and a `predicate` written only against `PatientFacts` fields, e.g. `{"field": "labs.egfr", "op": ">=", "value": 45, "unit": "mL/min/1.73m2"}`. If a criterion can't be expressed with those fields, `predicate` is null and `needs_judgment` is true.
 - Age and sex come from the structured fields, not the LLM.
 - Cached per NCT ID + hash of the criteria text: compile once, reuse everywhere (match, feasibility, eval).
-- Target: about 60% of criteria compile to predicates in T2D/CKD trials. Log the actual rate on the eval page.
+- Target: about 60% of criteria compile to predicates in T2D/CKD trials. Log the actual rate on the eval page. The target lives in settings (`eval_compile_rate_target`, default 0.6) and `/api/eval/latest` serves it as `compile_rate_target`, so the page never hardcodes it.
 
 **4. Matcher** (`evaluate.py`, `judge.py`, `verify.py`, `rank.py`, `match.py`)
 
@@ -285,7 +285,7 @@ class RunStats(BaseModel):             # the match form's duration / cost hint
 | POST | `/api/trials/{nct}/compile` | `{force: bool}` | `list[Criterion]`, traced |
 | POST | `/api/feasibility/{nct}` | `{overrides: {criterion_id: value}}` | `FeasibilityResult` |
 | POST | `/api/closer` | `{run_id, nct_id}` | `{run_id}` of a new agent run, streamed like a match |
-| GET | `/api/eval/latest` |  | metrics, baseline, compile rate, history |
+| GET | `/api/eval/latest` |  | `EvalLatest`: `{metrics, baseline, compile_rate, compile_rate_target, sample_size, topics, dropped, history}`; `metrics` / `baseline` are the newest matcher / BM25 run (`ndcg@10`, `p@10`, `accuracy`; the matcher's also `compile_rate`), `compile_rate_target` comes from settings, `history` is every `eval_runs` row newest first (`EvalRunSummary`: `created_at`, `system`, `git_sha`, `prompt_version`, `sample_size`, `metrics`) |
 | GET | `/api/health` |  | `{ok, demo_mode, model_ids}` |
 
 **`DEMO_MODE=replay`:** `/api/match` and `/api/closer` replay a recorded run from `data/fixtures/runs/*.json`, re-emitting events with their original timing (capped at 0.2 s gaps). It's the same UI and the same trace. Record the fixtures with `scripts/record_demo.py` the night before.
