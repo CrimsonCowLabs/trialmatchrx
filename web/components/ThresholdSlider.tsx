@@ -18,7 +18,7 @@ export function ThresholdSlider({
   onReset: () => void;
 }) {
   const range = sliderRange(step);
-  const changed = typeof step.defaultValue === "number" && value !== step.defaultValue;
+  const changed = typeof step.default_value === "number" && value !== step.default_value;
   const label = ruleLabel({ ...step, value });
   return (
     <div className="flex items-center gap-2">
@@ -29,7 +29,7 @@ export function ThresholdSlider({
         step={range.step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        aria-label={`${step.criterionId} threshold`}
+        aria-label={`${step.criterion_id} threshold`}
         aria-valuetext={label}
         className="h-1.5 w-full min-w-24 cursor-pointer accent-primary"
       />
@@ -39,8 +39,8 @@ export function ThresholdSlider({
         size="icon-xs"
         onClick={onReset}
         disabled={!changed}
-        aria-label={`Reset ${step.criterionId} to ${String(step.defaultValue)}`}
-        title={`Trial value: ${String(step.defaultValue)}`}
+        aria-label={`Reset ${step.criterion_id} to ${String(step.default_value)}`}
+        title={`Trial value: ${String(step.default_value)}`}
       >
         <RotateCcw />
       </Button>

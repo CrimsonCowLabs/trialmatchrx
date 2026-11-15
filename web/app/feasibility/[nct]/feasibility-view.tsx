@@ -7,28 +7,27 @@ import { ThresholdSlider } from "@/components/ThresholdSlider";
 import { Waterfall } from "@/components/Waterfall";
 import { Button } from "@/components/ui/button";
 import { api, errorMessage } from "@/lib/api";
-import {
-  biggestBlocker,
-  eligibleCount,
-  type Overrides,
-  reviewCriteria,
-  waterfallSteps,
-} from "@/lib/feasibility";
+import { biggestBlocker, eligibleCount, type Overrides, waterfallSteps } from "@/lib/feasibility";
 import { useFeasibility } from "@/lib/use-feasibility";
 
 function CompileTrial({ nct, onCompiled }: { nct: string; onCompiled: () => void }) {
-  const [state, setState] = useState<"idle" | "compiling" | string>("idle");
+  const [compiling, setCompiling] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const compile = () => {
-    setState("compiling");
-    api.compileTrial(nct).then(onCompiled, (err: unknown) => setState(errorMessage(err)));
+    setCompiling(true);
+    setError(null);
+    api.compileTrial(nct).then(onCompiled, (err: unknown) => {
+      setCompiling(false);
+      setError(errorMessage(err));
+    });
   };
   return (
     <div className="flex flex-col items-start gap-2 text-sm">
       <p>{nct} hasn&apos;t been compiled into predicates yet.</p>
-      <Button onClick={compile} disabled={state === "compiling"}>
-        {state === "compiling" ? "Compiling…" : "Compile criteria"}
+      <Button onClick={compile} disabled={compiling}>
+        {compiling ? "Compiling…" : "Compile criteria"}
       </Button>
-      {state !== "idle" && state !== "compiling" && <p className="text-destructive">{state}</p>}
+      {error && <p className="text-destructive">{error}</p>}
     </div>
   );
 }
@@ -70,15 +69,19 @@ function Feasibility({ nct }: { nct: string }) {
             {eligible}
             <span className="text-lg font-normal text-muted-foreground">
               {" "}
-              / {result.cohort_size} eligible
+              / {result.cohort_size} pass every rule
             </span>
           </div>
         </div>
         <div className="text-sm">
-          <div className="tabular-nums">{result.needs_review} need review</div>
+          <div className="tabular-nums">
+            {result.review_criteria.length > 0
+              ? `all ${result.needs_review} still need review on ${result.review_criteria.length} criteria without a rule`
+              : "every criterion has a rule: nothing left to review"}
+          </div>
           {blocker && (
             <div className="text-muted-foreground">
-              Dropping {blocker.criterionId} would add {blocker.addedIfRemoved}
+              Dropping {blocker.criterion_id} would add {blocker.added_if_removed}
             </div>
           )}
         </div>
@@ -95,17 +98,18 @@ function Feasibility({ nct }: { nct: string }) {
       <Waterfall
         cohortSize={result.cohort_size}
         steps={steps}
-        blockerId={blocker?.criterionId ?? null}
+        eligible={eligible}
+        blockerId={blocker?.criterion_id ?? null}
         needsReview={result.needs_review}
-        reviewCriteria={reviewCriteria(result)}
+        reviewCriteria={result.review_criteria}
         control={(s) => {
-          const current = overrides[s.criterionId];
+          const current = overrides[s.criterion_id];
           return (
             <ThresholdSlider
               step={s}
-              value={typeof current === "number" ? current : Number(s.defaultValue)}
-              onChange={(v) => setThreshold(s.criterionId, v)}
-              onReset={() => setThreshold(s.criterionId, null)}
+              value={typeof current === "number" ? current : Number(s.default_value)}
+              onChange={(v) => setThreshold(s.criterion_id, v)}
+              onReset={() => setThreshold(s.criterion_id, null)}
             />
           );
         }}

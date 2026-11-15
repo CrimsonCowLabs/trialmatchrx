@@ -35,7 +35,15 @@ from app.pipeline.predicate_fields import (
     normalize_unit,
     validate_predicate,
 )
-from app.schemas import Criterion, FeasibilityResult, PatientFacts, Predicate
+from app.schemas import (
+    Criterion,
+    FeasibilityResult,
+    LeaveOneOut,
+    PatientFacts,
+    Predicate,
+    ReviewCriterion,
+    WaterfallStep,
+)
 
 Mask = npt.NDArray[np.bool_]
 
@@ -47,6 +55,8 @@ _COMPARE: dict[str, Callable[[Any, Any], Any]] = {
     "==": operator.eq,
 }
 _CANONICAL = {"labs": LAB_UNITS, "vitals": VITAL_UNITS}
+# Masks are ~2 KB per predicate at 1,000 patients; bounded because slider values are unbounded.
+MAX_CACHED_CHECKS = 512
 _LISTS = ("conditions", "meds")
 _FLAGS = ("pregnant", "smoker")
 
@@ -100,6 +110,9 @@ class Cohort:
         """Per patient: can the facts answer the predicate (`known`), and does it hold."""
         key = p.model_dump_json()
         if key not in self._checks:
+            if len(self._checks) >= MAX_CACHED_CHECKS:
+                # Every slider position is a new predicate; drop the oldest (insertion order).
+                del self._checks[next(iter(self._checks))]
             self._checks[key] = self._check(p)
         return self._checks[key]
 
@@ -112,7 +125,10 @@ class Cohort:
         if head in _LISTS:
             # One regex over each patient's newline-joined names: the matcher's whole-word
             # rule (`mentions`), vectorized. A folded name has no newline, so no match spans two.
-            pattern = "|".join(name_pattern(w) for w in predicate_names(p.value))
+            names = [w for w in predicate_names(p.value) if w]
+            if not names:
+                return nothing, nothing  # an empty pattern would match everyone
+            pattern = "|".join(name_pattern(w) for w in names)
             hit = self.frame[head].str.contains(pattern, regex=True).to_numpy(dtype=bool)
             return np.ones(n, dtype=bool), ~hit if p.op == "not_has" else hit
         if p.field not in self.frame.columns:
@@ -166,46 +182,45 @@ def simulate(
 ) -> FeasibilityResult:
     """Waterfall, leave-one-out impact and needs-review count for one trial over the cohort.
     Raises InvalidOverride."""
-    original = {c.id: c.predicate for c in criteria}
-    rules = [c for c in apply_overrides(criteria, overrides or {}) if c.predicate is not None]
+    compiled = {c.id: c.predicate for c in criteria if c.predicate is not None}
+    effective = apply_overrides(criteria, overrides or {})
+    rules = [(c, c.predicate) for c in effective if c.predicate is not None]
     remaining: Mask = np.ones(cohort.size, dtype=bool)
     passes: list[Mask] = []
-    waterfall: list[dict[str, Any]] = []
-    for c in rules:
-        assert c.predicate is not None  # filtered above; narrows the type
-        known, holds = cohort.check(c.predicate)
+    waterfall: list[WaterfallStep] = []
+    for c, predicate in rules:
+        known, holds = cohort.check(predicate)
         passed = _passes(c, known, holds)
         passes.append(passed)
-        default = original[c.id]
         waterfall.append(
-            {
-                "criterion_id": c.id,
-                "text": c.text,
-                "type": c.type,
-                "category": c.category,
-                "field": c.predicate.field,
-                "op": c.predicate.op,
-                "value": c.predicate.value,
-                "default_value": default.value if default else None,
-                "unit": c.predicate.unit,
-                "numeric": isinstance(c.predicate.value, float),  # a threshold: slider-able
-                "remaining": int((remaining & passed).sum()),
-                "dropped": int((remaining & ~passed).sum()),
-                "missing": int((remaining & ~known).sum()),
-            }
+            WaterfallStep(
+                criterion_id=c.id,
+                text=c.text,
+                type=c.type,
+                category=c.category,
+                field=predicate.field,
+                op=predicate.op,
+                value=predicate.value,
+                default_value=compiled[c.id].value,
+                unit=predicate.unit,
+                numeric=isinstance(predicate.value, float),  # a threshold: slider-able
+                remaining=int((remaining & passed).sum()),
+                dropped=int((remaining & ~passed).sum()),
+                missing=int((remaining & ~known).sum()),
+            )
         )
         remaining &= passed
 
     eligible = int(remaining.sum())
     leave_one_out = [
-        {
-            "criterion_id": c.id,
-            "added_if_removed": _count_all(passes[:i] + passes[i + 1 :], cohort.size) - eligible,
-        }
-        for i, c in enumerate(rules)
+        LeaveOneOut(
+            criterion_id=c.id,
+            added_if_removed=_count_all(passes[:i] + passes[i + 1 :], cohort.size) - eligible,
+        )
+        for i, (c, _) in enumerate(rules)
     ]
     review = [
-        {"criterion_id": c.id, "text": c.text, "type": c.type}
+        ReviewCriterion(criterion_id=c.id, text=c.text, type=c.type)
         for c in criteria
         if c.predicate is None
     ]

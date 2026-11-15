@@ -98,15 +98,45 @@ class TrialMatch(BaseModel):
     counts: dict[str, int]  # pass / fail / unknown
 
 
+class WaterfallStep(BaseModel):
+    """One rule of the feasibility waterfall. SPEC.md's {criterion_id, text, remaining, dropped},
+    plus what the threshold sliders need."""
+
+    criterion_id: str
+    text: str
+    type: Literal["inclusion", "exclusion"]
+    category: str
+    field: str
+    op: str
+    value: float | str | list[str]  # after overrides
+    default_value: float | str | list[str]  # as compiled
+    unit: str | None
+    numeric: bool  # a numeric threshold: gets a slider
+    remaining: int
+    dropped: int
+    missing: int  # patients with no data for it: dropped on an inclusion, kept on an exclusion
+
+
+class LeaveOneOut(BaseModel):
+    criterion_id: str
+    added_if_removed: int
+
+
+class ReviewCriterion(BaseModel):
+    """A criterion with no predicate: never applied, never counted as passed."""
+
+    criterion_id: str
+    text: str
+    type: Literal["inclusion", "exclusion"]
+
+
 class FeasibilityResult(BaseModel):
     nct_id: str
     cohort_size: int
-    # {criterion_id, text, remaining, dropped} + missing (patients with no data for it), type,
-    # category, field, op, value (after overrides), default_value, unit, numeric (slider-able)
-    waterfall: list[dict[str, Any]]
-    leave_one_out: list[dict[str, Any]]  # {criterion_id, added_if_removed}
+    waterfall: list[WaterfallStep]  # SPEC.md: list[dict] {criterion_id, text, remaining, dropped}
+    leave_one_out: list[LeaveOneOut]
     needs_review: int  # patients left after the rules who still face review_criteria
-    review_criteria: list[dict[str, Any]]  # {criterion_id, text, type}: no predicate
+    review_criteria: list[ReviewCriterion]
 
 
 # --------------------------------------------------------------------------------------------

@@ -136,16 +136,16 @@ async def test_lowering_the_egfr_threshold_grows_the_eligible_pool() -> None:
         )
 
     assert strict.cohort_size == loose.cohort_size == 1000
-    assert loose.waterfall[-1]["remaining"] > strict.waterfall[-1]["remaining"] > 0
-    egfr = {s["criterion_id"]: s for s in loose.waterfall}["inc-5"]
-    assert (egfr["value"], egfr["default_value"], egfr["numeric"]) == (45, 60, True)
-    assert [r["criterion_id"] for r in loose.review_criteria] == [
+    assert loose.waterfall[-1].remaining > strict.waterfall[-1].remaining > 0
+    egfr = {s.criterion_id: s for s in loose.waterfall}["inc-5"]
+    assert (egfr.value, egfr.default_value, egfr.numeric) == (45, 60, True)
+    assert [r.criterion_id for r in loose.review_criteria] == [
         "inc-2",
         "exc-1",
         "exc-7",
         "exc-8",
     ]
-    assert loose.needs_review == loose.waterfall[-1]["remaining"]
+    assert loose.needs_review == loose.waterfall[-1].remaining
 
 
 async def test_responds_under_100_ms_over_a_1000_patient_cohort() -> None:

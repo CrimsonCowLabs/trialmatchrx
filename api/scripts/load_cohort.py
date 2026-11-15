@@ -16,6 +16,7 @@ from pathlib import Path
 
 from app.config import REPO_DIR
 from app.db import init_db
+from app.pipeline.evaluate import mentions
 from app.schemas import PatientFacts
 from app.sources.cohort import replace_cohort
 from app.sources.synthea import InvalidBundle, check_bundle, map_bundle
@@ -39,7 +40,8 @@ def read_bundles(
 
 
 def _has(facts: PatientFacts, name: str) -> bool:
-    return any(name in str(c.value).lower() for c in facts.conditions)
+    """The same whole-word rule a `has` predicate uses."""
+    return any(mentions(str(c.value), name) for c in facts.conditions)
 
 
 def main(directory: Path, as_of: dt.date) -> None:

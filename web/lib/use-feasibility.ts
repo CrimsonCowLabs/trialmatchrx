@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-import { ApiError, api, errorMessage } from "./api";
-import type { FeasibilityResult, Overrides } from "./feasibility";
+import { ApiError, type FeasibilityResult, api, errorMessage } from "./api";
+import type { Overrides } from "./feasibility";
 
 /** SPEC.md: the slider calls the API on every change, debounced 150 ms. */
 export const FEASIBILITY_DEBOUNCE_MS = 150;
@@ -11,7 +11,7 @@ export const FEASIBILITY_DEBOUNCE_MS = 150;
 export interface FeasibilityState {
   result: FeasibilityResult | null; // the latest answer; kept on screen while the next loads
   error: { message: string; status: number | null } | null;
-  loading: boolean;
+  loading: boolean; // the answer on screen isn't for the current overrides yet
   latencyMs: number | null; // round trip of the latest answer, shown next to the count
 }
 
@@ -24,28 +24,26 @@ export function useFeasibility(
   reloadKey = 0,
   delayMs = FEASIBILITY_DEBOUNCE_MS,
 ): FeasibilityState {
-  const [state, setState] = useState<FeasibilityState>({
-    result: null,
-    error: null,
-    loading: true,
-    latencyMs: null,
-  });
+  // `settled` is the request body the result / error answers (null before the first answer).
+  const [state, setState] = useState<Omit<FeasibilityState, "loading"> & { settled: string | null }>(
+    { result: null, error: null, latencyMs: null, settled: null },
+  );
   // Stable dependency for an object the caller rebuilds on every render.
   const body = JSON.stringify({ overrides });
   useEffect(() => {
     const controller = new AbortController();
     const timer = setTimeout(async () => {
-      setState((s) => ({ ...s, loading: true }));
       const started = performance.now();
       try {
         const result = await api.feasibility(nct, JSON.parse(body), controller.signal);
         if (controller.signal.aborted) return;
         const latencyMs = Math.round(performance.now() - started);
-        setState({ result, error: null, loading: false, latencyMs });
+        setState({ result, error: null, latencyMs, settled: body });
       } catch (err) {
         if (controller.signal.aborted) return;
         const status = err instanceof ApiError ? err.status : null;
-        setState((s) => ({ ...s, error: { message: errorMessage(err), status }, loading: false }));
+        const error = { message: errorMessage(err), status };
+        setState((s) => ({ ...s, error, settled: body }));
       }
     }, delayMs);
     return () => {
@@ -53,5 +51,6 @@ export function useFeasibility(
       controller.abort();
     };
   }, [nct, body, reloadKey, delayMs]);
-  return state;
+  const { settled, ...rest } = state;
+  return { ...rest, loading: settled !== body };
 }

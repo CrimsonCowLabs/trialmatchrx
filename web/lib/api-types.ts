@@ -299,19 +299,13 @@ export interface components {
             /** Cohort Size */
             cohort_size: number;
             /** Waterfall */
-            waterfall: {
-                [key: string]: unknown;
-            }[];
+            waterfall: components["schemas"]["WaterfallStep"][];
             /** Leave One Out */
-            leave_one_out: {
-                [key: string]: unknown;
-            }[];
+            leave_one_out: components["schemas"]["LeaveOneOut"][];
             /** Needs Review */
             needs_review: number;
             /** Review Criteria */
-            review_criteria: {
-                [key: string]: unknown;
-            }[];
+            review_criteria: components["schemas"]["ReviewCriterion"][];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -328,6 +322,13 @@ export interface components {
             model_ids: {
                 [key: string]: string;
             };
+        };
+        /** LeaveOneOut */
+        LeaveOneOut: {
+            /** Criterion Id */
+            criterion_id: string;
+            /** Added If Removed */
+            added_if_removed: number;
         };
         /** MatchRequest */
         MatchRequest: {
@@ -385,6 +386,21 @@ export interface components {
             value: number | string | string[];
             /** Unit */
             unit?: string | null;
+        };
+        /**
+         * ReviewCriterion
+         * @description A criterion with no predicate: never applied, never counted as passed.
+         */
+        ReviewCriterion: {
+            /** Criterion Id */
+            criterion_id: string;
+            /** Text */
+            text: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "inclusion" | "exclusion";
         };
         /** RunStarted */
         RunStarted: {
@@ -557,6 +573,42 @@ export interface components {
             verified: boolean;
             /** Trace Event Id */
             trace_event_id: string;
+        };
+        /**
+         * WaterfallStep
+         * @description One rule of the feasibility waterfall. SPEC.md's {criterion_id, text, remaining, dropped},
+         *     plus what the threshold sliders need.
+         */
+        WaterfallStep: {
+            /** Criterion Id */
+            criterion_id: string;
+            /** Text */
+            text: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "inclusion" | "exclusion";
+            /** Category */
+            category: string;
+            /** Field */
+            field: string;
+            /** Op */
+            op: string;
+            /** Value */
+            value: number | string | string[];
+            /** Default Value */
+            default_value: number | string | string[];
+            /** Unit */
+            unit: string | null;
+            /** Numeric */
+            numeric: boolean;
+            /** Remaining */
+            remaining: number;
+            /** Dropped */
+            dropped: number;
+            /** Missing */
+            missing: number;
         };
         /**
          * RunDone

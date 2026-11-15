@@ -2,11 +2,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import type { FeasibilityResult } from "./api.ts";
 import {
   biggestBlocker,
   eligibleCount,
-  type FeasibilityResult,
-  reviewCriteria,
   ruleLabel,
   sliderRange,
   waterfallSteps,
@@ -59,14 +58,14 @@ const RESULT: FeasibilityResult = {
 test("steps chain each rule's input to the previous rule's output and carry leave-one-out", () => {
   const steps = waterfallSteps(RESULT);
   assert.deepEqual(
-    steps.map((s) => [s.criterionId, s.before, s.remaining, s.dropped, s.addedIfRemoved]),
+    steps.map((s) => [s.criterion_id, s.before, s.remaining, s.dropped, s.added_if_removed]),
     [
       ["inc-1", 6, 5, 1, 1],
       ["inc-2", 5, 3, 2, 2],
     ],
   );
   assert.equal(steps[1].value, 45);
-  assert.equal(steps[1].defaultValue, 60);
+  assert.equal(steps[1].default_value, 60);
   assert.equal(steps[1].numeric, true);
 });
 
@@ -76,21 +75,15 @@ test("eligible is the last step's remaining, or the whole cohort with no rules",
 });
 
 test("the biggest blocker is the rule whose removal adds the most", () => {
-  assert.equal(biggestBlocker(waterfallSteps(RESULT))?.criterionId, "inc-2");
+  assert.equal(biggestBlocker(waterfallSteps(RESULT))?.criterion_id, "inc-2");
   assert.equal(biggestBlocker([]), null);
-});
-
-test("review criteria are listed apart from the rules", () => {
-  assert.deepEqual(reviewCriteria(RESULT), [
-    { criterionId: "inc-3", text: "Stable kidney function", type: "inclusion" },
-  ]);
 });
 
 test("slider range is the field's clinical range, widened to fit the values", () => {
   const [, egfr] = waterfallSteps(RESULT);
   assert.deepEqual(sliderRange(egfr), { min: 5, max: 120, step: 1 });
   assert.deepEqual(sliderRange({ ...egfr, value: 150 }), { min: 5, max: 150, step: 1 });
-  assert.deepEqual(sliderRange({ ...egfr, field: "labs.unknown", value: 7, defaultValue: 8 }), {
+  assert.deepEqual(sliderRange({ ...egfr, field: "labs.unknown", value: 7, default_value: 8 }), {
     min: 0,
     max: 16,
     step: 1,

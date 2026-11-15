@@ -66,6 +66,7 @@ function Row({
 export function Waterfall({
   cohortSize,
   steps,
+  eligible,
   blockerId,
   needsReview,
   reviewCriteria,
@@ -73,12 +74,12 @@ export function Waterfall({
 }: {
   cohortSize: number;
   steps: WaterfallStep[];
+  eligible: number; // patients left after every rule
   blockerId: string | null;
   needsReview: number;
   reviewCriteria: ReviewCriterion[];
   control: (step: WaterfallStep) => ReactNode; // the threshold slider for a numeric rule
 }) {
-  const eligible = steps.at(-1)?.remaining ?? cohortSize;
   return (
     <div className="flex flex-col gap-4">
       <ol className="flex flex-col">
@@ -90,11 +91,11 @@ export function Waterfall({
         />
         {steps.map((s) => (
           <Row
-            key={s.criterionId}
+            key={s.criterion_id}
             label={
               <>
                 <span className="mr-1.5 font-mono text-xs text-muted-foreground">
-                  {s.criterionId}
+                  {s.criterion_id}
                 </span>
                 {s.text}
               </>
@@ -107,7 +108,7 @@ export function Waterfall({
                     · {s.missing} with no data {s.type === "inclusion" ? "(dropped)" : "(kept)"}
                   </span>
                 )}
-                {s.criterionId === blockerId && <Badge variant="outline">biggest blocker</Badge>}
+                {s.criterion_id === blockerId && <Badge variant="outline">biggest blocker</Badge>}
               </span>
             }
             bar={<Bar kept={s.remaining} dropped={s.dropped} total={cohortSize} />}
@@ -116,14 +117,14 @@ export function Waterfall({
               <>
                 <div className="text-sm font-medium">{s.remaining}</div>
                 <div className="text-muted-foreground">−{s.dropped}</div>
-                <div className={s.addedIfRemoved > 0 ? "" : "text-muted-foreground"}>
-                  +{s.addedIfRemoved} if dropped
+                <div className={s.added_if_removed > 0 ? "" : "text-muted-foreground"}>
+                  +{s.added_if_removed} if dropped
                 </div>
               </>
             }
             tooltip={
               `${s.before} in, ${s.dropped} dropped, ${s.remaining} remain. ` +
-              `Without this rule: ${eligible + s.addedIfRemoved} eligible (+${s.addedIfRemoved}).`
+              `Without this rule: ${eligible + s.added_if_removed} eligible (+${s.added_if_removed}).`
             }
           />
         ))}
@@ -148,13 +149,13 @@ export function Waterfall({
             </div>
           }
           numbers={<span className="text-sm font-medium">{needsReview}</span>}
-          tooltip={`${needsReview} eligible patients still have to be checked by hand`}
+          tooltip={`${needsReview} patients pass every rule but still have to be checked by hand`}
         />
         {reviewCriteria.length > 0 && (
           <ul className="flex flex-col gap-1 px-2 pb-1 text-xs text-muted-foreground">
             {reviewCriteria.map((r) => (
-              <li key={r.criterionId}>
-                <span className="mr-1.5 font-mono">{r.criterionId}</span>
+              <li key={r.criterion_id}>
+                <span className="mr-1.5 font-mono">{r.criterion_id}</span>
                 {r.text}
               </li>
             ))}

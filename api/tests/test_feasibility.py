@@ -14,8 +14,8 @@ exclusion is no evidence of it).
 import pytest
 
 from app.pipeline.evaluate import check_predicate
-from app.pipeline.feasibility import Cohort, InvalidOverride, simulate
-from app.schemas import Criterion, Fact, PatientFacts, Predicate
+from app.pipeline.feasibility import MAX_CACHED_CHECKS, Cohort, InvalidOverride, simulate
+from app.schemas import Criterion, Fact, PatientFacts, Predicate, WaterfallStep
 
 
 def patient(conditions: list[str], egfr: float | None) -> PatientFacts:
@@ -72,10 +72,8 @@ CRITERIA = [
 ]
 
 
-def steps(result_waterfall: list[dict[str, object]]) -> list[tuple[object, ...]]:
-    return [
-        (s["criterion_id"], s["remaining"], s["dropped"], s["missing"]) for s in result_waterfall
-    ]
+def steps(result_waterfall: list[WaterfallStep]) -> list[tuple[object, ...]]:
+    return [(s.criterion_id, s.remaining, s.dropped, s.missing) for s in result_waterfall]
 
 
 def test_waterfall_applies_rules_in_criterion_order() -> None:
@@ -95,15 +93,15 @@ def test_overriding_a_threshold_reruns_the_waterfall() -> None:
 
     assert steps(result.waterfall)[1:3] == [("inc-2", 3, 2, 1), ("exc-1", 2, 1, 0)]
     egfr = result.waterfall[1]
-    assert (egfr["value"], egfr["default_value"]) == (45, 60)
+    assert (egfr.value, egfr.default_value) == (45, 60)
     # Only thresholds get a slider: `pregnant == "true"` uses == but isn't a number.
-    assert [s["numeric"] for s in result.waterfall] == [False, True, False, False]
+    assert [s.numeric for s in result.waterfall] == [False, True, False, False]
 
 
 def test_leave_one_out_counts_patients_each_rule_alone_removes() -> None:
     result = simulate("NCT1", CRITERIA, COHORT)
 
-    assert result.leave_one_out == [
+    assert [x.model_dump() for x in result.leave_one_out] == [
         {"criterion_id": "inc-1", "added_if_removed": 1},  # p5
         {"criterion_id": "inc-2", "added_if_removed": 3},  # p2, p3, p4
         {"criterion_id": "exc-1", "added_if_removed": 1},  # p6
@@ -114,14 +112,16 @@ def test_leave_one_out_counts_patients_each_rule_alone_removes() -> None:
 def test_leave_one_out_of_the_only_rule_adds_everyone_it_dropped() -> None:
     result = simulate("NCT1", [criterion("inc-2", "labs.egfr", ">=", 60)], COHORT)
 
-    assert result.leave_one_out == [{"criterion_id": "inc-2", "added_if_removed": 3}]
+    assert [x.model_dump() for x in result.leave_one_out] == [
+        {"criterion_id": "inc-2", "added_if_removed": 3}
+    ]
 
 
 def test_criteria_without_a_predicate_are_needs_review_not_passed() -> None:
     result = simulate("NCT1", CRITERIA, COHORT, overrides={"inc-2": 45})
 
-    assert "inc-3" not in [s["criterion_id"] for s in result.waterfall]
-    assert result.review_criteria == [
+    assert "inc-3" not in [s.criterion_id for s in result.waterfall]
+    assert [x.model_dump() for x in result.review_criteria] == [
         {
             "criterion_id": "inc-3",
             "text": "Stable kidney function for 12 weeks",
@@ -192,6 +192,17 @@ def test_cohort_checks_agree_with_the_matcher(predicate: dict[str, object]) -> N
         if expected is None and p.field in ("conditions", "meds"):
             expected = False
         assert (bool(known[i]), bool(holds[i])) == (expected is not None, bool(expected))
+
+
+def test_slider_sweeps_keep_the_check_cache_bounded() -> None:
+    cohort = Cohort.from_facts([patient([], 50)])
+    egfr = criterion("inc-2", "labs.egfr", ">=", 60)
+
+    for threshold in range(MAX_CACHED_CHECKS + 50):
+        result = simulate("NCT1", [egfr], cohort, overrides={"inc-2": threshold})
+        assert result.waterfall[0].remaining == (1 if threshold <= 50 else 0)
+
+    assert len(cohort._checks) == MAX_CACHED_CHECKS
 
 
 def test_demographic_rules_match_on_age_and_sex() -> None:
