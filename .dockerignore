@@ -1,0 +1,26 @@
+# Build context for api/Dockerfile and web/Dockerfile is the repo root (the API image needs
+# data/fixtures). Secrets and local state never enter it: no .env, no SQLite files.
+**/.env
+**/.env.*
+!.env.example
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+.git
+.claude
+**/.venv
+**/__pycache__
+**/.mypy_cache
+**/.pytest_cache
+**/.ruff_cache
+**/node_modules
+web/.next
+web/out
+web/next-env.d.ts
+**/*.tsbuildinfo
+api/openapi.json
+
+# Only the committed fixtures (TREC sample, replay runs); not Synthea output or TREC downloads.
+data/*
+!data/fixtures/

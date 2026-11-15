@@ -361,6 +361,8 @@ export interface components {
             };
             /** Compile Rate */
             compile_rate: number | null;
+            /** Compile Rate Target */
+            compile_rate_target: number;
             /** Sample Size */
             sample_size: number;
             /** Topics */

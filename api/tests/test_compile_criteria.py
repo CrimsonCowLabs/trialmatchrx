@@ -1,5 +1,6 @@
 """compile_study: eligibility module -> cached, traced list[Criterion]. Fake model, no network."""
 
+import json
 from typing import Any, get_args
 
 import pytest
@@ -158,13 +159,13 @@ async def test_llm_call_is_traced_with_prompt_output_tokens_and_cost() -> None:
     assert system["role"] == "system" and "`labs.egfr`" in system["content"]
     assert "HbA1c >= 7%" in user["content"]  # markdown escapes removed before the LLM sees it
     assert llm.output is not None
-    (call,) = llm.output["messages"][0]["tool_calls"]
-    assert call["args"] == DRAFT
+    (answer,) = llm.output["messages"]
+    assert json.loads(answer["content"]) == DRAFT and "tool_calls" not in answer
     assert llm.tokens_in and llm.tokens_out
     assert llm.cost_usd is not None and llm.cost_usd > 0
 
     top = named(rec, "compile_criteria")
-    assert top.input is not None and top.input["prompt_version"] == "compile-criteria-v1"
+    assert top.input is not None and top.input["prompt_version"] == "compile-criteria-v2"
     assert top.output is not None and top.output["compile_rate"] == pytest.approx(2 / 3)
 
 

@@ -41,6 +41,7 @@ function latest(metrics: Record<string, number>, baseline: Record<string, number
     metrics,
     baseline,
     compile_rate: null,
+    compile_rate_target: 0.6,
     sample_size: 0,
     topics: 0,
     dropped: 0,

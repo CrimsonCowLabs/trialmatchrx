@@ -1,5 +1,5 @@
-.PHONY: install dev api web check check-api check-web types seed cohort eval compile-fixtures \
-	record-demo
+.PHONY: install dev api web check check-api check-web check-scripts types seed cohort eval eval-offline \
+	eval-smoke compile-fixtures record-demo
 
 API_PORT ?= 8045
 WEB_PORT ?= 3045
@@ -21,13 +21,20 @@ api:
 web:
 	cd web && pnpm dev --port $(WEB_PORT)
 
-check: check-api check-web
+check: check-api check-web check-scripts
 
 check-api:
 	cd api && uv run ruff check . && uv run ruff format --check . && uv run mypy app/ && uv run pytest -q
 
 check-web:
 	cd web && pnpm typecheck && pnpm lint && pnpm test
+
+# The deploy scripts' suites: stubs only, no Docker, no network, no box.
+check-scripts:
+	@for t in scripts/tests/test-*.sh; do \
+		out="$$(bash "$$t")" || { printf '%s\n' "$$out"; exit 1; }; \
+		printf '%s: %s\n' "$$t" "$$(printf '%s\n' "$$out" | tail -1)"; \
+	done
 
 # Regenerate web/lib/api-types.ts from FastAPI's OpenAPI (no server needed).
 types:
@@ -64,9 +71,23 @@ cohort:
 # Matcher + BM25 on the fixed TREC sample -> eval_runs. Builds data/fixtures/trec/sample.json on
 # first run (network); `make eval ARGS=--rebuild` redraws and refetches it. The matcher needs
 # ANTHROPIC_API_KEY (skipped without it) and replays cached LLM answers on a re-run;
-# `ARGS=--bm25-only` skips it.
+# `ARGS=--bm25-only` skips it. `ARGS="--topics N"` scores both on only the first N topics (a cheap
+# live check): reported as partial, never written to eval_runs, its answers still cached.
+# `ARGS=--offline` scores the matcher from the caches only (no API calls, no key; misses are
+# counted per step, and an incomplete run records nothing and exits 1). `ARGS=--fail-fast` stops
+# at the first model failure (or, with --offline, cache miss), records nothing and exits 1.
 eval:
 	cd api && uv run python -m scripts.run_eval $(ARGS)
+
+# Shortcuts for the usual loop: `make eval-smoke` after a pipeline change (one topic live, stops
+# at the first failure, never recorded; needs ANTHROPIC_API_KEY, spends a few tokens), then
+# `make eval-offline` to re-score for free (no LLM calls, no tokens; records only a complete
+# replay). `make eval` is the run that fills the caches and records a score. Both take ARGS too.
+eval-offline:
+	cd api && uv run python -m scripts.run_eval --offline $(ARGS)
+
+eval-smoke:
+	cd api && uv run python -m scripts.run_eval --topics 1 --fail-fast $(ARGS)
 
 # Compile the 10 fixture trials and print the compile rate. Real Sonnet needs ANTHROPIC_API_KEY;
 # `make compile-fixtures ARGS=--fixtures` replays the saved (hand-authored) LLM outputs instead.

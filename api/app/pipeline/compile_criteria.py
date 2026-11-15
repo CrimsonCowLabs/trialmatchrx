@@ -4,7 +4,8 @@
 
 `study` is a raw ClinicalTrials.gov v2 study dict; where it came from is the caller's business.
 Age and sex are built in code from the structured fields. The free text goes to the compile
-model once via `with_structured_output(CompiledCriteria)`; every predicate it writes is checked
+model once via `with_structured_output(CompiledCriteria, method="json_schema")` (Anthropic's
+native structured output, not a forced tool call); every predicate it writes is checked
 against PatientFacts and downgraded to `needs_judgment` if invalid. Results are cached per
 NCT id + eligibility hash + prompt version. Every step, LLM call and guardrail is traced.
 """
@@ -29,6 +30,9 @@ from app.schemas import Criterion, Predicate
 from app.trace.recorder import TraceRecorder
 
 PROMPT_NAME = "compile_criteria"
+# The traced steps (the eval's --fail-fast reads them)
+STEP_NAME = "compile_criteria"
+LLM_SPLIT_STEP = "llm_split"
 
 ModelFactory = Callable[[], BaseChatModel]
 
@@ -240,11 +244,11 @@ async def _llm_split(
         HumanMessage(prompt.render_user(nct_id=nct_id, eligibility_text=text)),
     ]
     async with rec.step(
-        "llm_split", "step", {"prompt": prompt.name, "prompt_version": prompt.version}
+        LLM_SPLIT_STEP, "step", {"prompt": prompt.name, "prompt_version": prompt.version}
     ) as s:
         model = model_factory()
         model_id = getattr(model, "model", None) or getattr(model, "model_name", None)
-        runnable = model.with_structured_output(CompiledCriteria)
+        runnable = model.with_structured_output(CompiledCriteria, method="json_schema")
         try:
             result = await runnable.ainvoke(
                 messages,
@@ -256,7 +260,7 @@ async def _llm_split(
         except (OutputParserException, ValidationError) as exc:
             raise CompileFailed(f"{nct_id}: malformed compile output: {exc}") from exc
         if not isinstance(result, CompiledCriteria):
-            # e.g. no tool call at all (max_tokens hit, or the model answered in prose)
+            # Narrows the type: the parser returns the schema or raises (prose, bad JSON) above
             raise CompileFailed(f"{nct_id}: compile model returned {type(result).__name__}")
         criteria = _finalize(result.criteria, text, rec)
         s.output = {
@@ -284,7 +288,7 @@ async def compile_study(
     key = criteria_cache.eligibility_hash(eligibility)
 
     async with rec.step(
-        "compile_criteria",
+        STEP_NAME,
         "step",
         {"nct": nct_id, "criteria_hash": key, "prompt_version": prompt.version, "force": force},
     ) as top:
