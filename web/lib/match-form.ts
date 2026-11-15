@@ -5,8 +5,9 @@ import type { RunStats } from "./api.ts";
 /** The search radius choices, in miles; the form submits the chosen one as `radius_mi`. */
 export const RADII_MI = [25, 50, 100] as const;
 export type RadiusMi = (typeof RADII_MI)[number];
-// HACK(demo): 50 mi default around Sacramento, as SPEC.md's trial search.
-export const DEFAULT_RADIUS_MI: RadiusMi = 50;
+// HACK(demo): 100 mi default, the radius `make seed` caches (api config ctgov_seed_radius_mi),
+// not SPEC.md's 50 mi; results past 50 mi carry an "Outside 50 mi" warning instead.
+export const DEFAULT_RADIUS_MI: RadiusMi = 100;
 
 /** What a match run does, in pipeline order (SPEC.md "Pipelines"). Descriptions only: no
  *  figures, since every number on the page must come from the API. */

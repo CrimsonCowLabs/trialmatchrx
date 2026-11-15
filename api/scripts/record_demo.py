@@ -40,7 +40,7 @@ DEMO_REQUEST: dict[str, Any] = {
         "Lives in Sacramento."
     ),
     "condition": "type 2 diabetes",
-    "radius_mi": 50,
+    "radius_mi": 100,
 }
 
 
