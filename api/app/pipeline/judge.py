@@ -100,7 +100,6 @@ def anthropic_judge_model() -> BaseChatModel:
         model=settings.model_judge,
         api_key=SecretStr(settings.anthropic_api_key),
         max_tokens=2000,
-        temperature=0,
     )
 
 
