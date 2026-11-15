@@ -27,10 +27,6 @@ from app.trace.runner import start_traced_run
 router = APIRouter(prefix="/api", tags=["match"])
 
 
-def _replaying() -> bool:
-    return get_settings().demo_mode == "replay"
-
-
 def _recorded(kind: RunKind, nct_id: str | None = None) -> RunFixture:
     """DEMO_MODE=replay: the fixture to replay, or 503 when none was recorded."""
     try:
@@ -79,8 +75,10 @@ async def start_match(
         except synthea.InvalidBundle as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    if _replaying():
-        return _start_replay("match", req.model_dump(mode="json"), _recorded("match"), {})
+    if get_settings().demo_mode == "replay":
+        fixture = _recorded("match")
+        # The recorded request, not this one: the run's request, parse and trace must agree.
+        return _start_replay("match", fixture.request, fixture, {})
 
     async def work(rec: TraceRecorder) -> dict[str, Any]:
         return await run_match(
@@ -113,7 +111,7 @@ async def start_closer(
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except CloserToolError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    if _replaying():
+    if get_settings().demo_mode == "replay":
         fixture = _recorded("closer", req.nct_id)
         # The recorded agent read the recorded match run; the replay points at this one.
         ids = {str(fixture.request["run_id"]): req.run_id}

@@ -32,8 +32,8 @@ from app.schemas import CloserRequest, MatchRequest, RunKind
 from app.trace.replay import RunFixture, export_run, write_fixture
 from app.trace.runner import RunWork, traced_run
 
-# The request web/app/match/page.tsx sends (its DEMO_NOTE, condition and radius), so a replayed
-# /match submit finds this fixture by its request.
+# HACK(demo): a copy of the request web/app/match/page.tsx sends (its DEMO_NOTE, condition and
+# radius), so the recording is of exactly what the pitch submits. Keep the two in sync.
 DEMO_REQUEST: dict[str, Any] = {
     "note": (
         "61-year-old man with type 2 diabetes, HbA1c 8.4%, eGFR 48, on metformin. "

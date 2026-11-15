@@ -13,6 +13,7 @@ from app.pipeline.fixture_model import FixtureChatModel
 from app.routers.match import closer_model_factory, judge_model_factory, parse_model_factory
 from app.routers.trials import compile_model_factory
 from app.schemas import CloserOutput, Health, RunSummary, TraceEvent
+from app.trace import store
 from app.trace.replay import RunFixture
 from scripts.record_demo import record_closer, record_match
 from tests.scripted_model import ScriptedChatModel
@@ -48,15 +49,11 @@ async def recorded(
     closer = await record_closer(
         out, match.run_id, TRIAL, model=ScriptedChatModel(replies=happy_script(match.run_id))
     )
-    for factory in (
-        parse_model_factory,
-        judge_model_factory,
-        compile_model_factory,
-        closer_model_factory,
-    ):
+    factories = (parse_model_factory, judge_model_factory, compile_model_factory)
+    for factory in (*factories, closer_model_factory):
         app.dependency_overrides[factory] = lambda: _no_model
     yield match, closer
-    for factory in (judge_model_factory, compile_model_factory, closer_model_factory):
+    for factory in (*factories, closer_model_factory):
         app.dependency_overrides.pop(factory, None)
 
 
@@ -118,6 +115,22 @@ async def test_any_match_request_replays_the_recorded_demo(
 ) -> None:
     match, _, _ = await replayed("/api/match", {**BODY, "note": "61M, T2D, slightly reworded"})
     assert [m.nct_id for m in match.matches] == [TRIAL]
+    # The run keeps the request that was recorded, so its request, parse and trace agree.
+    run = store.get_run(match.run_id)
+    assert run is not None and run.request == recorded[0].request
+
+
+@pytest.fixture
+def broken_fixture(replay_mode: Path) -> Path:
+    replay_mode.mkdir(parents=True)
+    (path := replay_mode / "match.json").write_text("{not json")
+    return path
+
+
+async def test_a_broken_fixture_file_makes_health_not_ok(broken_fixture: Path) -> None:
+    async with client() as c:
+        response = await c.get("/api/health")
+    assert response.status_code == 200 and not Health.model_validate(response.json()).ok
 
 
 async def test_replay_without_fixtures_is_503(replay_mode: Path) -> None:

@@ -66,6 +66,7 @@ def export_run(run_id: str) -> RunFixture:
 
 
 def write_fixture(path: Path, fixture: RunFixture) -> Path:
+    """Save `fixture` as JSON at `path` (creating its directory); returns `path`."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(fixture.model_dump_json(indent=1) + "\n")
     return path
