@@ -133,6 +133,7 @@ class RunTotals(BaseModel):
     tokens_out: int
     cost_usd: float
     cache_hits: int
+    guardrail_trips: int  # `guardrail` events that failed (bad quote, invalid predicate, ...)
     wall_time_s: float | None
 
 

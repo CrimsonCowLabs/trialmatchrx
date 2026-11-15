@@ -103,7 +103,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Trial */
+        /**
+         * Get Trial
+         * @description Cached trial summary (fetched once on a cache miss). Traced as a `trial` run whose id
+         *     comes back in the `X-Run-Id` header, on errors too.
+         */
         get: operations["get_trial"];
         put?: never;
         post?: never;
@@ -405,6 +409,8 @@ export interface components {
             cost_usd: number;
             /** Cache Hits */
             cache_hits: number;
+            /** Guardrail Trips */
+            guardrail_trips: number;
             /** Wall Time S */
             wall_time_s: number | null;
         };
