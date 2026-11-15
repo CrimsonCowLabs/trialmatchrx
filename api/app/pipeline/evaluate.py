@@ -78,16 +78,26 @@ def _numeric(fact: Fact | None, label: str, p: Predicate) -> PredicateResult:
     return PredicateResult(holds, _evidence(fact, label), f"{label} {value:g} {p.op} {p.value:g}")
 
 
-def _names(value: float | str | list[str]) -> list[str]:
+def fold(text: str) -> str:
+    """Lowercased, whitespace runs collapsed to one space: how names are compared."""
+    return " ".join(text.lower().split())
+
+
+def predicate_names(value: float | str | list[str]) -> list[str]:
+    """The names a `has` / `not_has` / `in` predicate asks for, folded."""
     items = value if isinstance(value, list) else [str(value)]
-    return [" ".join(v.lower().split()) for v in items]
+    return [fold(v) for v in items]
 
 
-def _mentions(fact: Fact, name: str) -> bool:
+def name_pattern(name: str) -> str:
+    """Regex for a folded name as a whole-word match inside folded text."""
+    return rf"\b{re.escape(name)}\b"
+
+
+def mentions(text: str, name: str) -> bool:
     """Whole-word containment: "type 2 diabetes" is in "type 2 diabetes mellitus", "hiv" is
-    not in "archive"."""
-    text = " ".join(str(fact.value).lower().split())
-    return re.search(rf"\b{re.escape(name)}\b", text) is not None
+    not in "archive". `name` comes from `predicate_names`."""
+    return re.search(name_pattern(name), fold(text)) is not None
 
 
 def _membership(items: list[Fact], label: str, p: Predicate) -> PredicateResult:
@@ -96,8 +106,8 @@ def _membership(items: list[Fact], label: str, p: Predicate) -> PredicateResult:
     Only a listed name is evidence. A name the facts don't list is `holds=None` (unknown) in
     both directions: a note's silence about pancreatitis neither proves nor rules it out.
     """
-    wanted = _names(p.value)
-    hits = [f for f in items if any(_mentions(f, w) for w in wanted)]
+    wanted = predicate_names(p.value)
+    hits = [f for f in items if any(mentions(str(f.value), w) for w in wanted)]
     if not hits:
         listed = ", ".join(str(f.value) for f in items) or "none listed"
         return PredicateResult(None, None, f"{', '.join(wanted)} not among {label} ({listed})")

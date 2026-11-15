@@ -14,7 +14,6 @@ from app.routers.trials import compile_model_factory
 from app.schemas import (
     Criterion,
     EvalLatest,
-    FeasibilityResult,
     Health,
     RunSummary,
     TraceEvent,
@@ -182,18 +181,12 @@ async def test_compile_without_api_key_on_a_cache_miss_is_503() -> None:
     assert "ANTHROPIC_API_KEY" in response.json()["detail"]
 
 
-async def test_feasibility_eval_health() -> None:
+async def test_eval_health() -> None:
+    """Feasibility has its own route tests (tests/test_feasibility_route.py)."""
     async with client() as c:
-        loose = FeasibilityResult.model_validate(
-            (await c.post("/api/feasibility/NCT1", json={"overrides": {"inc-1": 45}})).json()
-        )
-        strict = FeasibilityResult.model_validate(
-            (await c.post("/api/feasibility/NCT1", json={"overrides": {"inc-1": 60}})).json()
-        )
         EvalLatest.model_validate((await c.get("/api/eval/latest")).json())
         health = Health.model_validate((await c.get("/api/health")).json())
 
-    assert loose.waterfall[-1]["remaining"] > strict.waterfall[-1]["remaining"]
     assert health.ok and health.demo_mode == "off"
 
 

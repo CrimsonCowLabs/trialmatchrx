@@ -40,6 +40,26 @@ def test_most_recent_lab_wins_with_its_unit_and_date() -> None:
     assert set(labs) == {"hba1c", "egfr"}
 
 
+def test_other_vocabulary_labs_synthea_reports_are_mapped() -> None:
+    data = bundle("sparse")
+    for code, unit, value in [("14959-1", "mg/g", 412.0), ("6298-4", "mmol/L", 4.9)]:
+        observation = {
+            "resourceType": "Observation",
+            "id": f"o-{code}",
+            "code": {"coding": [{"system": "http://loinc.org", "code": code}]},
+            "effectiveDateTime": "2026-09-20T09:30:00-07:00",
+            "valueQuantity": {"value": value, "unit": unit},
+        }
+        data["entry"].append({"resource": observation})
+    mapping = synthea.map_bundle(data, as_of=AS_OF)
+    sep_20 = dt.date(2026, 9, 20)
+    assert mapping.facts.labs == {
+        "potassium": Fact(value=4.9, unit="mmol/L", date=sep_20),
+        "uacr": Fact(value=412.0, unit="mg/g", date=sep_20),
+    }
+    assert "labs.uacr" not in mapping.missing  # only SPEC's core labs are reported missing
+
+
 def test_most_recent_vitals_including_the_blood_pressure_panel() -> None:
     vitals = synthea.facts_from_bundle(bundle("full"), as_of=AS_OF).vitals
     sep_20 = dt.date(2026, 9, 20)

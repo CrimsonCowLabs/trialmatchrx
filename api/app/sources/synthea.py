@@ -5,9 +5,10 @@
 
 Plain dict parsing of a FHIR R4 Bundle (no FHIR library). Maps Patient (age, sex, geolocation),
 active Conditions, Observations (LOINC: HbA1c 4548-4, eGFR 33914-3 / 62238-1, BMI 39156-5, BP
-panel 85354-9, smoking status 72166-2) and active MedicationRequests. Per lab / vital the most
-recent reading in the canonical unit wins, with its unit and date. Anything the bundle doesn't
-have stays empty / None: nothing is inferred.
+panel 85354-9, smoking status 72166-2, plus the other vocabulary labs Synthea reports: UACR,
+potassium, LDL, creatinine, albumin, ALT, weight) and active MedicationRequests. Per lab / vital
+the most recent reading in the canonical unit wins, with its unit and date. Anything the bundle
+doesn't have stays empty / None: nothing is inferred.
 """
 
 import datetime as dt
@@ -23,14 +24,30 @@ from app.trace.recorder import TraceRecorder
 GEOLOCATION = "http://hl7.org/fhir/StructureDefinition/geolocation"
 
 # LOINC code -> (PatientFacts section, key). SPEC.md: HbA1c 4548-4, eGFR 33914-3 / 62238-1,
-# BMI 39156-5, BP panel 85354-9 (its systolic / diastolic components).
-LOINC: dict[str, tuple[str, str]] = {
+# BMI 39156-5, BP panel 85354-9 (its systolic / diastolic components). A bundle without one of
+# these is reported as `missing`.
+SPEC_LOINC: dict[str, tuple[str, str]] = {
     "4548-4": ("labs", "hba1c"),
     "33914-3": ("labs", "egfr"),
     "62238-1": ("labs", "egfr"),
     "39156-5": ("vitals", "bmi"),
     "8480-6": ("vitals", "sbp"),
     "8462-4": ("vitals", "dbp"),
+}
+# The other labs / vitals in the predicate vocabulary that Synthea's panels report. Trials gate
+# on UACR, potassium, LDL ..., so the feasibility cohort needs them; most patients have none of
+# them, so their absence isn't reported.
+LOINC: dict[str, tuple[str, str]] = {
+    **SPEC_LOINC,
+    "14959-1": ("labs", "uacr"),
+    "6298-4": ("labs", "potassium"),
+    "2823-3": ("labs", "potassium"),
+    "18262-6": ("labs", "ldl"),
+    "38483-4": ("labs", "creatinine"),
+    "2160-0": ("labs", "creatinine"),
+    "1751-7": ("labs", "albumin"),
+    "1742-6": ("labs", "alt"),
+    "29463-7": ("vitals", "weight"),
 }
 BP_PANEL = "85354-9"
 CANONICAL_UNITS = {"labs": LAB_UNITS, "vitals": VITAL_UNITS}
@@ -310,7 +327,7 @@ def map_bundle(bundle: dict[str, Any], *, as_of: dt.date) -> BundleMapping:
         lon=lon,
     )
     present = {"labs": facts.labs, "vitals": facts.vitals}
-    mapped = dict.fromkeys(LOINC.values())  # (section, key) in table order, deduplicated
+    mapped = dict.fromkeys(SPEC_LOINC.values())  # (section, key) in table order, deduplicated
     missing = [f"{sec}.{key}" for sec, key in mapped if key not in present[sec]]
     scalars = {"age": facts.age, "sex": facts.sex, "smoker": facts.smoker, "lat/lon": facts.lat}
     missing += [name for name, value in scalars.items() if value is None]
