@@ -2,7 +2,8 @@
 
     facts = await parse_patient(recorder, note, model_factory=anthropic_parse_model)
 
-Haiku returns a `DraftPatient` via `with_structured_output`: the PatientFacts vocabulary, but
+Haiku returns a `DraftPatient` via `with_structured_output(..., method="json_schema")` (a JSON
+text answer, not a forced tool call): the PatientFacts vocabulary, but
 with a required verbatim `source_span` on every fact, scalars included. Code then checks each
 span against the note (case- and whitespace-insensitive) and builds the frozen `PatientFacts`:
 
@@ -288,7 +289,7 @@ async def parse_patient(
         {"note_chars": len(note), "prompt": prompt.name, "prompt_version": prompt.version},
     ) as s:
         model = model_factory()
-        runnable = model.with_structured_output(DraftPatient)
+        runnable = model.with_structured_output(DraftPatient, method="json_schema")
         try:
             result: Any = await runnable.ainvoke(
                 messages,

@@ -108,7 +108,6 @@ class Models:
         )
         self.parse = ByMarker(
             output={"x": 1},
-            tool_name="DraftPatient",
             model_name="parse-model",
             by_marker={"58F": _patient("58", "female", 40), "70M": _patient("70", "male", 75)},
         )
@@ -119,7 +118,6 @@ class Models:
                 "patient_evidence": "consents to research",
                 "rationale": "The note says the patient consents.",
             },
-            tool_name="JudgeOutput",
             model_name="judge-model",
         )
 
@@ -214,7 +212,7 @@ async def test_a_judge_error_marks_the_score_incomplete() -> None:
     # Nothing is cached for a failed call, so a re-run would ask again and could score
     # differently: the score must say so rather than pass as reproducible.
     models = Models()
-    judge = Unreachable(output={"x": 1}, tool_name="JudgeOutput", model_name="judge-model")
+    judge = Unreachable(output={"x": 1}, model_name="judge-model")
 
     score = await score_matcher(
         _sample(),

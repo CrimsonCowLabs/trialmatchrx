@@ -6,13 +6,14 @@
     judge = llm_judge(model, trial_text=..., note=note, semaphore=semaphore)  # an evaluate.Judge
 
 Each item is one `needs_judgment` criterion with its trial's (cleaned) eligibility text. The
-judge model answers through `with_structured_output(JudgeOutput)`; `verify.verify_verdict` then
+judge model answers through `with_structured_output(JudgeOutput, method="json_schema")` (a JSON
+text answer, not a forced tool call); `verify.verify_verdict` then
 checks both quotes against their sources and downgrades unverifiable verdicts to `unknown`.
 
 Failure handling, per criterion, never failing the batch:
-- malformed output (parser/validation error, or no tool call) gets one retry, with the prompt's
-  `## retry` turn naming the error appended; a second failure gives `unknown` plus an `error`
-  event `judge:<nct>:<id>:malformed`.
+- malformed output (parser/validation error, e.g. prose or invalid JSON) gets one retry, with
+  the prompt's `## retry` turn naming the error appended; a second failure gives `unknown` plus
+  an `error` event `judge:<nct>:<id>:malformed`.
 - with no API key, `judge_criteria` raises `JudgeModelUnavailable` before any call; the caller
   decides whether that fails the run.
 - any other model error (network, API) gives `unknown` plus an `error` event
@@ -131,7 +132,7 @@ async def _ask(
 ) -> JudgeOutput:
     """One judge call. Raises `_Malformed` when the answer isn't a valid `JudgeOutput`."""
     try:
-        result = await model.with_structured_output(JudgeOutput).ainvoke(
+        result = await model.with_structured_output(JudgeOutput, method="json_schema").ainvoke(
             messages,
             config={
                 "callbacks": [rec.langchain_handler()],
@@ -141,8 +142,8 @@ async def _ask(
     except (OutputParserException, ValidationError) as exc:
         raise _Malformed(describe_error(exc)) from exc
     if not isinstance(result, JudgeOutput):
-        # e.g. no tool call at all (max_tokens hit, or the model answered in prose)
-        raise _Malformed(f"no JudgeOutput tool call (got {type(result).__name__})")
+        # Narrows the type: the parser returns the schema or raises (prose, bad JSON) above
+        raise _Malformed(f"no JudgeOutput (got {type(result).__name__})")
     return result
 
 

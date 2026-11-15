@@ -1,7 +1,7 @@
 """Prompt files: `app/prompts/<name>.md`, each with a `version:` header.
 
     ---
-    version: compile-criteria-v1
+    version: compile-criteria-v2
     ---
     ## system
     ... {{placeholder}} ...

@@ -4,7 +4,8 @@
 
 `study` is a raw ClinicalTrials.gov v2 study dict; where it came from is the caller's business.
 Age and sex are built in code from the structured fields. The free text goes to the compile
-model once via `with_structured_output(CompiledCriteria)`; every predicate it writes is checked
+model once via `with_structured_output(CompiledCriteria, method="json_schema")` (Anthropic's
+native structured output, not a forced tool call); every predicate it writes is checked
 against PatientFacts and downgraded to `needs_judgment` if invalid. Results are cached per
 NCT id + eligibility hash + prompt version. Every step, LLM call and guardrail is traced.
 """
@@ -243,7 +244,7 @@ async def _llm_split(
     ) as s:
         model = model_factory()
         model_id = getattr(model, "model", None) or getattr(model, "model_name", None)
-        runnable = model.with_structured_output(CompiledCriteria)
+        runnable = model.with_structured_output(CompiledCriteria, method="json_schema")
         try:
             result = await runnable.ainvoke(
                 messages,
@@ -255,7 +256,7 @@ async def _llm_split(
         except (OutputParserException, ValidationError) as exc:
             raise CompileFailed(f"{nct_id}: malformed compile output: {exc}") from exc
         if not isinstance(result, CompiledCriteria):
-            # e.g. no tool call at all (max_tokens hit, or the model answered in prose)
+            # Narrows the type: the parser returns the schema or raises (prose, bad JSON) above
             raise CompileFailed(f"{nct_id}: compile model returned {type(result).__name__}")
         criteria = _finalize(result.criteria, text, rec)
         s.output = {

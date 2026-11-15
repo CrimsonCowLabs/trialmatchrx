@@ -28,9 +28,7 @@ def draft(name: str) -> dict[str, Any]:
 
 
 def model(output: dict[str, Any]) -> FixtureChatModel:
-    return FixtureChatModel(
-        output=output, tool_name="DraftPatient", model_name=get_settings().model_parse
-    )
+    return FixtureChatModel(output=output, model_name=get_settings().model_parse)
 
 
 def recorder() -> TraceRecorder:
@@ -160,7 +158,7 @@ async def test_the_parse_llm_call_is_in_the_trace_under_the_parse_step() -> None
     assert llm.model == get_settings().model_parse
     assert llm.tokens_in and llm.tokens_out and llm.cost_usd is not None
     assert llm.input is not None and "HbA1c 8.4%" in json.dumps(llm.input)
-    assert step.input is not None and step.input["prompt_version"] == "parse-patient-v2"
+    assert step.input is not None and step.input["prompt_version"] == "parse-patient-v3"
     assert step.output is not None and step.output["patient"]["labs"]["egfr"]["value"] == 48
 
 

@@ -44,7 +44,6 @@ def fixture_parse_model() -> Iterator[FixtureChatModel]:
     """Match runs parse the note with the saved demo-patient output, not Haiku."""
     model = FixtureChatModel(
         output=load_llm_fixture("demo_short", root=PARSE_FIXTURES),
-        tool_name="DraftPatient",
         model_name=get_settings().model_parse,
     )
     app.dependency_overrides[parse_model_factory] = lambda: lambda: model
