@@ -91,6 +91,23 @@ class RunRow(SQLModel, table=True):
     error: str | None = None
 
 
+class CompiledCriteriaRow(SQLModel, table=True):
+    """One trial's compiled criteria, keyed by NCT id + hash of its eligibility fields.
+
+    `criteria` is the full `list[Criterion]` JSON (age/sex included). A row only counts as a
+    cache hit when `prompt_version` matches the current prompt.
+    """
+
+    __tablename__ = "compiled_criteria"
+
+    nct_id: str = Field(primary_key=True)
+    criteria_hash: str = Field(primary_key=True)
+    prompt_version: str
+    model: str | None = None
+    created_at: dt.datetime = Field(default_factory=utcnow, index=True)
+    criteria: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
+
+
 class TraceEventRow(SQLModel, table=True):
     """Append-only log of every TraceEvent emission, keyed by (run_id, seq).
 
