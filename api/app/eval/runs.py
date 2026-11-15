@@ -83,7 +83,7 @@ def current_git_sha() -> str | None:
 
 
 def current_prompt_version() -> str:
-    """e.g. `parse-patient-v1+compile-criteria-v1+judge-v1`."""
+    """e.g. `parse-patient-v3+compile-criteria-v2+judge-v2`."""
     return "+".join(load_prompt(name).version for name in EVAL_PROMPTS)
 
 
@@ -94,6 +94,12 @@ def record_eval_run(
     sample: TrecSample,
     git_sha: str | None,
 ) -> EvalRunRow:
+    """One `eval_runs` row. A partial sample (`first_topics`) is refused: its score covers only
+    some topics, so it would sit in the history as if comparable with a full one."""
+    if sample.partial:
+        raise ValueError(
+            f"not recording a partial sample ({len(sample.topics)} of {sample.n_topics} topics)"
+        )
     row = EvalRunRow(
         id=uuid.uuid4().hex,
         system=system,

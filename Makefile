@@ -64,7 +64,8 @@ cohort:
 # Matcher + BM25 on the fixed TREC sample -> eval_runs. Builds data/fixtures/trec/sample.json on
 # first run (network); `make eval ARGS=--rebuild` redraws and refetches it. The matcher needs
 # ANTHROPIC_API_KEY (skipped without it) and replays cached LLM answers on a re-run;
-# `ARGS=--bm25-only` skips it.
+# `ARGS=--bm25-only` skips it. `ARGS="--topics N"` scores both on only the first N topics (a cheap
+# live check): reported as partial, never written to eval_runs, its answers still cached.
 eval:
 	cd api && uv run python -m scripts.run_eval $(ARGS)
 

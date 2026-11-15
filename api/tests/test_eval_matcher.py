@@ -17,7 +17,7 @@ from langchain_core.outputs import ChatResult
 from app.eval.matcher import score_matcher
 from app.pipeline.compile_criteria import CompileModelUnavailable
 from app.pipeline.fixture_model import FixtureChatModel
-from app.sources.trec import Judgment, Topic, TrecSample
+from app.sources.trec import Judgment, Topic, TrecSample, first_topics
 from app.trace import store
 
 EGFR = "mL/min/1.73m2"
@@ -108,7 +108,6 @@ class Models:
         )
         self.parse = ByMarker(
             output={"x": 1},
-            tool_name="DraftPatient",
             model_name="parse-model",
             by_marker={"58F": _patient("58", "female", 40), "70M": _patient("70", "male", 75)},
         )
@@ -119,7 +118,6 @@ class Models:
                 "patient_evidence": "consents to research",
                 "rationale": "The note says the patient consents.",
             },
-            tool_name="JudgeOutput",
             model_name="judge-model",
         )
 
@@ -214,7 +212,7 @@ async def test_a_judge_error_marks_the_score_incomplete() -> None:
     # Nothing is cached for a failed call, so a re-run would ask again and could score
     # differently: the score must say so rather than pass as reproducible.
     models = Models()
-    judge = Unreachable(output={"x": 1}, tool_name="JudgeOutput", model_name="judge-model")
+    judge = Unreachable(output={"x": 1}, model_name="judge-model")
 
     score = await score_matcher(
         _sample(),
@@ -232,3 +230,144 @@ async def test_a_clean_run_is_complete() -> None:
     score = await Models().score(_sample())
 
     assert (score.judge_errors, score.complete) == (0, True)
+
+
+MALFORMED = {"age": {"value": "sixty"}}  # not a DraftPatient: the parse fails (ParseFailed)
+
+
+def _parse_failing_on(marker: str) -> ByMarker:
+    """The fixture parse model, but its answer for the note containing `marker` is malformed."""
+    good = {"58F": _patient("58", "female", 40), "70M": _patient("70", "male", 75)}
+    return ByMarker(
+        output={"x": 1},
+        tool_name="DraftPatient",
+        model_name="parse-model",
+        by_marker=good | {marker: MALFORMED},
+    )
+
+
+async def test_a_topic_whose_parse_fails_is_reported_and_the_others_are_still_scored() -> None:
+    models = Models()
+    models.parse = _parse_failing_on("70M")  # topic 2
+
+    score = await models.score(_sample())
+
+    (failure,) = score.failed
+    assert (failure.topic_id, failure.step) == (2, "parse_patient")
+    assert failure.error.startswith("ParseFailed: malformed parse output")
+    # Topic 1 is matched and scored as in the clean run; topic 2 has no ranking.
+    assert score.rankings == {1: ["NCT01", "NCT03", "NCT02", "NCT04"]}
+    assert score.metrics["ndcg@10"] == pytest.approx(1.0)
+    assert not score.complete
+
+
+async def test_a_failed_topics_match_run_is_marked_failed_where_it_broke() -> None:
+    models = Models()
+    models.parse = _parse_failing_on("70M")
+
+    score = await models.score(_sample())
+
+    (failure,) = score.failed
+    run = store.get_run(failure.run_id)
+    assert run is not None and run.status == "failed" and run.error == failure.error
+    assert run.request["eval"] == {"topic": 2}
+    assert score.run_ids[2] == failure.run_id
+    (step,) = [e for e in store.latest_events(failure.run_id) if e.name == "parse_patient"]
+    assert step.status == "failed"
+    assert store.get_run(score.run_ids[1]).status == "done"  # type: ignore[union-attr]
+
+
+class Crashing(ByMarker):
+    """A compile model that crashes (not a malformed answer) on the trial named `crash_on`."""
+
+    crash_on: str = ""
+
+    def _result(self, messages: list[BaseMessage]) -> ChatResult:
+        if self.crash_on in "".join(str(m.content) for m in messages):
+            raise RuntimeError("model client bug")
+        return super()._result(messages)
+
+
+async def test_any_other_error_in_a_topic_fails_only_that_topic() -> None:
+    models = Models()
+    models.compile = Crashing(
+        output={"criteria": []},
+        by_marker={n: {"criteria": [c]} for n, c in CRITERIA.items()},
+        crash_on="NCT03",  # judged for topic 1 only
+    )
+
+    score = await models.score(_sample())
+
+    (failure,) = score.failed
+    assert failure.topic_id == 1
+    assert failure.step == "trial:NCT03 > compile_criteria > llm_split"
+    assert failure.error == "RuntimeError: model client bug"
+    assert score.rankings == {2: ["NCT01", "NCT02", "NCT04"]}
+    assert score.metrics["ndcg@10"] == pytest.approx(0.5)
+    assert not score.complete
+
+
+async def test_a_rerun_asks_again_for_the_failed_topic_and_replays_the_rest() -> None:
+    first = Models()
+    first.parse = _parse_failing_on("70M")
+    await first.score(_sample())
+
+    again = Models()  # the model now answers topic 2 well
+    score = await again.score(_sample())
+
+    assert score.failed == []
+    assert score.complete
+    # Topic 2's malformed answer was not cached: parsed again. Topic 1 and its judge call, and
+    # every trial's criteria, replay.
+    assert again.calls == (0, 1, 0)
+
+
+async def test_when_every_topic_fails_there_is_nothing_to_score() -> None:
+    models = Models()
+    models.parse = ByMarker(output={"x": 1}, tool_name="DraftPatient", by_marker={"": MALFORMED})
+
+    score = await models.score(_sample())
+
+    assert [f.topic_id for f in score.failed] == [1, 2]
+    assert (score.rankings, score.metrics) == ({}, {})
+
+
+def _topic_2_first() -> TrecSample:
+    """The sample with topic 2 (NCT04, NCT01, NCT02; nothing to judge) drawn first."""
+    sample = _sample()
+    return sample.model_copy(update={"topics": sample.topics[::-1]})
+
+
+async def test_a_partial_run_matches_only_the_first_topics_and_compiles_only_their_trials() -> None:
+    models = Models()
+    score = await models.score(first_topics(_topic_2_first(), 1))
+
+    assert score.rankings == {2: ["NCT01", "NCT02", "NCT04"]}
+    assert sorted(score.run_ids) == [2]
+    # NCT03 is judged only under topic 1: never compiled, nothing judged.
+    assert models.calls == (3, 1, 0)
+    # Topic 2 alone: labels [1, 0, 2] -> nDCG 0.5, P@10 0.1; accuracy 1/2 (NCT04 right, NCT01
+    # wrongly eligible); all three trials are rules.
+    assert score.metrics == {
+        "ndcg@10": pytest.approx(0.5),
+        "p@10": pytest.approx(0.1),
+        "accuracy": pytest.approx(0.5),
+        "compile_rate": pytest.approx(1.0),
+    }
+
+
+async def test_a_full_run_after_a_partial_one_replays_its_answers() -> None:
+    await Models().score(first_topics(_topic_2_first(), 1))
+
+    full = Models()
+    score = await full.score(_topic_2_first())
+
+    # Only topic 1's own work is new: NCT03's compile, topic 1's parse, NCT03's judge call.
+    assert full.calls == (1, 1, 1)
+    # Same score as the cold full run in test_matcher_scores_the_sample_by_hand.
+    assert score.metrics == {
+        "ndcg@10": pytest.approx(0.75),
+        "p@10": pytest.approx(0.15),
+        "accuracy": pytest.approx(0.8),
+        "compile_rate": pytest.approx(0.75),
+    }

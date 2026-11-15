@@ -1,11 +1,12 @@
 ---
-version: parse-patient-v2
+version: parse-patient-v3
 ---
 
 ## system
 
 You extract structured facts from a free-text clinical note so code can check the patient
-against clinical-trial eligibility criteria. Return them with the `DraftPatient` tool.
+against clinical-trial eligibility criteria. Answer with one JSON object matching the
+`DraftPatient` schema, nothing else.
 
 ### Source spans
 

@@ -2,6 +2,7 @@
 
 import asyncio
 import datetime as dt
+import json
 from collections.abc import Callable
 from typing import Any
 
@@ -81,7 +82,7 @@ def of_kind(rec: TraceRecorder, kind: str) -> list[TraceEvent]:
 
 
 def fixture(*replies: dict[str, Any] | None) -> FixtureChatModel:
-    return FixtureChatModel(replies=list(replies), tool_name="JudgeOutput", model_name="judge-fake")
+    return FixtureChatModel(replies=list(replies), model_name="judge-fake")
 
 
 async def judge_one(
@@ -132,7 +133,8 @@ async def test_every_judge_call_is_traced_with_prompt_and_raw_output() -> None:
     prompt = str(llm.input["messages"])
     assert INC_1.text in prompt and "metformin 1000 mg twice daily" in prompt
     assert llm.output is not None
-    assert llm.output["messages"][0]["tool_calls"][0]["args"] == GOOD
+    (answer,) = llm.output["messages"]
+    assert json.loads(answer["content"]) == GOOD and "tool_calls" not in answer
     assert llm.tokens_in and llm.tokens_out
 
 
@@ -177,7 +179,7 @@ async def test_malformed_response_is_retried_once() -> None:
 
 async def test_malformed_twice_becomes_unknown_with_an_error_event() -> None:
     rec = recorder()
-    model = fixture(MALFORMED, None)  # bad args, then prose with no tool call
+    model = fixture(MALFORMED, None)  # bad args, then prose that is not JSON
 
     verdict = await judge_one(rec, model)
 
@@ -207,7 +209,7 @@ async def test_a_model_error_becomes_unknown_with_an_error_event_without_failing
 
     rec = recorder()
 
-    down = Down(output=GOOD, tool_name="JudgeOutput", model_name="judge-fake")
+    down = Down(output=GOOD, model_name="judge-fake")
 
     verdict = await judge_one(rec, down)
 
@@ -263,7 +265,7 @@ class Slow(FixtureChatModel):
 
 async def test_one_semaphore_bounds_judge_calls_at_8_across_trials() -> None:
     rec = recorder()
-    model = Slow(output=GOOD, tool_name="JudgeOutput", model_name="judge-fake")
+    model = Slow(output=GOOD, model_name="judge-fake")
     factory: Callable[[], BaseChatModel] = lambda: model  # noqa: E731
     semaphore = new_judge_semaphore()
     trials = [[JudgeItem(f"NCT0000000{t}", INC_1, TRIAL_TEXT) for _ in range(10)] for t in range(3)]
