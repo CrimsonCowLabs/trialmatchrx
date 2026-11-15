@@ -1,11 +1,12 @@
 """POST /api/match and POST /api/closer: start a background run, return its id."""
 
 import asyncio
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.config import get_settings
+from app.pipeline.parse_patient import ModelFactory, anthropic_parse_model, parse_patient
 from app.schemas import CloserRequest, MatchRequest, RunStarted
 from app.stub_data import STUB_CRITERIA, STUB_NCT, STUB_PATIENT, stub_matches
 from app.trace import store
@@ -15,19 +16,30 @@ from app.trace.runner import start_traced_run
 router = APIRouter(prefix="/api", tags=["match"])
 
 
-# HACK(demo): stub — five fake trace events, 300 ms apart, then a fixed result (M2).
-async def stub_match(rec: TraceRecorder, req: MatchRequest) -> dict[str, Any]:
-    delay = get_settings().stub_event_delay_s
-    note_len = len(req.note or "")
+def parse_model_factory() -> ModelFactory:
+    """Dependency: how a match run builds its note-parse model (tests override it)."""
+    return anthropic_parse_model
 
-    await asyncio.sleep(delay)
-    rec.event(
-        "parse_patient",
-        "step",
-        input={"note_chars": note_len},
-        output={"facts": 4},
-        note=f"Parsed {note_len} chars into 4 facts (stub)",
-    )
+
+# HACK(demo): stub — after the real note parse, four fake trace events 300 ms apart, then a
+# fixed match list (M2).
+async def stub_match(
+    rec: TraceRecorder, req: MatchRequest, parse_model: ModelFactory
+) -> dict[str, Any]:
+    delay = get_settings().stub_event_delay_s
+
+    if req.note:
+        patient = await parse_patient(rec, req.note, model_factory=parse_model)
+    else:
+        # HACK(demo): stub — the FHIR path (sources/synthea.py) doesn't exist yet.
+        patient = STUB_PATIENT
+        rec.event(
+            "parse_patient",
+            "step",
+            input={"fhir_bundle": True},
+            output={"patient": patient.model_dump(mode="json")},
+            note="FHIR bundle parsing not implemented; stub patient (stub)",
+        )
     await asyncio.sleep(delay)
     rec.event(
         "search_trials",
@@ -61,18 +73,21 @@ async def stub_match(rec: TraceRecorder, req: MatchRequest) -> dict[str, Any]:
     rec.event("rank", "step", output={"likely": 1}, note="1 likely, 0 needs info (stub)")
 
     return {
-        "patient": STUB_PATIENT.model_dump(mode="json"),
+        "patient": patient.model_dump(mode="json"),
         "matches": [m.model_dump(mode="json") for m in stub_matches(rule.id)],
     }
 
 
 @router.post("/match", response_model=RunStarted)
-async def start_match(req: MatchRequest) -> RunStarted:
+async def start_match(
+    req: MatchRequest,
+    parse_model: Annotated[ModelFactory, Depends(parse_model_factory)],
+) -> RunStarted:
     if not req.note and not req.fhir_bundle:
         raise HTTPException(status_code=422, detail="provide note or fhir_bundle")
 
     async def work(rec: TraceRecorder) -> dict[str, Any]:
-        return await stub_match(rec, req)
+        return await stub_match(rec, req, parse_model)
 
     # HACK(demo): stub — DEMO_MODE=replay is not implemented yet (M7); always runs the stub.
     return RunStarted(run_id=start_traced_run("match", req.model_dump(mode="json"), work))
