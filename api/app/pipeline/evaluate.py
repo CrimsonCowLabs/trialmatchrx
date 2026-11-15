@@ -75,7 +75,10 @@ def _numeric(fact: Fact | None, label: str, p: Predicate) -> PredicateResult:
     if isinstance(p.value, list | str) or p.op not in NUMERIC_OPS:
         return PredicateResult(None, None, f"cannot compare {label} {p.op} {p.value!r}")
     holds = _compare(float(value), p.op, float(p.value))
-    return PredicateResult(holds, _evidence(fact, label), f"{label} {value:g} {p.op} {p.value:g}")
+    relation = p.op if holds else f"is not {p.op}"  # never state a comparison that is false
+    return PredicateResult(
+        holds, _evidence(fact, label), f"{label} {value:g} {relation} {p.value:g}"
+    )
 
 
 def fold(text: str) -> str:
@@ -210,6 +213,15 @@ async def no_judge(
     )
 
 
+def _effect(criterion: Criterion, outcome: Outcome) -> str:
+    """What the outcome means for this criterion: "exclusion does not apply", "inclusion met"."""
+    if outcome == "unknown":
+        return criterion.type
+    if criterion.type == "inclusion":
+        return "inclusion met" if outcome == "pass" else "inclusion not met"
+    return "exclusion does not apply" if outcome == "pass" else "exclusion applies"
+
+
 def rule_verdict(
     nct_id: str, criterion: Criterion, predicate: Predicate, facts: PatientFacts, rec: TraceRecorder
 ) -> Verdict:
@@ -222,7 +234,7 @@ def rule_verdict(
         rec,
         outcome=outcome,
         evidence=result.evidence,
-        rationale=f"{result.reason} -> {outcome} ({criterion.type})",
+        rationale=f"{result.reason} -> {outcome} ({_effect(criterion, outcome)})",
         trace_input={"predicate": predicate.model_dump(mode="json")},
         trace_output={"holds": result.holds, "evidence": result.evidence},
     )
