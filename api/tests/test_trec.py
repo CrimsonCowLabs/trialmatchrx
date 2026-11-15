@@ -4,6 +4,8 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from app.sources.trec import (
     EVAL_FIELDS,
     Judgment,
@@ -79,6 +81,11 @@ def test_sample_skips_topics_too_thin_in_any_label() -> None:
     sample = draw_sample(qrels, n_topics=15, per_topic=20, seed=7)
 
     assert {j.topic_id for j in sample} == set(range(1, 16))
+
+
+def test_sample_says_so_when_too_few_topics_qualify() -> None:
+    with pytest.raises(ValueError, match="only 3 topics"):
+        draw_sample(_qrels(range(1, 4), per_label=10), n_topics=15, per_topic=20, seed=7)
 
 
 def test_sample_is_deterministic_per_seed() -> None:

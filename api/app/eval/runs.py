@@ -41,24 +41,17 @@ def score_bm25(sample: TrecSample) -> dict[str, float]:
     return {f"ndcg@{K}": fmean(ndcgs), f"p@{K}": fmean(precisions)}
 
 
+def _git(*args: str) -> str:
+    return subprocess.run(
+        ["git", *args], cwd=REPO_DIR, capture_output=True, text=True, check=True
+    ).stdout.strip()
+
+
 def current_git_sha() -> str | None:
     """Short HEAD SHA, suffixed `-dirty` when the tree has uncommitted changes; None outside
-    a git checkout."""
+    a git checkout. Take it before the eval writes anything into the tree."""
     try:
-        sha = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
-            cwd=REPO_DIR,
-            capture_output=True,
-            text=True,
-            check=True,
-        ).stdout.strip()
-        dirty = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=REPO_DIR,
-            capture_output=True,
-            text=True,
-            check=True,
-        ).stdout.strip()
+        sha, dirty = _git("rev-parse", "--short", "HEAD"), _git("status", "--porcelain")
     except (OSError, subprocess.CalledProcessError):
         return None
     return f"{sha}-dirty" if dirty else sha
@@ -94,18 +87,6 @@ def record_eval_run(
     return row
 
 
-def _summary(row: EvalRunRow) -> EvalRunSummary:
-    return EvalRunSummary(
-        id=row.id,
-        created_at=row.created_at,
-        system=MATCHER if row.system == MATCHER else BM25,
-        git_sha=row.git_sha,
-        prompt_version=row.prompt_version,
-        sample_size=row.sample_size,
-        metrics=row.metrics,
-    )
-
-
 def latest_eval() -> EvalLatest:
     """The newest matcher and BM25 scores, sample size from the newest run, every run newest
     first. Empty (zeros, `{}`) before the first `make eval`."""
@@ -121,5 +102,5 @@ def latest_eval() -> EvalLatest:
             sample_size=newest.sample_size if newest else 0,
             topics=newest.topics if newest else 0,
             dropped=newest.dropped if newest else 0,
-            history=[_summary(r) for r in rows],
+            history=[EvalRunSummary.model_validate(r, from_attributes=True) for r in rows],
         )

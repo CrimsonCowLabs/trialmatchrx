@@ -194,7 +194,7 @@ class EvalLatest(BaseModel):
     compile_rate: float | None
     sample_size: int  # judged (topic, trial) pairs in the fixed TREC sample
     topics: int  # TREC topics in the sample
-    dropped: int  # sampled trials dropped (gone from ClinicalTrials.gov or no criteria text)
+    dropped: int  # sampled trials dropped (gone, merged into another record, or no criteria)
     history: list[EvalRunSummary]  # every run, newest first
 
 

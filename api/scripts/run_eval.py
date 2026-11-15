@@ -57,6 +57,7 @@ def _reasons(sample: trec.TrecSample) -> str:
 
 def main(rebuild: bool) -> None:
     init_db()
+    git_sha = current_git_sha()  # before a first run writes sample.json into the tree
     if rebuild or not trec.SAMPLE_PATH.exists():
         sample = asyncio.run(build())
     else:
@@ -66,10 +67,10 @@ def main(rebuild: bool) -> None:
         f"{len(sample.topics)} topics; {len(sample.dropped)} trials dropped ({_reasons(sample)})"
     )
     metrics = score_bm25(sample)
-    row = record_eval_run(BM25, metrics, sample=sample, git_sha=current_git_sha())
+    row = record_eval_run(BM25, metrics, sample=sample, git_sha=git_sha)
+    scores = "  ".join(f"{name} {value:.4f}" for name, value in metrics.items())
     print(
-        f"bm25: nDCG@10 {metrics['ndcg@10']:.4f}  P@10 {metrics['p@10']:.4f}  "
-        f"(eval_runs {row.id[:8]}, git {row.git_sha}, prompts {row.prompt_version})"
+        f"bm25: {scores}  (eval_runs {row.id[:8]}, git {row.git_sha}, prompts {row.prompt_version})"
     )
 
 

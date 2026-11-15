@@ -13,7 +13,10 @@ export default function EvalPage() {
       </div>
       <p className="text-sm text-muted-foreground">
         TREC 2021 Clinical Trials topics against expert qrels, on a fixed sample. Relevant means
-        label 2 (eligible); excluded and not-relevant trials both count as misses.
+        label 2 (eligible); excluded and not-relevant trials both count as misses. Each topic
+        reranks its own 20 judged trials, split about evenly across the three labels (so P@10
+        tops out near 0.7), and topics short of any label are left out. Scores are not
+        comparable with the official TREC numbers.
       </p>
       <EvalView />
     </main>

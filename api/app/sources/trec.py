@@ -98,6 +98,8 @@ def draw_sample(
         for t in sorted({j.topic_id for j in qrels})
         if all(len(by_stratum[(t, label)]) >= quotas[label] for label in LABELS)
     ]
+    if len(eligible) < n_topics:
+        raise ValueError(f"only {len(eligible)} topics can fill {quotas}; asked for {n_topics}")
     sample: list[Judgment] = []
     for topic in sorted(rng.sample(eligible, n_topics)):
         for label in LABELS:
