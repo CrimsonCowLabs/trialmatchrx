@@ -9,6 +9,8 @@ import {
   formatScore,
   formatTarget,
   groupByPromptVersion,
+  isLoss,
+  matcherScored,
   metricCards,
 } from "./eval.ts";
 
@@ -94,6 +96,17 @@ test("gains are signed to three decimals", () => {
   assert.equal(formatGain(0.1849), "+0.185");
   assert.equal(formatGain(-0.02), "−0.020");
   assert.equal(formatGain(0), "+0.000");
+});
+
+test("a gain that rounds to zero is not a loss", () => {
+  assert.equal(formatGain(-0.0001), "+0.000");
+  assert.equal(isLoss(-0.0001), false);
+  assert.equal(isLoss(-0.02), true);
+});
+
+test("the matcher counts as scored once it reports any metric", () => {
+  assert.equal(matcherScored(metricCards({}, { "ndcg@10": 0.4 })), false);
+  assert.equal(matcherScored(metricCards({ "ndcg@10": 0.6 }, { "ndcg@10": 0.4 })), true);
 });
 
 test("the compile target formats as a whole percentage", () => {

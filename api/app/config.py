@@ -4,6 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 API_DIR = Path(__file__).resolve().parent.parent
@@ -41,7 +42,7 @@ class Settings(BaseSettings):
 
     # Share of criteria the compiler should turn into predicates (SPEC.md: "about 60%"); the
     # /eval page shows the measured compile rate against it.
-    eval_compile_rate_target: float = 0.6
+    eval_compile_rate_target: float = Field(default=0.6, ge=0, le=1)
 
     cors_origins: list[str] = ["http://localhost:3045", "http://127.0.0.1:3045"]
 

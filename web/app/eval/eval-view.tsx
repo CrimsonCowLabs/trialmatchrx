@@ -9,20 +9,21 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { api, type EvalLatest } from "@/lib/api";
 import {
-  EVAL_METRICS as METRICS,
+  EVAL_METRICS,
   formatGain,
   formatRate,
   formatScore,
   formatTarget,
   groupByPromptVersion,
+  isLoss,
+  matcherScored,
   metricCards,
   type MetricCard,
 } from "@/lib/eval";
+import { countNoun } from "@/lib/format";
 import { useLoad } from "@/lib/use-load";
 
 type Run = EvalLatest["history"][number];
-
-const TITLE = "Eval against TREC expert labels";
 
 // Literal class names so Tailwind sees them.
 const SYSTEMS = {
@@ -35,11 +36,16 @@ function Header({ latest }: { latest?: EvalLatest }) {
   return (
     <PageHeader
       breadcrumb={[{ label: "Home", href: "/" }]}
-      title={TITLE}
+      title={
+        <>
+          <span className="md:hidden">Eval</span>
+          <span className="hidden md:inline">Eval against TREC expert labels</span>
+        </>
+      }
       description={
         ran && (
           <p data-testid="eval-sample">
-            <span className="hidden sm:inline">
+            <span className="hidden md:inline">
               <Num>{latest.sample_size}</Num> judged (topic, trial) pairs over{" "}
               <Num>{latest.topics}</Num> topics.
               {latest.dropped > 0 && (
@@ -51,7 +57,7 @@ function Header({ latest }: { latest?: EvalLatest }) {
                 </>
               )}
             </span>
-            <span className="sm:hidden">
+            <span className="md:hidden">
               {latest.sample_size} pairs · {latest.topics} topics · TREC labels
             </span>
           </p>
@@ -85,19 +91,20 @@ function MetricScoreCard({ card }: { card: MetricCard }) {
         <h2 className="text-sm font-medium text-ink-4">{label}</h2>
         {gain !== null && (
           <span
-            className={`rounded-md px-2 py-0.5 font-mono text-xs font-semibold tabular-nums ${gain >= 0 ? "bg-verdict-pass-bg text-verdict-pass" : "bg-verdict-fail-bg text-verdict-fail"}`}
-            title="Matcher minus BM25"
+            className={`rounded-md px-2 py-0.5 font-mono text-xs font-semibold tabular-nums ${isLoss(gain) ? "bg-verdict-fail-bg text-verdict-fail" : "bg-verdict-pass-bg text-verdict-pass"}`}
             data-testid="eval-gain"
           >
+            <span className="sr-only">Gain over BM25: </span>
             {formatGain(gain)}
           </span>
         )}
       </div>
       <p className="flex flex-wrap items-baseline gap-x-2.5">
-        <span className="font-mono text-3xl font-semibold tracking-tight tabular-nums sm:text-4xl">
+        <span aria-hidden className="font-mono text-3xl font-semibold tracking-tight tabular-nums sm:text-4xl">
           {formatScore(matcher)}
         </span>
-        <span className="font-mono text-sm text-ink-5 tabular-nums">vs {formatScore(bm25)}</span>
+        <span aria-hidden className="font-mono text-sm text-ink-4 tabular-nums">
+          vs {formatScore(bm25)}</span>
         <span className="sr-only">
           Matcher {formatScore(matcher)}, BM25 baseline {formatScore(bm25)}
         </span>
@@ -131,12 +138,12 @@ function CompileRateCard({ rate, target }: { rate: number | null; target: number
   );
 }
 
-function Legend({ matcherScored }: { matcherScored: boolean }) {
+function Legend({ scored }: { scored: boolean }) {
   return (
     <div className="flex flex-col gap-1.5 text-sm text-ink-4 sm:flex-row sm:gap-4">
       <span className="flex items-center gap-1.5">
         <span aria-hidden className={`size-2.5 shrink-0 rounded-xs ${SYSTEMS.matcher.fill}`} />
-        {matcherScored
+        {scored
           ? "Matcher"
           : "Matcher: not scored yet. make eval scores it when ANTHROPIC_API_KEY is set."}
       </span>
@@ -157,7 +164,9 @@ function Legend({ matcherScored }: { matcherScored: boolean }) {
 function SystemPill({ system }: { system: Run["system"] }) {
   const { label, pill } = SYSTEMS[system];
   return (
-    <span className={`rounded-full px-2.5 py-0.5 font-sans text-xs font-medium whitespace-nowrap ${pill}`}>
+    <span
+      className={`inline-flex h-6 items-center rounded-full px-2.5 font-sans text-xs font-medium whitespace-nowrap ${pill}`}
+    >
       {label}
     </span>
   );
@@ -180,7 +189,7 @@ function HistoryRow({ run }: { run: Run }) {
       <td className={TD}>
         <SystemPill system={run.system} />
       </td>
-      {METRICS.map(({ key }) => (
+      {EVAL_METRICS.map(({ key }) => (
         <td key={key} className={`${TD} text-right`}>
           {formatScore(run.metrics[key])}
         </td>
@@ -196,57 +205,67 @@ function HistoryRow({ run }: { run: Run }) {
 function GroupHeading({ version, count }: { version: string | null; count: number }) {
   return (
     <span className="flex flex-wrap items-baseline gap-x-2">
-      <span className="font-mono text-xs break-all text-ink-2">{version ?? "No prompt version"}</span>
-      <span className="text-xs text-ink-4">
-        {count} {count === 1 ? "run" : "runs"}
+      <span className="font-mono text-xs break-all text-ink-2">
+        {version ?? "No prompt version"}
       </span>
+      <span className="text-xs text-ink-4">{countNoun(count, "run", "runs")}</span>
     </span>
   );
 }
 
-function HistoryTable({ history, grouped }: { history: Run[]; grouped: boolean }) {
-  const head = (
-    <thead className="text-left">
-      <tr>
-        <th className={`${TH} pl-5`}>When</th>
-        <th className={TH}>System</th>
-        {METRICS.map(({ key, label }) => (
-          <th key={key} className={`${TH} text-right normal-case`}>
-            {label}
-          </th>
-        ))}
-        <th className={`${TH} text-right`}>Compile</th>
-        <th className={`${TH} text-right`}>Pairs</th>
-        <th className={TH}>Git</th>
-        <th className={`${TH} pr-5`}>Prompts</th>
-      </tr>
-    </thead>
-  );
-  const columns = METRICS.length + 6;
+/** Runs to list under one heading; the "All runs" view is a single group with no heading. */
+type RunGroup = { key: string; heading: ReactNode | null; runs: Run[] };
+
+function runGroups(history: Run[], grouped: boolean): RunGroup[] {
+  if (!grouped) return [{ key: "all", heading: null, runs: history }];
+  return groupByPromptVersion(history).map(({ prompt_version, runs }) => ({
+    key: prompt_version ?? "none",
+    heading: <GroupHeading version={prompt_version} count={runs.length} />,
+    runs,
+  }));
+}
+
+const HEADERS = [
+  { label: "When", className: "pl-5" },
+  { label: "System", className: "" },
+  ...EVAL_METRICS.map(({ label }) => ({ label, className: "text-right normal-case" })),
+  { label: "Compile", className: "text-right" },
+  { label: "Pairs", className: "text-right" },
+  { label: "Git", className: "" },
+  { label: "Prompts", className: "pr-5" },
+];
+
+function HistoryTable({ groups }: { groups: RunGroup[] }) {
   return (
     <div className="hidden overflow-x-auto md:block">
       <table className="w-full text-sm" data-testid="eval-history">
-        {head}
-        {grouped ? (
-          groupByPromptVersion(history).map(({ prompt_version, runs }) => (
-            <tbody key={prompt_version ?? "none"} data-testid="eval-prompt-group">
+        <thead className="text-left">
+          <tr>
+            {HEADERS.map(({ label, className }) => (
+              <th key={label} className={`${TH} ${className}`}>
+                {label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        {groups.map(({ key, heading, runs }) => (
+          <tbody key={key} data-testid={heading ? "eval-prompt-group" : undefined}>
+            {heading && (
               <tr className="border-t border-line bg-surface-sunken">
-                <th colSpan={columns} scope="colgroup" className="px-5 py-2 text-left font-normal">
-                  <GroupHeading version={prompt_version} count={runs.length} />
+                <th
+                  colSpan={HEADERS.length}
+                  scope="rowgroup"
+                  className="px-5 py-2 text-left font-normal"
+                >
+                  {heading}
                 </th>
               </tr>
-              {runs.map((run) => (
-                <HistoryRow key={run.id} run={run} />
-              ))}
-            </tbody>
-          ))
-        ) : (
-          <tbody>
-            {history.map((run) => (
+            )}
+            {runs.map((run) => (
               <HistoryRow key={run.id} run={run} />
             ))}
           </tbody>
-        )}
+        ))}
       </table>
     </div>
   );
@@ -260,7 +279,7 @@ function HistoryCard({ run }: { run: Run }) {
         <span className="font-mono text-xs text-ink-4 tabular-nums">{when(run)}</span>
       </div>
       <dl className="grid grid-cols-4 gap-2 font-mono text-sm tabular-nums">
-        {METRICS.map(({ key, label }) => (
+        {EVAL_METRICS.map(({ key, label }) => (
           <div key={key}>
             <dt className="font-sans text-xs text-ink-4">{label}</dt>
             <dd>{formatScore(run.metrics[key])}</dd>
@@ -278,23 +297,12 @@ function HistoryCard({ run }: { run: Run }) {
   );
 }
 
-function HistoryCards({ history, grouped }: { history: Run[]; grouped: boolean }) {
-  if (!grouped) {
-    return (
-      <ul className="md:hidden">
-        {history.map((run) => (
-          <HistoryCard key={run.id} run={run} />
-        ))}
-      </ul>
-    );
-  }
+function HistoryCards({ groups }: { groups: RunGroup[] }) {
   return (
     <div className="md:hidden">
-      {groupByPromptVersion(history).map(({ prompt_version, runs }) => (
-        <section key={prompt_version ?? "none"} className="border-t border-line first:border-t-0">
-          <h3 className="bg-surface-sunken px-4 py-2">
-            <GroupHeading version={prompt_version} count={runs.length} />
-          </h3>
+      {groups.map(({ key, heading, runs }) => (
+        <section key={key} className="border-t border-line first:border-t-0">
+          {heading && <h3 className="bg-surface-sunken px-4 py-2">{heading}</h3>}
           <ul>
             {runs.map((run) => (
               <HistoryCard key={run.id} run={run} />
@@ -315,6 +323,7 @@ function History({ history }: { history: Run[] }) {
   const [grouped, setGrouped] = useState(false);
   // Below md the history starts collapsed behind "View history (N runs)".
   const [open, setOpen] = useState(false);
+  const groups = runGroups(history, grouped);
   return (
     <>
       <button
@@ -325,12 +334,9 @@ function History({ history }: { history: Run[] }) {
         className="link self-start px-1 py-1.5 text-sm font-medium md:hidden"
         data-testid="eval-history-toggle"
       >
-        {open ? "Hide history" : `View history (${history.length} ${history.length === 1 ? "run" : "runs"})`}
+        {open ? "Hide history" : `View history (${countNoun(history.length, "run", "runs")})`}
       </button>
-      <Card
-        id="eval-history-card"
-        className={`gap-0 py-0 ${open ? "" : "max-md:hidden"}`}
-      >
+      <Card id="eval-history-card" className={`gap-0 py-0 ${open ? "" : "max-md:hidden"}`}>
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line-soft px-4 py-3 sm:px-5">
           <h2 className="text-base font-semibold">History</h2>
           <div
@@ -351,8 +357,8 @@ function History({ history }: { history: Run[] }) {
             ))}
           </div>
         </div>
-        <HistoryTable history={history} grouped={grouped} />
-        <HistoryCards history={history} grouped={grouped} />
+        <HistoryTable groups={groups} />
+        <HistoryCards groups={groups} />
       </Card>
     </>
   );
@@ -368,7 +374,7 @@ function Results({ latest }: { latest: EvalLatest }) {
         ))}
         <CompileRateCard rate={latest.compile_rate} target={latest.compile_rate_target} />
       </div>
-      <Legend matcherScored={Object.keys(latest.metrics).length > 0} />
+      <Legend scored={matcherScored(cards)} />
       <History history={latest.history} />
     </>
   );

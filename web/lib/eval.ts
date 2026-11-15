@@ -50,9 +50,19 @@ export function groupByPromptVersion(history: Run[]): PromptVersionGroup[] {
   return [...groups.values()];
 }
 
+/** True once the matcher has a score on any card (false when only BM25 has run). */
+export function matcherScored(cards: MetricCard[]): boolean {
+  return cards.some((card) => card.matcher !== null);
+}
+
+/** A gain below zero at the three decimals shown (so -0.0001 is not a loss). */
+export function isLoss(delta: number): boolean {
+  return Math.round(delta * 1000) < 0;
+}
+
 /** A gain (matcher minus BM25), signed, to three decimals. */
 export function formatGain(delta: number): string {
-  return `${delta >= 0 ? "+" : "−"}${Math.abs(delta).toFixed(3)}`;
+  return `${isLoss(delta) ? "−" : "+"}${Math.abs(delta).toFixed(3)}`;
 }
 
 /** The compile-rate target as a whole percentage, e.g. 0.6 -> "60%". */
