@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     # Nearest cached trials a match run compiles and evaluates (SPEC.md: "about 20 trials").
     match_max_trials: int = 20
 
-    cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    cors_origins: list[str] = ["http://localhost:3045", "http://127.0.0.1:3045"]
 
     # USD per million tokens, (input, output). Anthropic first-party list prices; a model id
     # matches an entry exactly or by prefix (dated ids like `claude-sonnet-4-5-20250929`).
