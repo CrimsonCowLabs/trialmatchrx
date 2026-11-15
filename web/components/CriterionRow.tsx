@@ -4,6 +4,7 @@
 // Self-contained on purpose: badges (e.g. "unverified quote") and the "Why?" link go here.
 import { CircleCheck, CircleQuestionMark, CircleX, type LucideIcon } from "lucide-react";
 
+import { UnverifiedQuoteBadge } from "@/components/UnverifiedQuoteBadge";
 import type { Schemas } from "@/lib/api";
 
 export type Verdict = Schemas["Verdict"];
@@ -31,7 +32,8 @@ export function CriterionRow({ verdict }: { verdict: Verdict }) {
             {verdict.criterion_id}
             {exclusion ? " (excl.)" : ""}
           </span>
-          {verdict.criterion_quote}
+          {verdict.criterion_quote}{" "}
+          <UnverifiedQuoteBadge verified={verdict.verified} />
         </p>
         <p className="text-xs text-muted-foreground">
           {verdict.patient_evidence && (

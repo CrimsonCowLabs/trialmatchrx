@@ -413,6 +413,8 @@ export interface components {
             cost_usd: number;
             /** Cache Hits */
             cache_hits: number;
+            /** Guardrail Trips */
+            guardrail_trips: number;
             /** Wall Time S */
             wall_time_s: number | null;
         };

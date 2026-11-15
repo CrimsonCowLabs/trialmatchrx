@@ -30,6 +30,7 @@ def compute_totals(run: RunRow, events: list[TraceEvent]) -> RunTotals:
         tokens_out=sum(e.tokens_out or 0 for e in llm),
         cost_usd=sum(e.cost_usd or 0.0 for e in llm),
         cache_hits=sum(1 for e in events if e.cache_hit),
+        guardrail_trips=sum(1 for e in events if e.kind == "guardrail" and e.status == "failed"),
         wall_time_s=wall,
     )
 

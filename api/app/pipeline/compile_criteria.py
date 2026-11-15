@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field, SecretStr, ValidationError
 from app.config import get_settings
 from app.pipeline import criteria_cache
 from app.pipeline.predicate_fields import InvalidPredicate, describe_vocabulary, validate_predicate
+from app.pipeline.verify import normalize
 from app.prompts import load_prompt
 from app.schemas import Criterion, Predicate
 from app.trace.recorder import TraceRecorder
@@ -146,10 +147,6 @@ def clean_eligibility_text(text: str) -> str:
     return _MD_ESCAPE.sub(r"\1", text).strip()
 
 
-def _normalize(text: str) -> str:
-    return " ".join(text.lower().split())
-
-
 def predicate_count(criteria: list[Criterion]) -> int:
     return sum(c.predicate is not None for c in criteria)
 
@@ -192,7 +189,7 @@ def _finalize(
 ) -> list[Criterion]:
     """Number the drafts `inc-N` / `exc-N`, validate predicates, check quotes."""
     counters = {"inclusion": 0, "exclusion": 0}
-    haystack = _normalize(source_text)
+    haystack = normalize(source_text)
     out: list[Criterion] = []
     for draft in drafts:
         counters[draft.type] += 1
@@ -211,7 +208,7 @@ def _finalize(
                     output={"error": str(exc), "action": "predicate=null, needs_judgment=true"},
                     note=f"{crit_id}: invalid predicate downgraded to needs_judgment",
                 )
-        if _normalize(draft.text) not in haystack:
+        if normalize(draft.text) not in haystack:
             rec.event(
                 f"quote:{crit_id}",
                 "guardrail",

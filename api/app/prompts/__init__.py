@@ -7,6 +7,8 @@
     ... {{placeholder}} ...
     ## user
     ...
+    ## retry          (optional: the follow-up turn after a malformed answer)
+    ...
 
 `load_prompt(name)` parses the file; `Prompt.render_system(...)` / `render_user(...)` fill the
 `{{placeholders}}`. Prompts are never written inline in code.
@@ -20,7 +22,7 @@ from pathlib import Path
 PROMPTS_DIR = Path(__file__).resolve().parent
 
 _FRONT_MATTER = re.compile(r"\A---\n(?P<header>.*?)\n---\n(?P<body>.*)\Z", re.S)
-_SECTION = re.compile(r"^## (system|user)\s*$", re.M)
+_SECTION = re.compile(r"^## (system|user|retry)\s*$", re.M)
 _PLACEHOLDER = re.compile(r"\{\{(\w+)\}\}")
 
 
@@ -43,12 +45,18 @@ class Prompt:
     version: str
     system: str
     user: str
+    retry: str | None = None  # optional `## retry`: the follow-up turn after a malformed answer
 
     def render_system(self, **values: str) -> str:
         return _render(self.system, values)
 
     def render_user(self, **values: str) -> str:
         return _render(self.user, values)
+
+    def render_retry(self, **values: str) -> str:
+        if self.retry is None:
+            raise PromptError(f"{self.name}: no `## retry` section")
+        return _render(self.retry, values)
 
 
 @cache
@@ -63,6 +71,6 @@ def load_prompt(name: str) -> Prompt:
         raise PromptError(f"{path.name}: missing `version:` header")
     parts = _SECTION.split(m.group("body"))
     sections = {parts[i]: parts[i + 1].strip() for i in range(1, len(parts) - 1, 2)}
-    if set(sections) != {"system", "user"}:
+    if not {"system", "user"} <= set(sections):
         raise PromptError(f"{path.name}: needs `## system` and `## user` sections")
-    return Prompt(name, version, sections["system"], sections["user"])
+    return Prompt(name, version, sections["system"], sections["user"], sections.get("retry"))
