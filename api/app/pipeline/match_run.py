@@ -8,6 +8,9 @@ judge:<nct>:<id> ...), rank. A trial whose criteria can't be compiled (cache mis
 key, malformed model output) is dropped from the results with a failed `trial:<nct>` step; the
 run carries on.
 
+`parse_patient` is the LLM note parser for a `note`, or the deterministic Synthea mapping
+(`sources/synthea.parse_bundle`, no LLM event) for a `fhir_bundle`.
+
 Criteria with no predicate go to the LLM judge (`judge.llm_judge`), bounded by one judge
 semaphore shared by every trial in the run. With no API key for the judge they stay `unknown`
 (`evaluate.no_judge`) and a skipped `judge` event says why; the run still finishes.
@@ -37,8 +40,7 @@ from app.pipeline.parse_patient import anthropic_parse_model, parse_patient
 from app.pipeline.rank import TIER_ORDER, build_match, rank_matches
 from app.pipeline.trial_search import CandidateTrial, search_cached_trials
 from app.schemas import MatchRequest, PatientFacts, TrialMatch
-from app.sources import ctgov
-from app.stub_data import STUB_PATIENT
+from app.sources import ctgov, synthea
 from app.trace.recorder import TraceRecorder, describe_error
 
 # SPEC.md: Semaphore(8). This bounds trials in flight; a judge that calls an LLM per criterion
@@ -49,14 +51,13 @@ TRIAL_CONCURRENCY = 8
 async def _parse_patient(
     rec: TraceRecorder, req: MatchRequest, parse_model_factory: ModelFactory
 ) -> PatientFacts:
-    if req.note:
-        return await parse_patient(rec, req.note, model_factory=parse_model_factory)
-    # HACK(demo): stub — the FHIR path (sources/synthea.py) doesn't exist yet.
-    async with rec.step("parse_patient", "step", {"fhir_bundle": True}) as s:
-        facts = STUB_PATIENT.model_copy(deep=True)
-        s.output = {"patient": facts.model_dump(mode="json")}
-        s.note = "FHIR bundle parsing not implemented; stub patient (stub)"
-    return facts
+    """The note goes to the LLM parser; a FHIR bundle is mapped in code (no LLM). The router
+    guarantees exactly one of them is set."""
+    if req.fhir_bundle is not None:
+        return await synthea.parse_bundle(rec, req.fhir_bundle)
+    if not req.note:
+        raise ValueError("a match needs a note or a fhir_bundle")
+    return await parse_patient(rec, req.note, model_factory=parse_model_factory)
 
 
 def _trial_text(study: dict[str, Any]) -> str:

@@ -16,7 +16,8 @@ export interface paths {
         /**
          * Start Match
          * @description Start a match run in the background; poll `GET /api/runs/{run_id}` or stream its
-         *     events. The compile model is only built on a compile-cache miss.
+         *     events. Exactly one of `note` (parsed by the LLM) or `fhir_bundle` (a Synthea FHIR bundle,
+         *     mapped in code) is required. The compile model is only built on a compile-cache miss.
          */
         post: operations["start_match"];
         delete?: never;
