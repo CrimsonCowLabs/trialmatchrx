@@ -24,6 +24,8 @@ Needs only Docker (no host Python or Node). `cp .env.example .env` and set `ANTH
 
 On ccl-vps only `compose.yaml` runs (`docker compose -f compose.yaml`, from `scripts/deploy.sh`); the box's own Caddy does the routing.
 
+**Where prod routing lives.** Not in this repo. The Caddy on ccl-vps is its own stack, whose source is in the KeyIDPro repo (`eodgooch/keyidpro`, `deploy/caddy/`). TrialMatch Rx is its block `deploy/caddy/sites/tmrx.crimsoncowlabs.com.caddy`: `https://tmrx.crimsoncowlabs.com`, `basic_auth` on every path, `/api/*` to `127.0.0.1:8045` and everything else to `127.0.0.1:3045`, so changing a port here means changing it there too. It goes out with that repo's `./scripts/deploy-caddy.sh`. The password's bcrypt line is only on the box, in `/app/caddy/secrets/tmrx.crimsoncowlabs.com.basicauth`; that repo's `deploy/caddy/sites/README.md` says how to make or change it.
+
 ## Deploying to ccl-vps
 
 From the Mac, on a commit with nothing uncommitted under `api/`, `web/`, `data/fixtures/`, `compose.yaml`. `scripts/deploy.sh` builds both images for linux/amd64, pushes them to the tailnet registry, and brings them up in `/app/trialmatchrx` (API on the box's `127.0.0.1:8045`, web on `127.0.0.1:3045`), rolling back if they don't come up healthy with `/api/health` `ok: true`. `scripts/load-data.sh` copies a seeded `api/app.db` into the stack's database volume. `--help` on either lists its settings.
