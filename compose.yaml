@@ -1,0 +1,80 @@
+# TrialMatch Rx as one compose stack: the API (uvicorn, no --reload) and the web app (a
+# production Next build), shaped for ccl-vps.
+#
+# Caddy on the box is host-networked and reaches each app on a loopback port, routing
+# `/api/*` to the API and everything else to the web app, so the page and its API share one
+# origin (no CORS, SSE behind the same auth as the page). Locally, compose.override.yaml adds
+# a small Caddy with that same split; `docker compose up --build` picks it up on its own.
+
+name: trialmatchrx
+
+services:
+  api:
+    # What scripts/deploy.sh pushed, set by it in the box's shell and .env. Unset (local
+    # `docker compose up --build`), the image is built from `build:` under this local name.
+    image: ${TRIALMATCH_API_IMAGE:-trialmatchrx-api}
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    restart: unless-stopped
+    # ANTHROPIC_API_KEY, DEMO_MODE, model ids: from the .env beside this file, never the image.
+    env_file: .env
+    environment:
+      # Stated here so a DATABASE_URL / DEMO_FIXTURES_DIR in .env (written for `make dev`)
+      # can't point the container at a path that isn't in it.
+      DATABASE_URL: sqlite:////data/app.db
+      DEMO_FIXTURES_DIR: /app/data/fixtures/runs
+    volumes:
+      - db:/data
+    # Loopback only. Docker on ccl-vps writes no iptables rules, so a port published on every
+    # address would be held back by ufw alone. 8045 / 3045 match `make dev`; 8000 and 5000
+    # are taken on the box.
+    ports:
+      - "127.0.0.1:${TRIALMATCH_API_PORT:-8045}:8045"
+    # Liveness, not demo readiness: any 200 passes, so `ok: false` (replay mode with no
+    # recorded runs) is still a running API, and the health body says why.
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8045/api/health', timeout=5)"
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+    # The box has 3.8 GB with postgres (1 GiB) and the KeyIDPro API (1 GiB) already on it.
+    # Swap is held to the same figure, so an overrun is an OOM kill of this container rather
+    # than a slide into swap that slows everything else on the box.
+    mem_limit: 512m
+    memswap_limit: 512m
+
+  web:
+    image: ${TRIALMATCH_WEB_IMAGE:-trialmatchrx-web}
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      args:
+        # "" = call the API by relative path (web/lib/api.ts). Not read from .env, whose
+        # NEXT_PUBLIC_API_URL is the `make dev` cross-origin one.
+        NEXT_PUBLIC_API_URL: ""
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${TRIALMATCH_WEB_PORT:-3045}:3045"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3045/').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+    mem_limit: 256m
+    memswap_limit: 256m
+
+volumes:
+  # SQLite (trials cache, cohort, runs, eval). Survives `docker compose down`; only
+  # `down -v` removes it.
+  db:

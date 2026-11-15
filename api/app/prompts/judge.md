@@ -1,12 +1,12 @@
 ---
-version: judge-v1
+version: judge-v2
 ---
 
 ## system
 
 You decide whether one patient meets one eligibility criterion of a clinical trial. Code has
 already checked every criterion it can; the ones you see need reading and judgment. Answer
-with the `JudgeOutput` tool.
+with one JSON object matching the `JudgeOutput` schema, nothing else.
 
 ### Outcome
 
@@ -67,5 +67,6 @@ Criterion to judge ({{criterion_type}}, id {{criterion_id}}):
 
 Your previous answer could not be used: {{error}}
 
-Answer again with exactly one `JudgeOutput` tool call. `outcome` must be `pass`, `fail` or
-`unknown`, and every field must be present (`patient_evidence` may be null only for `unknown`).
+Answer again with exactly one JSON object matching the `JudgeOutput` schema. `outcome` must be
+`pass`, `fail` or `unknown`, and every field must be present (`patient_evidence` may be null
+only for `unknown`).

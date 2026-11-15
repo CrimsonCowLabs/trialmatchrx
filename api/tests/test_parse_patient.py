@@ -28,9 +28,7 @@ def draft(name: str) -> dict[str, Any]:
 
 
 def model(output: dict[str, Any]) -> FixtureChatModel:
-    return FixtureChatModel(
-        output=output, tool_name="DraftPatient", model_name=get_settings().model_parse
-    )
+    return FixtureChatModel(output=output, model_name=get_settings().model_parse)
 
 
 def recorder() -> TraceRecorder:
@@ -168,8 +166,22 @@ async def test_the_parse_llm_call_is_in_the_trace_under_the_parse_step() -> None
     assert llm.model == get_settings().model_parse
     assert llm.tokens_in and llm.tokens_out and llm.cost_usd is not None
     assert llm.input is not None and "HbA1c 8.4%" in json.dumps(llm.input)
-    assert step.input is not None and step.input["prompt_version"] == "parse-patient-v1"
+    assert llm.output is not None
+    (answer,) = llm.output["messages"]
+    assert json.loads(answer["content"]) == draft("demo_short") and "tool_calls" not in answer
+    assert step.input is not None and step.input["prompt_version"] == "parse-patient-v3"
     assert step.output is not None and step.output["patient"]["labs"]["egfr"]["value"] == 48
+
+
+@pytest.mark.parametrize("empty", [None, "null"])
+async def test_a_null_or_null_string_list_is_read_as_empty(empty: str | None) -> None:
+    output = draft("demo_short")
+    output["meds"] = empty  # Haiku has answered `"meds": "null"` for a note with no meds
+
+    facts, _ = await parse("demo_short", output)
+
+    assert facts.meds == []
+    assert facts.labs["egfr"].value == 48
 
 
 async def test_malformed_model_output_fails_the_parse_step() -> None:

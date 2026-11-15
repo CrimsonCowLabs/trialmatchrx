@@ -2,7 +2,8 @@
 
     facts = await parse_patient(recorder, note, model_factory=anthropic_parse_model)
 
-Haiku returns a `DraftPatient` via `with_structured_output`: the PatientFacts vocabulary, but
+Haiku returns a `DraftPatient` via `with_structured_output(..., method="json_schema")` (a JSON
+text answer, not a forced tool call): the PatientFacts vocabulary, but
 with a required verbatim `source_span` on every fact, scalars included. Code then checks each
 span against the note (case- and whitespace-insensitive) and builds the frozen `PatientFacts`:
 
@@ -27,7 +28,7 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.exceptions import OutputParserException
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
-from pydantic import BaseModel, Field, SecretStr, ValidationError
+from pydantic import BaseModel, Field, SecretStr, ValidationError, field_validator
 
 from app.config import get_settings
 from app.pipeline.predicate_fields import LAB_UNITS, VITAL_UNITS
@@ -36,6 +37,7 @@ from app.schemas import Fact, PatientFacts
 from app.trace.recorder import TraceRecorder
 
 PROMPT_NAME = "parse_patient"
+STEP_NAME = "parse_patient"  # the traced step (the eval's --fail-fast reads it)
 
 ModelFactory = Callable[[], BaseChatModel]
 
@@ -94,6 +96,12 @@ class DraftPatient(BaseModel):
     smoker: DraftFlag | None = None
     location: DraftLocation | None = None
 
+    # Haiku sometimes answers an unmentioned list with null or the string "null" instead of [].
+    @field_validator("conditions", "labs", "vitals", "meds", mode="before")
+    @classmethod
+    def _null_list_is_empty(cls, v: Any) -> Any:
+        return [] if v is None or v == "null" else v
+
 
 # --------------------------------------------------------------------------------------------
 # Model
@@ -108,14 +116,16 @@ class ParseFailed(RuntimeError):
     """The parse model's answer could not be parsed into DraftPatient."""
 
 
-def anthropic_parse_model() -> BaseChatModel:
-    """The real parse model (Haiku, `MODEL_PARSE`)."""
+def anthropic_parse_model(api_key: str | None = None) -> BaseChatModel:
+    """The real parse model (Haiku, `MODEL_PARSE`). `api_key` overrides the settings' key (the
+    eval's `--offline` passes a placeholder: the key is not part of the LLM cache key)."""
     settings = get_settings()
-    if not settings.anthropic_api_key:
+    api_key = api_key or settings.anthropic_api_key
+    if not api_key:
         raise ParseModelUnavailable("ANTHROPIC_API_KEY is not set; can't parse the patient note")
     return ChatAnthropic(
         model=settings.model_parse,
-        api_key=SecretStr(settings.anthropic_api_key),
+        api_key=SecretStr(api_key),
         max_tokens=4000,
     )
 
@@ -277,12 +287,12 @@ async def parse_patient(
         HumanMessage(prompt.render_user(note=note.strip())),
     ]
     async with rec.step(
-        "parse_patient",
+        STEP_NAME,
         "step",
         {"note_chars": len(note), "prompt": prompt.name, "prompt_version": prompt.version},
     ) as s:
         model = model_factory()
-        runnable = model.with_structured_output(DraftPatient)
+        runnable = model.with_structured_output(DraftPatient, method="json_schema")
         try:
             result: Any = await runnable.ainvoke(
                 messages,

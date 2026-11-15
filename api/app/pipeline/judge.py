@@ -6,13 +6,14 @@
     judge = llm_judge(model, trial_text=..., note=note, semaphore=semaphore)  # an evaluate.Judge
 
 Each item is one `needs_judgment` criterion with its trial's (cleaned) eligibility text. The
-judge model answers through `with_structured_output(JudgeOutput)`; `verify.verify_verdict` then
+judge model answers through `with_structured_output(JudgeOutput, method="json_schema")` (a JSON
+text answer, not a forced tool call); `verify.verify_verdict` then
 checks both quotes against their sources and downgrades unverifiable verdicts to `unknown`.
 
 Failure handling, per criterion, never failing the batch:
-- malformed output (parser/validation error, or no tool call) gets one retry, with the prompt's
-  `## retry` turn naming the error appended; a second failure gives `unknown` plus an `error`
-  event `judge:<nct>:<id>:malformed`.
+- malformed output (parser/validation error, e.g. prose or invalid JSON) gets one retry, with
+  the prompt's `## retry` turn naming the error appended; a second failure gives `unknown` plus
+  an `error` event `judge:<nct>:<id>:malformed`.
 - with no API key, `judge_criteria` raises `JudgeModelUnavailable` before any call; the caller
   decides whether that fails the run.
 - any other model error (network, API) gives `unknown` plus an `error` event
@@ -42,6 +43,7 @@ from app.schemas import Criterion, PatientFacts, Verdict
 from app.trace.recorder import Step, TraceRecorder, describe_error
 
 PROMPT_NAME = "judge"
+STEP_PREFIX = "judge:"  # judge:<nct>:<id>, the traced step (the eval reads it)
 
 # SPEC.md: asyncio.Semaphore(8) across trials and criteria.
 JUDGE_CONCURRENCY = 8
@@ -91,14 +93,16 @@ def new_judge_semaphore() -> asyncio.Semaphore:
     return asyncio.Semaphore(JUDGE_CONCURRENCY)
 
 
-def anthropic_judge_model() -> BaseChatModel:
-    """The real judge model (Sonnet, from settings)."""
+def anthropic_judge_model(api_key: str | None = None) -> BaseChatModel:
+    """The real judge model (Sonnet, from settings). `api_key` overrides the settings' key
+    (the eval's `--offline` passes a placeholder: the key is not part of the LLM cache key)."""
     settings = get_settings()
-    if not settings.anthropic_api_key:
+    api_key = api_key or settings.anthropic_api_key
+    if not api_key:
         raise JudgeModelUnavailable("ANTHROPIC_API_KEY is not set; criteria can't be judged")
     return ChatAnthropic(
         model=settings.model_judge,
-        api_key=SecretStr(settings.anthropic_api_key),
+        api_key=SecretStr(api_key),
         max_tokens=2000,
     )
 
@@ -131,7 +135,7 @@ async def _ask(
 ) -> JudgeOutput:
     """One judge call. Raises `_Malformed` when the answer isn't a valid `JudgeOutput`."""
     try:
-        result = await model.with_structured_output(JudgeOutput).ainvoke(
+        result = await model.with_structured_output(JudgeOutput, method="json_schema").ainvoke(
             messages,
             config={
                 "callbacks": [rec.langchain_handler()],
@@ -141,8 +145,8 @@ async def _ask(
     except (OutputParserException, ValidationError) as exc:
         raise _Malformed(describe_error(exc)) from exc
     if not isinstance(result, JudgeOutput):
-        # e.g. no tool call at all (max_tokens hit, or the model answered in prose)
-        raise _Malformed(f"no JudgeOutput tool call (got {type(result).__name__})")
+        # Narrows the type: the parser returns the schema or raises (prose, bad JSON) above
+        raise _Malformed(f"no JudgeOutput (got {type(result).__name__})")
     return result
 
 
@@ -156,7 +160,7 @@ def _give_up(
     step.status = "failed"
     step.output = {"outcome": "unknown", **output}
     rec.event(
-        f"judge:{label}:{kind}",
+        f"{STEP_PREFIX}{label}:{kind}",
         "error",
         status="failed",
         input={"criterion_id": item.criterion.id},
@@ -187,7 +191,7 @@ async def judge_criterion(
     prompt = load_prompt(PROMPT_NAME)
     label = f"{item.nct_id}:{item.criterion.id}"
     async with rec.step(
-        f"judge:{label}",
+        f"{STEP_PREFIX}{label}",
         "step",
         {
             "nct": item.nct_id,

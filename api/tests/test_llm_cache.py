@@ -13,12 +13,20 @@ class Answer(BaseModel):
     text: str
 
 
+class Reply(BaseModel):
+    """The same shape under another schema name, as two pipeline steps would ask."""
+
+    text: str
+
+
 def _model(text: str) -> FixtureChatModel:
-    return FixtureChatModel(output={"text": text}, tool_name="Answer", model_name="m-1")
+    return FixtureChatModel(output={"text": text}, model_name="m-1")
 
 
 async def _ask(model: FixtureChatModel, question: str) -> Answer:
-    result = await model.with_structured_output(Answer).ainvoke([HumanMessage(question)])
+    result = await model.with_structured_output(Answer, method="json_schema").ainvoke(
+        [HumanMessage(question)]
+    )
     assert isinstance(result, Answer)
     return result
 
@@ -47,6 +55,18 @@ async def test_a_different_model_misses_the_cache() -> None:
     cache = SqliteLlmCache()
     await _ask(with_cache(lambda: _model("one"), cache)(), "q")
 
-    other = FixtureChatModel(output={"text": "two"}, tool_name="Answer", model_name="m-2")
+    other = FixtureChatModel(output={"text": "two"}, model_name="m-2")
     other = with_cache(lambda: other, cache)()
     assert (await _ask(other, "q")).text == "two"
+
+
+async def test_a_different_answer_schema_misses_the_cache() -> None:
+    cache = SqliteLlmCache()
+    await _ask(with_cache(lambda: _model("one"), cache)(), "q")
+
+    model = with_cache(lambda: _model("two"), cache)()
+    result = await model.with_structured_output(Reply, method="json_schema").ainvoke(
+        [HumanMessage("q")]
+    )
+    assert isinstance(result, Reply) and result.text == "two"
+    assert model.calls == 1

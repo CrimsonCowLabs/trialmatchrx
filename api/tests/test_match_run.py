@@ -155,7 +155,7 @@ JUDGED = {"inc-2", "exc-1", "exc-2", "exc-4"}  # NCT07271186 criteria without a 
 
 
 def install_judge(output: dict[str, Any]) -> FixtureChatModel:
-    model = FixtureChatModel(output=output, tool_name="JudgeOutput", model_name="claude-judge")
+    model = FixtureChatModel(output=output, model_name="claude-judge")
     app.dependency_overrides[judge_model_factory] = lambda: lambda: model
     return model
 

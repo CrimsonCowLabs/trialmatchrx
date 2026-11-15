@@ -1,11 +1,12 @@
 # HACK(demo): a fake chat model that replays saved compile outputs; used by pytest and by
 # `scripts/compile_fixtures.py --fixtures` because no ANTHROPIC_API_KEY exists here yet.
-"""FixtureChatModel: answers every call with one saved tool call (`CompiledCriteria` by
-default), or with a scripted sequence of `replies` (the judge's retry tests).
+"""FixtureChatModel: answers every call with one saved structured answer (a `CompiledCriteria`
+payload by default), or with a scripted sequence of `replies` (the judge's retry tests).
 
-It goes through the same `with_structured_output` path as ChatAnthropic (bind_tools ->
-tool call -> PydanticToolsParser), so the compiler and the trace callbacks see a real-shaped
-LangChain call. Token counts are estimated (~4 chars per token), not measured.
+It answers `with_structured_output(..., method="json_schema")` the way ChatAnthropic does: it
+binds `output_config` and parses the JSON text answer with PydanticOutputParser, so the pipeline
+and the trace callbacks see a real-shaped LangChain call. Token counts are estimated (~4 chars
+per token), not measured.
 """
 
 import json
@@ -18,8 +19,10 @@ from langchain_core.callbacks import (
 )
 from langchain_core.language_models import BaseChatModel, LanguageModelInput
 from langchain_core.messages import AIMessage, BaseMessage
+from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.outputs import ChatGeneration, ChatResult
 from langchain_core.runnables import Runnable
+from pydantic import BaseModel
 
 from app.config import API_DIR, get_settings
 
@@ -36,11 +39,10 @@ def _estimate_tokens(text: str) -> int:
 
 
 class FixtureChatModel(BaseChatModel):
-    output: dict[str, Any] = {}  # the tool-call args, i.e. a CompiledCriteria payload
-    # Optional script, one reply per call (the last repeats): tool-call args, or None for a
-    # prose answer with no tool call. Overrides `output` when set.
+    output: dict[str, Any] = {}  # the structured answer, e.g. a CompiledCriteria payload
+    # Optional script, one reply per call (the last repeats): an answer, or None for a prose
+    # answer that isn't JSON. Overrides `output` when set.
     replies: list[dict[str, Any] | None] = []
-    tool_name: str = "CompiledCriteria"
     # Reported as the model id so the trace shows what the real call would cost.
     model_name: str = ""
     calls: int = 0
@@ -57,24 +59,34 @@ class FixtureChatModel(BaseChatModel):
 
     @property
     def _identifying_params(self) -> dict[str, Any]:
-        # What an LLM cache keys on besides the prompt, as ChatAnthropic's model id does.
-        return {"model_name": self.model_name, "tool_name": self.tool_name}
+        # What an LLM cache keys on besides the prompt, as ChatAnthropic's model id does. The
+        # bound `output_config` (the answer's schema) is keyed too, as a call kwarg.
+        return {"model_name": self.model_name}
 
-    def bind_tools(self, tools: Any, **kwargs: Any) -> Runnable[LanguageModelInput, AIMessage]:
-        return self
+    def with_structured_output(
+        self,
+        schema: dict[str, Any] | type,
+        *,
+        include_raw: bool = False,
+        method: str = "function_calling",
+        **kwargs: Any,
+    ) -> Runnable[LanguageModelInput, dict[str, Any] | BaseModel]:
+        if method != "json_schema" or include_raw or kwargs or not isinstance(schema, type):
+            raise NotImplementedError("FixtureChatModel answers only method='json_schema'")
+        if not issubclass(schema, BaseModel):
+            raise NotImplementedError("FixtureChatModel needs a pydantic schema")
+        output_config = {"format": {"type": "json_schema", "schema": schema.model_json_schema()}}
+        return self.bind(output_config=output_config) | PydanticOutputParser(pydantic_object=schema)
 
     def _result(self, messages: list[BaseMessage]) -> ChatResult:
         self.calls += 1
         args = self.replies[min(self.calls, len(self.replies)) - 1] if self.replies else self.output
         prompt = "".join(str(m.content) for m in messages)
         tokens_in = _estimate_tokens(prompt)
-        tokens_out = _estimate_tokens(json.dumps(args))
-        call_id = f"fixture-{self.calls}"
+        content = json.dumps(args) if args is not None else "I cannot answer in that format."
+        tokens_out = _estimate_tokens(content)
         message = AIMessage(
-            content="" if args is not None else "I cannot answer with the tool.",
-            tool_calls=(
-                [] if args is None else [{"name": self.tool_name, "args": args, "id": call_id}]
-            ),
+            content=content,
             usage_metadata={
                 "input_tokens": tokens_in,
                 "output_tokens": tokens_out,
