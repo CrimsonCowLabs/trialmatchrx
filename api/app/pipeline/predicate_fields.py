@@ -56,9 +56,10 @@ VITAL_UNITS: dict[str, str] = {
 _KEYED: dict[str, Mapping[str, str]] = {"labs": LAB_UNITS, "vitals": VITAL_UNITS}
 
 # Other spellings accepted for a canonical unit (both sides through `normalize_unit`). "" is a
-# reading written with no unit, allowed only where the unit is a count or a ratio.
+# reading written with no unit, allowed only where the unit is a count, a ratio or % predicted
+# (the `_pct` key already says it; LAB_RANGES catches a bare value in litres).
 UNIT_ALIASES: dict[str, frozenset[str]] = {
-    "%predicted": frozenset({"%", "%pred", "%ofpredicted", "percentpredicted", "%pp"}),
+    "%predicted": frozenset({"", "%", "%pred", "%ofpredicted", "percentpredicted", "%pp"}),
     "ratio": frozenset({"", "fraction"}),
     "points": frozenset({"", "point", "pts", "pt", "score"}),
     "m": frozenset({"meter", "meters", "metre", "metres"}),

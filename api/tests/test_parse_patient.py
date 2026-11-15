@@ -172,14 +172,16 @@ async def test_a_measure_outside_its_plausible_range_is_dropped(
     assert [e.name for e in events(rec) if e.kind == "guardrail"] == [f"range:labs.{name}"]
 
 
-async def test_a_percent_predicted_lab_without_a_unit_is_dropped() -> None:
+async def test_a_percent_predicted_lab_without_a_unit_is_kept() -> None:
+    # Haiku often leaves the unit off "FVC 82% predicted" (the `_pct` key already says it).
     output = draft("pulm_note")
     output["labs"][1]["unit"] = None  # fvc_pct
 
     facts, rec = await parse("pulm_note", output)
 
-    assert "fvc_pct" not in facts.labs
-    assert [e.name for e in events(rec) if e.kind == "guardrail"] == ["unit:labs.fvc_pct"]
+    assert facts.labs["fvc_pct"].value == 82
+    assert facts.labs["fvc_pct"].unit == "% predicted"
+    assert [e.name for e in events(rec) if e.kind == "guardrail"] == []
 
 
 async def test_a_span_must_match_whole_words() -> None:
