@@ -55,6 +55,14 @@ async def _get(client: httpx.AsyncClient, path: str, params: dict[str, Any]) -> 
     raise AssertionError("unreachable")
 
 
+class StudyMovedError(LookupError):
+    """The NCT ID was merged into another record (`moved_to`); the API redirects to it."""
+
+    def __init__(self, nct: str, moved_to: str) -> None:
+        super().__init__(f"{nct} moved to {moved_to}")
+        self.nct, self.moved_to = nct, moved_to
+
+
 def search_params(
     cond: str, *, radius_mi: float | None = None, page_size: int = 50
 ) -> dict[str, Any]:
@@ -84,11 +92,18 @@ async def search_studies(
         params = {**params, "pageToken": token}
 
 
-async def fetch_study(nct: str, *, client: httpx.AsyncClient) -> dict[str, Any] | None:
-    """One study by NCT ID from the API, or None if ClinicalTrials.gov doesn't know it."""
-    resp = await _get(client, f"/studies/{nct}", {"fields": FIELDS})
+async def fetch_study(
+    nct: str, *, client: httpx.AsyncClient, fields: str = FIELDS
+) -> dict[str, Any] | None:
+    """One study by NCT ID from the API, or None if ClinicalTrials.gov doesn't know it.
+
+    Raises StudyMovedError when the ID is now an alias (a 301 to the record it was merged into).
+    """
+    resp = await _get(client, f"/studies/{nct}", {"fields": fields})
     if resp.status_code == 404:
         return None
+    if resp.is_redirect:
+        raise StudyMovedError(nct, resp.headers.get("Location", "").rsplit("/", 1)[-1])
     study: dict[str, Any] = resp.raise_for_status().json()
     return study
 

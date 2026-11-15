@@ -175,20 +175,27 @@ class CloserRequest(BaseModel):
     nct_id: str
 
 
+EvalSystem = Literal["bm25", "matcher"]
+
+
 class EvalRunSummary(BaseModel):
     id: str
     created_at: dt.datetime
+    system: EvalSystem  # what was scored: the BM25 baseline or the matcher
     git_sha: str | None
     prompt_version: str | None
+    sample_size: int  # judged (topic, trial) pairs scored
     metrics: dict[str, float]
 
 
 class EvalLatest(BaseModel):
-    metrics: dict[str, float]  # ndcg@10, p@10, accuracy
-    baseline: dict[str, float]  # BM25, same keys
+    metrics: dict[str, float]  # ndcg@10, p@10, accuracy (latest matcher run; {} until one)
+    baseline: dict[str, float]  # BM25, same keys ({} until `make eval`)
     compile_rate: float | None
-    sample_size: int
-    history: list[EvalRunSummary]
+    sample_size: int  # judged (topic, trial) pairs in the fixed TREC sample
+    topics: int  # TREC topics in the sample
+    dropped: int  # sampled trials dropped (gone from ClinicalTrials.gov or no criteria text)
+    history: list[EvalRunSummary]  # every run, newest first
 
 
 class Health(BaseModel):

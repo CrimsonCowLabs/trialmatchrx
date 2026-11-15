@@ -7,6 +7,7 @@ export type RunSummary = Schemas["RunSummary"];
 export type RunDone = Schemas["RunDone"];
 export type MatchRequest = Schemas["MatchRequest"];
 export type RunStarted = Schemas["RunStarted"];
+export type EvalLatest = Schemas["EvalLatest"];
 
 // Called directly (not through a Next rewrite) so the SSE stream is never buffered.
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -39,5 +40,6 @@ export const api = {
   getRun: (runId: string) => request<RunSummary>(`/api/runs/${encodeURIComponent(runId)}`),
   getTrace: (runId: string) =>
     request<TraceEvent[]>(`/api/runs/${encodeURIComponent(runId)}/trace`),
+  getEvalLatest: () => request<EvalLatest>("/api/eval/latest"),
   eventsUrl: (runId: string) => `${API_URL}/api/runs/${encodeURIComponent(runId)}/events`,
 };

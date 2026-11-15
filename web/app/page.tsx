@@ -12,6 +12,9 @@ export default function Home() {
       <Button render={<Link href="/match" />} className="self-start">
         Match a patient
       </Button>
+      <Link href="/eval" className="text-sm underline">
+        Eval: scores against TREC expert labels
+      </Link>
     </main>
   );
 }

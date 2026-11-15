@@ -38,8 +38,10 @@ seed:
 	cd api && uv run python -m scripts.seed_trials
 	@echo "make seed: cohort (load_cohort.py) not loaded until M5"  # HACK(demo): stub
 
+# BM25 on the fixed TREC sample -> eval_runs. Builds data/fixtures/trec/sample.json on first run
+# (network); `make eval ARGS=--rebuild` redraws and refetches it.
 eval:
-	@echo "make eval: no-op until M4 (run_eval.py)"  # HACK(demo): stub
+	cd api && uv run python -m scripts.run_eval $(ARGS)
 
 # Compile the 10 fixture trials and print the compile rate. Real Sonnet needs ANTHROPIC_API_KEY;
 # `make compile-fixtures ARGS=--fixtures` replays the saved (hand-authored) LLM outputs instead.

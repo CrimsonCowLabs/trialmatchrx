@@ -135,3 +135,23 @@ class TrialCacheRow(SQLModel, table=True):
     last_update_post_date: str = Field(primary_key=True)  # ISO "YYYY-MM-DD", sorts as text
     fetched_at: dt.datetime = Field(default_factory=utcnow)
     data: dict[str, Any] = Field(sa_column=Column(JSON, nullable=False))
+
+
+class EvalRunRow(SQLModel, table=True):
+    """One scored pass over the fixed TREC sample (`make eval`): BM25 or the matcher.
+
+    `git_sha` and `prompt_version` pin what produced the numbers, so the /eval history ties
+    each score to a prompt change.
+    """
+
+    __tablename__ = "eval_runs"
+
+    id: str = Field(primary_key=True)
+    created_at: dt.datetime = Field(default_factory=utcnow, index=True)
+    system: str = Field(index=True)  # EvalSystem
+    git_sha: str | None = None
+    prompt_version: str | None = None
+    sample_size: int  # judged (topic, trial) pairs scored
+    topics: int
+    dropped: int  # sampled trials that never made it into the sample
+    metrics: dict[str, float] = Field(default_factory=dict, sa_column=Column(JSON))
