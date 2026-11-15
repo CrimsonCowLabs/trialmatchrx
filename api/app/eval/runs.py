@@ -14,7 +14,7 @@ from statistics import fmean
 
 from sqlmodel import col, select
 
-from app.config import REPO_DIR
+from app.config import REPO_DIR, get_settings
 from app.db import EvalRunRow, session_scope
 from app.eval.bm25 import Bm25Index, trial_text
 from app.eval.metrics import eligibility_accuracy, ndcg_at_k, precision_at_k
@@ -120,7 +120,8 @@ def record_eval_run(
 
 def latest_eval() -> EvalLatest:
     """The newest matcher and BM25 scores, sample size from the newest run, every run newest
-    first. Empty (zeros, `{}`) before the first `make eval`."""
+    first, and the compile-rate target from settings. Empty (zeros, `{}`) before the first
+    `make eval`."""
     with session_scope() as s:
         rows = s.exec(select(EvalRunRow).order_by(col(EvalRunRow.created_at).desc())).all()
         newest = rows[0] if rows else None
@@ -130,6 +131,7 @@ def latest_eval() -> EvalLatest:
             metrics=matcher.metrics if matcher else {},
             baseline=baseline.metrics if baseline else {},
             compile_rate=matcher.metrics.get(COMPILE_RATE) if matcher else None,
+            compile_rate_target=get_settings().eval_compile_rate_target,
             sample_size=newest.sample_size if newest else 0,
             topics=newest.topics if newest else 0,
             dropped=newest.dropped if newest else 0,

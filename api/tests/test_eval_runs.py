@@ -4,6 +4,7 @@ from typing import Any
 
 import pytest
 
+from app.config import get_settings
 from app.eval.runs import BM25, MATCHER, latest_eval, record_eval_run, score_bm25
 from app.schemas import EvalLatest, EvalSystem
 from app.sources.trec import Judgment, Topic, TrecSample, first_topics
@@ -96,6 +97,16 @@ def test_latest_shows_the_newest_matcher_run_and_its_compile_rate() -> None:
     assert latest.baseline == baseline
     assert latest.compile_rate == 0.55
     assert [h.system for h in latest.history] == ["matcher", "bm25"]
+
+
+def test_latest_serves_the_compile_rate_target_from_settings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # SPEC.md: about 60% of criteria compile; the web page shows it, so the API serves it.
+    assert latest_eval().compile_rate_target == 0.6
+    monkeypatch.setattr(get_settings(), "eval_compile_rate_target", 0.75)
+
+    assert latest_eval().compile_rate_target == 0.75
 
 
 @pytest.mark.parametrize("system", [BM25, MATCHER])

@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     # Nearest cached trials a match run compiles and evaluates (SPEC.md: "about 20 trials").
     match_max_trials: int = 20
 
+    # Share of criteria the compiler should turn into predicates (SPEC.md: "about 60%"); the
+    # /eval page shows the measured compile rate against it.
+    eval_compile_rate_target: float = 0.6
+
     cors_origins: list[str] = ["http://localhost:3045", "http://127.0.0.1:3045"]
 
     # USD per million tokens, (input, output). Anthropic first-party list prices; a model id
