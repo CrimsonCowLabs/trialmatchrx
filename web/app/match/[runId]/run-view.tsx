@@ -1,38 +1,49 @@
 "use client";
 
+import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
 
-import { MatchResults } from "@/components/MatchResults";
-import { TracePanel } from "@/components/TracePanel";
-import { api, type RunSummary } from "@/lib/api";
-import { useRunEvents } from "@/lib/sse";
+import { RunWithTrace } from "@/components/RunWithTrace";
+import { useRunSummary } from "@/lib/use-run-summary";
+import { useRunEvents, type StreamState } from "@/lib/sse";
 
-function Results({ runId }: { runId: string }) {
-  const [summary, setSummary] = useState<RunSummary | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  useEffect(() => {
-    api.getRun(runId).then(setSummary, (err: unknown) =>
-      setError(err instanceof Error ? err.message : String(err)),
-    );
-  }, [runId]);
-  if (error) return <p className="text-sm text-destructive">{error}</p>;
-  if (!summary) return <p className="text-sm text-muted-foreground">Loading results…</p>;
-  return <MatchResults matches={summary.matches} />;
-}
+const STREAM_VARIANT: Record<StreamState, "outline" | "destructive" | "secondary"> = {
+  connecting: "outline",
+  open: "outline",
+  done: "secondary",
+  error: "destructive",
+};
 
 function MatchRun({ runId }: { runId: string }) {
   const { events, state, runStatus } = useRunEvents(runId);
+  const { summary, error } = useRunSummary(runId, runStatus !== null);
   return (
-    <div className="grid gap-4 md:grid-cols-[1fr_minmax(0,28rem)]">
-      <div className="flex flex-col gap-2">
-        <p className="text-sm text-muted-foreground">
-          Run <span className="font-mono">{runId}</span> · {runStatus ?? "running"}
-        </p>
-        {runStatus === "done" && <Results runId={runId} />}
-      </div>
-      <TracePanel events={events} state={state} />
-    </div>
+    <RunWithTrace
+      runId={runId}
+      events={events}
+      live={state !== "done" && state !== "error"}
+      status={{ label: state, variant: STREAM_VARIANT[state] }}
+      matches={summary?.status === "done" ? summary.matches : null}
+    >
+      <p className="text-sm text-muted-foreground">
+        Run <span className="font-mono">{runId}</span> · {runStatus ?? "running"}
+        {runStatus && (
+          <>
+            {" · "}
+            <Link href={`/runs/${encodeURIComponent(runId)}`} className="underline">
+              Replay
+            </Link>
+          </>
+        )}
+      </p>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      {runStatus === "failed" && (
+        <p className="text-sm text-destructive">Run failed; the error event is in the trace.</p>
+      )}
+      {runStatus && !summary && !error && (
+        <p className="text-sm text-muted-foreground">Loading results…</p>
+      )}
+    </RunWithTrace>
   );
 }
 

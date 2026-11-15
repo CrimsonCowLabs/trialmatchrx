@@ -32,5 +32,7 @@ export const api = {
   startMatch: (body: JsonBody<"/api/match", "post">) =>
     request<RunStarted>("/api/match", { method: "POST", body: JSON.stringify(body) }),
   getRun: (runId: string) => request<RunSummary>(`/api/runs/${encodeURIComponent(runId)}`),
+  getTrace: (runId: string) =>
+    request<TraceEvent[]>(`/api/runs/${encodeURIComponent(runId)}/trace`),
   eventsUrl: (runId: string) => `${API_URL}/api/runs/${encodeURIComponent(runId)}/events`,
 };

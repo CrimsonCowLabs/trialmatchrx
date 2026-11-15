@@ -18,14 +18,23 @@ const TIERS: { tier: Tier; title: string; hint: string }[] = [
   { tier: "ineligible", title: "Ineligible", hint: "At least one criterion fails" },
 ];
 
-function TrialCard({ match }: { match: TrialMatch }) {
-  const [open, setOpen] = useState(match.tier !== "ineligible");
+interface Linking {
+  /** `trace_event_id` of the verdict to highlight (the selected trace event produced it). */
+  highlightedEventId?: string | null;
+  onWhy?: (traceEventId: string) => void;
+}
+
+function TrialCard({ match, highlightedEventId, onWhy }: { match: TrialMatch } & Linking) {
+  const [userOpen, setOpen] = useState(match.tier !== "ineligible");
+  // A highlighted verdict is always visible, even in a collapsed (e.g. ineligible) trial.
+  const open =
+    userOpen || match.verdicts.some((v) => v.trace_event_id === highlightedEventId);
   const { pass = 0, fail = 0, unknown = 0 } = match.counts;
   return (
     <li data-testid="trial-match" data-nct={match.nct_id} className="rounded-md border">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(!open)}
         aria-expanded={open}
         className="flex w-full flex-wrap items-baseline gap-x-2 gap-y-1 px-3 py-2 text-left hover:bg-muted"
       >
@@ -44,7 +53,12 @@ function TrialCard({ match }: { match: TrialMatch }) {
       {open && (
         <ul className="border-t px-3">
           {match.verdicts.map((v) => (
-            <CriterionRow key={v.criterion_id} verdict={v} />
+            <CriterionRow
+              key={v.criterion_id}
+              verdict={v}
+              highlighted={!!highlightedEventId && v.trace_event_id === highlightedEventId}
+              onWhy={onWhy}
+            />
           ))}
         </ul>
       )}
@@ -52,7 +66,11 @@ function TrialCard({ match }: { match: TrialMatch }) {
   );
 }
 
-export function MatchResults({ matches }: { matches: TrialMatch[] }) {
+export function MatchResults({
+  matches,
+  highlightedEventId,
+  onWhy,
+}: { matches: TrialMatch[] } & Linking) {
   if (matches.length === 0) {
     return (
       <Card>
@@ -80,7 +98,12 @@ export function MatchResults({ matches }: { matches: TrialMatch[] }) {
               ) : (
                 <ul className="flex flex-col gap-2">
                   {inTier.map((m) => (
-                    <TrialCard key={m.nct_id} match={m} />
+                    <TrialCard
+                      key={m.nct_id}
+                      match={m}
+                      highlightedEventId={highlightedEventId}
+                      onWhy={onWhy}
+                    />
                   ))}
                 </ul>
               )}
