@@ -46,15 +46,16 @@ def get_run(run_id: str) -> RunRow | None:
         return run
 
 
-def list_runs(kind: RunKind, limit: int) -> list[RunRow]:
-    """Runs of one kind, newest first (insertion order breaks a created_at tie)."""
+def list_runs(kind: RunKind, limit: int, status: RunStatus | None = None) -> list[RunRow]:
+    """Runs of one kind (and status, if given), newest first (insertion order breaks a
+    created_at tie)."""
     rowid: ColumnClause[int] = literal_column(f"{RunRow.__tablename__}.rowid")
+    query = select(RunRow).where(RunRow.kind == kind)
+    if status is not None:
+        query = query.where(RunRow.status == status)
     with session_scope() as s:
         rows = s.exec(
-            select(RunRow)
-            .where(RunRow.kind == kind)
-            .order_by(col(RunRow.created_at).desc(), rowid.desc())
-            .limit(limit)
+            query.order_by(col(RunRow.created_at).desc(), rowid.desc()).limit(limit)
         ).all()
         for row in rows:
             s.expunge(row)

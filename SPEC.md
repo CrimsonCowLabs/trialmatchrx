@@ -264,12 +264,18 @@ class RunListItem(BaseModel):          # one row of /runs; from the run row only
     created_at: datetime; ended_at: datetime | None
     patient_label: str | None          # e.g. "58 F", once the run has finished
     tier_counts: TierCounts
+
+class RunStats(BaseModel):             # the match form's duration / cost hint
+    runs: int                          # recent finished (done) match runs summarised
+    wall_time_min_s: float | None; wall_time_max_s: float | None
+    cost_usd_median: float | None      # None everywhere when runs == 0
 ```
 
 | Method | Path | Body / params | Returns |
 | --- | --- | --- | --- |
 | POST | `/api/match` | `{note?: str, fhir_bundle?: dict, condition: str, radius_mi: int = 50}` | `{run_id}`; work continues in a background task |
 | GET | `/api/runs` | `?kind: RunKind = match`, `?limit: int = 50` (max 200) | `list[RunListItem]`, newest first; read-only, not traced |
+| GET | `/api/runs/stats` | `?limit: int = 20` (max 200) | `RunStats` over the newest `limit` finished match runs: wall-time range and median cost from stored runs; read-only, not traced |
 | GET | `/api/runs/{run_id}/events` | SSE | `TraceEvent` stream, then `done` |
 | GET | `/api/runs/{run_id}` |  | `{status, patient: PatientFacts, matches: list[TrialMatch], totals}` |
 | GET | `/api/runs/{run_id}/trace` |  | `list[TraceEvent]` (export / replay) |

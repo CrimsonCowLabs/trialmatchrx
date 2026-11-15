@@ -240,6 +240,16 @@ class RunListItem(BaseModel):
     tier_counts: TierCounts
 
 
+class RunStats(BaseModel):
+    """What recent finished (`done`) match runs took, for the match form's hint. From stored
+    runs and their trace events; every figure is None when `runs` is 0."""
+
+    runs: int  # finished match runs summarised (the most recent, at most `limit`)
+    wall_time_min_s: float | None
+    wall_time_max_s: float | None
+    cost_usd_median: float | None  # median of each run's summed `llm` event cost
+
+
 class RunDone(BaseModel):
     """Payload of the final `done` SSE event."""
 
