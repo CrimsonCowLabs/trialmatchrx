@@ -3,12 +3,18 @@
     result = await run_match(rec, req)              # {"patient": ..., "matches": [...]}
 
 The router runs this as a background traced run. Trace shape:
-run > parse_patient, search_trials, trial:<nct> (> compile_criteria ..., rule:<nct>:<id> ...),
-rank. A trial whose criteria can't be compiled (cache miss with no API key, malformed model
-output) is dropped from the results with a failed `trial:<nct>` step; the run carries on.
+run > parse_patient, search_trials, trial:<nct> (> compile_criteria ..., rule:<nct>:<id> ...,
+judge:<nct>:<id> ...), rank. A trial whose criteria can't be compiled (cache miss with no API
+key, malformed model output) is dropped from the results with a failed `trial:<nct>` step; the
+run carries on.
+
+Criteria with no predicate go to the LLM judge (`judge.llm_judge`), bounded by one judge
+semaphore shared by every trial in the run. With no API key for the judge they stay `unknown`
+(`evaluate.no_judge`) and a skipped `judge` event says why; the run still finishes.
 """
 
 import asyncio
+from collections.abc import Callable
 from typing import Any
 
 from app.config import get_settings
@@ -17,9 +23,16 @@ from app.pipeline.compile_criteria import (
     CompileModelUnavailable,
     ModelFactory,
     anthropic_compile_model,
+    clean_eligibility_text,
     compile_study,
 )
 from app.pipeline.evaluate import Judge, evaluate_trial, no_judge
+from app.pipeline.judge import (
+    JudgeModelUnavailable,
+    anthropic_judge_model,
+    llm_judge,
+    new_judge_semaphore,
+)
 from app.pipeline.parse_patient import anthropic_parse_model, parse_patient
 from app.pipeline.rank import TIER_ORDER, build_match, rank_matches
 from app.pipeline.trial_search import CandidateTrial, search_cached_trials
@@ -44,6 +57,32 @@ async def _parse_patient(
         s.output = {"patient": facts.model_dump(mode="json")}
         s.note = "FHIR bundle parsing not implemented; stub patient (stub)"
     return facts
+
+
+def _trial_text(study: dict[str, Any]) -> str:
+    eligibility = study["protocolSection"].get("eligibilityModule", {})
+    return clean_eligibility_text(eligibility.get("eligibilityCriteria") or "")
+
+
+def _judges(
+    rec: TraceRecorder, judge_model_factory: ModelFactory, note: str | None
+) -> Callable[[CandidateTrial], Judge]:
+    """How each trial gets its judge: one model and one semaphore for the whole run."""
+    try:
+        model = judge_model_factory()
+    except JudgeModelUnavailable as exc:
+        rec.event(
+            "judge",
+            "step",
+            status="skipped",
+            output={"error": describe_error(exc)},
+            note="no judge model: criteria without a rule stay unknown",
+        )
+        return lambda trial: no_judge
+    semaphore = new_judge_semaphore()
+    return lambda trial: llm_judge(
+        model, trial_text=_trial_text(trial.study), note=note, semaphore=semaphore
+    )
 
 
 def _origin(facts: PatientFacts) -> tuple[float, float]:
@@ -88,12 +127,12 @@ async def run_match(
     *,
     model_factory: ModelFactory = anthropic_compile_model,
     parse_model_factory: ModelFactory = anthropic_parse_model,
-    judge: Judge = no_judge,
+    judge_model_factory: ModelFactory = anthropic_judge_model,
 ) -> dict[str, Any]:
     """The whole match. Returns the run result stored on the run row (read back by
     `GET /api/runs/{run_id}`): `{"patient": PatientFacts, "matches": list[TrialMatch]}`.
     `model_factory` builds the compile model (only on a cache miss), `parse_model_factory` the
-    note-parse model."""
+    note-parse model, `judge_model_factory` the judge model (once per run)."""
     facts = await _parse_patient(rec, req, parse_model_factory)
     trials = await search_cached_trials(
         rec,
@@ -103,11 +142,14 @@ async def run_match(
         condition=req.condition,
     )
 
+    judge_for = _judges(rec, judge_model_factory, req.note)
     slots = asyncio.Semaphore(TRIAL_CONCURRENCY)
 
     async def bounded(trial: CandidateTrial) -> TrialMatch | None:
         async with slots:
-            return await match_trial(rec, trial, facts, model_factory=model_factory, judge=judge)
+            return await match_trial(
+                rec, trial, facts, model_factory=model_factory, judge=judge_for(trial)
+            )
 
     results = await asyncio.gather(*(bounded(t) for t in trials))
     matches = [m for m in results if m is not None]

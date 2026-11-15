@@ -3,6 +3,8 @@
     semaphore = new_judge_semaphore()          # one per match run, shared by every trial
     verdicts = await judge_criteria(rec, items, facts, note, semaphore=semaphore)
 
+    judge = llm_judge(model, trial_text=..., note=note, semaphore=semaphore)  # an evaluate.Judge
+
 Each item is one `needs_judgment` criterion with its trial's (cleaned) eligibility text. The
 judge model answers through `with_structured_output(JudgeOutput)`; `verify.verify_verdict` then
 checks both quotes against their sources and downgrades unverifiable verdicts to `unknown`.
@@ -33,6 +35,7 @@ from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from pydantic import BaseModel, Field, SecretStr, ValidationError
 
 from app.config import get_settings
+from app.pipeline.evaluate import Judge
 from app.pipeline.verify import render_facts, verify_verdict
 from app.prompts import Prompt, load_prompt
 from app.schemas import Criterion, PatientFacts, Verdict
@@ -268,3 +271,19 @@ async def judge_criteria(
             return await judge_criterion(rec, item, facts, note, model=model)
 
     return list(await asyncio.gather(*(one(item) for item in items)))
+
+
+def llm_judge(
+    model: BaseChatModel, *, trial_text: str, note: str | None, semaphore: asyncio.Semaphore
+) -> Judge:
+    """An `evaluate.Judge` for one trial: judges each criterion it's handed against that trial's
+    cleaned eligibility text, holding a slot of the run's shared `semaphore` per call."""
+
+    async def judge(
+        nct_id: str, criterion: Criterion, facts: PatientFacts, rec: TraceRecorder
+    ) -> Verdict:
+        async with semaphore:
+            item = JudgeItem(nct_id, criterion, trial_text)
+            return await judge_criterion(rec, item, facts, note, model=model)
+
+    return judge

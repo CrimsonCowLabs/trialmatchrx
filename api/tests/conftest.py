@@ -8,7 +8,8 @@ from app import db
 from app.config import get_settings
 from app.main import app
 from app.pipeline.fixture_model import FixtureChatModel, load_llm_fixture
-from app.routers.match import parse_model_factory
+from app.pipeline.judge import JudgeModelUnavailable
+from app.routers.match import judge_model_factory, parse_model_factory
 from app.sources import ctgov
 
 PARSE_FIXTURES = Path(__file__).parent / "fixtures" / "parse_patient"
@@ -48,3 +49,16 @@ def fixture_parse_model() -> Iterator[FixtureChatModel]:
     app.dependency_overrides[parse_model_factory] = lambda: lambda: model
     yield model
     app.dependency_overrides.pop(parse_model_factory, None)
+
+
+def _no_judge_model() -> FixtureChatModel:
+    raise JudgeModelUnavailable("tests: no judge model unless a test installs one")
+
+
+@pytest.fixture(autouse=True)
+def no_judge_model() -> Iterator[None]:
+    """Match runs never reach the real judge: criteria without a rule stay `unknown` unless a
+    test overrides `judge_model_factory` with a fixture model."""
+    app.dependency_overrides[judge_model_factory] = lambda: _no_judge_model
+    yield
+    app.dependency_overrides.pop(judge_model_factory, None)

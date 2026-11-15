@@ -142,8 +142,7 @@ def outcome_for(criterion: Criterion, result: PredicateResult) -> Outcome:
 
 class Judge(Protocol):
     """Decides a criterion that has no predicate. Must trace its own work and return a Verdict
-    whose `trace_event_id` points at the event that produced it (issue #6 plugs the LLM judge
-    in here)."""
+    whose `trace_event_id` points at the event that produced it (`judge.llm_judge`)."""
 
     async def __call__(
         self, nct_id: str, criterion: Criterion, facts: PatientFacts, rec: TraceRecorder
@@ -186,15 +185,15 @@ def _traced_verdict(
 async def no_judge(
     nct_id: str, criterion: Criterion, facts: PatientFacts, rec: TraceRecorder
 ) -> Verdict:
-    """The default Judge: `unknown`, recorded as a skipped `rule` event."""
-    # HACK(demo): no LLM judge yet (issue #6); criteria without a predicate are `unknown`.
+    """The fallback Judge when no judge model is available (no API key): `unknown`, recorded as
+    a skipped `rule` event."""
     return _traced_verdict(
         nct_id,
         criterion,
         rec,
         outcome="unknown",
         evidence=None,
-        rationale="needs judgment; no rule can decide it and the LLM judge is not wired in yet",
+        rationale="needs judgment; no rule can decide it and no LLM judge is available",
         trace_input={"predicate": None},
         trace_output={},
         status="skipped",
