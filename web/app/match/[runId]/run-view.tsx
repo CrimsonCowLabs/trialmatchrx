@@ -38,6 +38,7 @@ function MatchRun({ runId }: { runId: string }) {
       live={state !== "done" && state !== "error"}
       status={{ label: state, variant: STREAM_VARIANT[state] }}
       matches={summary?.status === "done" ? summary.matches : null}
+      totals={summary?.totals}
       onNextSteps={summary?.status === "done" ? startCloser : undefined}
       runStatus={runStatus ?? "running"}
       link={finished ? { href: `/runs/${encodeURIComponent(runId)}`, label: "Replay" } : undefined}

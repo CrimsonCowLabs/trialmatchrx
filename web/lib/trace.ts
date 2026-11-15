@@ -1,16 +1,8 @@
 // Pure helpers over a run's trace events, shared by the live run page and the replay page.
 // No React here, so `lib/trace.test.ts` can run them under node:test.
-import type { TraceEvent } from "./api.ts";
+import type { Schemas, TraceEvent } from "./api.ts";
 
-export interface Totals {
-  llmCalls: number;
-  tokensIn: number;
-  tokensOut: number;
-  costUsd: number;
-  cacheHits: number;
-  guardrailTrips: number;
-  wallTimeS: number | null;
-}
+export type RunTotals = Schemas["RunTotals"];
 
 const ms = (iso: string) => new Date(iso).getTime();
 
@@ -82,7 +74,32 @@ export interface TraceRow {
   event: TraceEvent;
   depth: number;
   hasChildren: boolean;
+  /** The spend of this event's subtree, itself included, so a collapsed trial still shows
+   *  what its llm calls cost. */
+  spend: Spend;
 }
+
+/** Tokens and cost, as the run totals count them. */
+export interface Spend {
+  tokensIn: number;
+  tokensOut: number;
+  costUsd: number;
+}
+
+const NO_SPEND: Spend = { tokensIn: 0, tokensOut: 0, costUsd: 0 };
+
+/** What one event adds to the run's tokens and cost: only `llm` events count (as in the
+ *  API's `compute_totals`). */
+function eventSpend(e: TraceEvent): Spend {
+  if (e.kind !== "llm") return NO_SPEND;
+  return { tokensIn: e.tokens_in ?? 0, tokensOut: e.tokens_out ?? 0, costUsd: e.cost_usd ?? 0 };
+}
+
+const addSpend = (a: Spend, b: Spend): Spend => ({
+  tokensIn: a.tokensIn + b.tokensIn,
+  tokensOut: a.tokensOut + b.tokensOut,
+  costUsd: a.costUsd + b.costUsd,
+});
 
 function parentOf(events: TraceEvent[]): Map<string, string | null> {
   const ids = new Set(events.map((e) => e.id));
@@ -104,11 +121,19 @@ export function traceRows(events: TraceEvent[], expanded: ReadonlySet<string>): 
     if (siblings) siblings.push(e);
     else children.set(p, [e]);
   }
+  const subtreeSpend = new Map<string, Spend>();
+  const spendOf = (e: TraceEvent): Spend => {
+    let s = subtreeSpend.get(e.id);
+    if (s) return s;
+    s = (children.get(e.id) ?? []).map(spendOf).reduce(addSpend, eventSpend(e));
+    subtreeSpend.set(e.id, s);
+    return s;
+  };
   const out: TraceRow[] = [];
   const walk = (parent: string | null, depth: number) => {
     for (const event of children.get(parent) ?? []) {
       const hasChildren = children.has(event.id);
-      out.push({ event, depth, hasChildren });
+      out.push({ event, depth, hasChildren, spend: spendOf(event) });
       if (hasChildren && expanded.has(event.id)) walk(event.id, depth + 1);
     }
   };
@@ -152,10 +177,13 @@ export function replayDelays(emissions: TraceEvent[], capMs: number): number[] {
   );
 }
 
-/** Same rules as the API's `compute_totals`. Wall time runs from the first event's start to
- *  `now` (pass it while the run is live) or else to the last timestamp seen. */
-export function computeTotals(events: TraceEvent[], now?: number): Totals {
-  const llm = events.filter((e) => e.kind === "llm");
+/** The run's totals derived from the events seen so far, counted by the same rules as the
+ *  API's `compute_totals` (both are held to `api/tests/fixtures/trace/totals.json`). Only
+ *  wall time differs: the API measures the run row (null until it ends), this runs from the
+ *  first event's start to `now` (pass it while the run is live) or else to the last
+ *  timestamp seen. */
+export function computeTotals(events: TraceEvent[], now?: number): RunTotals {
+  const spend = events.map(eventSpend).reduce(addSpend, NO_SPEND);
   let first = Infinity;
   let last = -Infinity;
   for (const e of events) {
@@ -163,12 +191,163 @@ export function computeTotals(events: TraceEvent[], now?: number): Totals {
     last = Math.max(last, ms(e.ended_at ?? e.started_at));
   }
   return {
-    llmCalls: llm.length,
-    tokensIn: llm.reduce((n, e) => n + (e.tokens_in ?? 0), 0),
-    tokensOut: llm.reduce((n, e) => n + (e.tokens_out ?? 0), 0),
-    costUsd: llm.reduce((n, e) => n + (e.cost_usd ?? 0), 0),
-    cacheHits: events.filter((e) => e.cache_hit).length,
-    guardrailTrips: events.filter((e) => e.kind === "guardrail" && e.status === "failed").length,
-    wallTimeS: events.length ? (Math.max(last, now ?? -Infinity) - first) / 1000 : null,
+    llm_calls: events.filter((e) => e.kind === "llm").length,
+    tokens_in: spend.tokensIn,
+    tokens_out: spend.tokensOut,
+    cost_usd: spend.costUsd,
+    cache_hits: events.filter((e) => e.cache_hit).length,
+    guardrail_trips: events.filter((e) => e.kind === "guardrail" && e.status === "failed").length,
+    wall_time_s: events.length ? (Math.max(last, now ?? -Infinity) - first) / 1000 : null,
   };
+}
+
+type Kind = TraceEvent["kind"];
+
+// Literal class names so Tailwind sees them; colours are the trace-kind tokens in globals.css.
+const KIND_STYLE: Record<Kind, { label: string; className: string }> = {
+  run: { label: "run", className: "text-kind-run bg-kind-run-bg" },
+  step: { label: "step", className: "text-kind-step bg-kind-step-bg" },
+  llm: { label: "llm", className: "text-kind-llm bg-kind-llm-bg" },
+  tool: { label: "tool", className: "text-kind-tool bg-kind-tool-bg" },
+  rule: { label: "rule", className: "text-kind-rule bg-kind-rule-bg" },
+  guardrail: { label: "guard", className: "text-kind-guardrail bg-kind-guardrail-bg" },
+  error: { label: "error", className: "text-kind-error bg-kind-error-bg" },
+};
+
+/** The kind chip on a trace row: a short label and its trace-kind colour tokens. */
+export const kindStyle = (kind: Kind) => KIND_STYLE[kind];
+
+const STATUS_STYLE: Record<TraceEvent["status"], { label: string; className: string } | null> = {
+  ok: null, // the normal case: no marker
+  started: { label: "running", className: "text-teal" },
+  failed: { label: "failed", className: "text-verdict-fail" },
+  skipped: { label: "skipped", className: "text-ink-5" },
+};
+
+/** A row's status marker, or null for `ok`. */
+export const statusStyle = (status: TraceEvent["status"]) => STATUS_STYLE[status];
+
+export interface PromptMessage {
+  role?: string;
+  content?: unknown;
+  tool_calls?: unknown;
+}
+
+/** What the trace panel shows for a selected event. */
+export interface EventDetail {
+  /** `model …`, `seq …`, tokens, cost, `cache hit`: whichever the event has. */
+  meta: string[];
+  /** The headline output: an llm call's parsed tool-call args (or its text), else the
+   *  event's output without its error keys. Null when there is none. */
+  headline: { title: string; value: unknown } | null;
+  /** LangChain chat input `{messages: [[{role, content}, ...]]}`, flattened; else null. */
+  messages: PromptMessage[] | null;
+  /** The input when it isn't prompt messages. */
+  input: Record<string, unknown> | null;
+  /** An llm call's raw model output (null for other kinds, shown as `headline` there). */
+  raw: Record<string, unknown> | null;
+  /** Whatever the output says went wrong: `error`, `errors`, or guardrail `failed`. */
+  errors: unknown[];
+}
+
+const ERROR_KEYS = ["error", "errors", "failed"];
+
+function promptMessages(input: TraceEvent["input"]): PromptMessage[] | null {
+  const batches = input?.messages;
+  if (!Array.isArray(batches)) return null;
+  return batches.flatMap((b) => (Array.isArray(b) ? b : [b])) as PromptMessage[];
+}
+
+/** `with_structured_output` answers with a tool call: the args of each one returned. */
+function toolCallArgs(output: TraceEvent["output"]): unknown[] {
+  const messages = output?.messages;
+  if (!Array.isArray(messages)) return [];
+  return (messages as PromptMessage[]).flatMap((m) =>
+    Array.isArray(m.tool_calls) ? m.tool_calls.map((c: { args?: unknown }) => c.args ?? c) : [],
+  );
+}
+
+const nonEmpty = (o: Record<string, unknown>) => (Object.keys(o).length ? o : null);
+
+export function eventDetail(event: TraceEvent): EventDetail {
+  const out = event.output ?? {};
+  const errors = ERROR_KEYS.map((k) => out[k]).filter(
+    (v) => v !== undefined && v !== null && !(Array.isArray(v) && v.length === 0),
+  );
+  const rest = nonEmpty(
+    Object.fromEntries(Object.entries(out).filter(([k]) => !ERROR_KEYS.includes(k))),
+  );
+  const messages = promptMessages(event.input);
+  const meta = [
+    event.model && `model ${event.model}`,
+    `seq ${event.seq}`,
+    event.tokens_in !== null &&
+      `${formatCount(event.tokens_in)} in / ${formatCount(event.tokens_out ?? 0)} out tokens`,
+    event.cost_usd !== null && formatUsd(event.cost_usd),
+    event.cache_hit && "cache hit",
+  ].filter((m): m is string => Boolean(m));
+
+  let headline: EventDetail["headline"] = null;
+  if (event.kind === "llm") {
+    const parsed = toolCallArgs(event.output);
+    const text = typeof out.text === "string" ? out.text : "";
+    if (parsed.length) {
+      headline = { title: "Parsed output", value: parsed.length === 1 ? parsed[0] : parsed };
+    } else if (text) headline = { title: "Model output", value: text };
+  } else if (rest) headline = { title: "Output", value: rest };
+
+  return {
+    meta,
+    headline,
+    messages,
+    input: messages ? null : (event.input ?? null),
+    raw: event.kind === "llm" ? rest : null,
+    errors,
+  };
+}
+
+/** A row's latency:`1 ms`, `2.2 s`, or `…` while the event is still running. */
+export function formatLatency(ms: number | null): string {
+  if (ms === null) return "…";
+  return ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`;
+}
+
+/** A row's tokens: `96`, `1.9k`; blank when there are none. */
+export function formatTokens(n: number): string {
+  if (n === 0) return "";
+  return n < 1000 ? String(n) : `${(n / 1000).toFixed(1)}k`;
+}
+
+/** `$0.0053` under a dollar (per-call costs are fractions of a cent), `$1.50` above. */
+export const formatUsd = (n: number) => `$${n.toFixed(n < 1 ? 4 : 2)}`;
+
+const formatCount = (n: number) => n.toLocaleString("en-US");
+
+export interface TotalsCell {
+  label: string;
+  value: string;
+}
+
+/** The trace panel's totals strip. `runTotals` (from the run summary, once the run is done)
+ *  wins; before it arrives the figures are `computeTotals` over the events seen so far and
+ *  the clock reads "Elapsed" (first event to `now`), since the API has no wall time for an
+ *  unfinished run. A wall time neither source has is left out. */
+export function totalsStrip(
+  runTotals: RunTotals | null | undefined,
+  events: TraceEvent[],
+  now?: number,
+): { final: boolean; cells: TotalsCell[] } {
+  const final = Boolean(runTotals);
+  const t = runTotals ?? computeTotals(events, now);
+  const cells: (TotalsCell | null)[] = [
+    { label: "LLM calls", value: formatCount(t.llm_calls) },
+    { label: "Tokens", value: formatCount(t.tokens_in + t.tokens_out) },
+    { label: "Cost", value: formatUsd(t.cost_usd) },
+    t.wall_time_s === null
+      ? null
+      : { label: final ? "Wall time" : "Elapsed", value: `${t.wall_time_s.toFixed(1)} s` },
+    { label: "Cache hits", value: formatCount(t.cache_hits) },
+    { label: "Guardrails", value: formatCount(t.guardrail_trips) },
+  ];
+  return { final, cells: cells.filter((c) => c !== null) };
 }

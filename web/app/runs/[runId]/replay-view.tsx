@@ -66,6 +66,7 @@ function Replay({ runId, trace, summary }: { runId: string } & Loaded) {
       }}
       matches={finished && summary.status === "done" && !isCloser ? summary.matches : null}
       closer={finished ? (summary.closer ?? null) : null}
+      totals={finished ? summary.totals : null}
       runStatus={summary.status}
       link={{
         href: `/${isCloser ? "closer" : "match"}/${encodeURIComponent(runId)}`,

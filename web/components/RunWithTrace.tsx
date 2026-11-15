@@ -20,6 +20,7 @@ export function RunWithTrace({
   status,
   matches,
   closer = null,
+  totals,
   onNextSteps,
   runStatus,
   link,
@@ -33,6 +34,8 @@ export function RunWithTrace({
   matches: Schemas["TrialMatch"][] | null;
   /** A closer run's answer (null until loaded, or for a match run). */
   closer?: CloserOutput | null;
+  /** The run summary's totals for the trace panel (null until loaded). */
+  totals?: TracePanelProps["totals"];
   /** "Next steps" on a trial: start the closer agent for it (live match page only). */
   onNextSteps?: (nctId: string) => void;
   /** The run's own status ("running", "done", "failed"). */
@@ -84,6 +87,7 @@ export function RunWithTrace({
         verdictEventIds={verdictEventIds}
         live={live}
         status={status}
+        totals={totals}
       />
     </div>
   );
