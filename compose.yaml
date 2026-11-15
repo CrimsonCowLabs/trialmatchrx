@@ -10,6 +10,9 @@ name: trialmatchrx
 
 services:
   api:
+    # What scripts/deploy.sh pushed, set by it in the box's shell and .env. Unset (local
+    # `docker compose up --build`), the image is built from `build:` under this local name.
+    image: ${TRIALMATCH_API_IMAGE:-trialmatchrx-api}
     build:
       context: .
       dockerfile: api/Dockerfile
@@ -47,6 +50,7 @@ services:
     memswap_limit: 512m
 
   web:
+    image: ${TRIALMATCH_WEB_IMAGE:-trialmatchrx-web}
     build:
       context: .
       dockerfile: web/Dockerfile
