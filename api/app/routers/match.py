@@ -20,17 +20,28 @@ from app.pipeline.parse_patient import anthropic_parse_model
 from app.routers.trials import compile_model_factory
 from app.schemas import CloserRequest, MatchRequest, RunKind, RunStarted
 from app.sources import synthea
+from app.trace import store
 from app.trace.recorder import TraceRecorder
-from app.trace.replay import NoRecordedRun, RunFixture, find_fixture, replay_run
+from app.trace.replay import (
+    NoRecordedRun,
+    RunFixture,
+    find_closer_fixture,
+    find_match_fixture,
+    replay_run,
+)
 from app.trace.runner import start_traced_run
 
 router = APIRouter(prefix="/api", tags=["match"])
 
 
-def _recorded(kind: RunKind, nct_id: str | None = None) -> RunFixture:
-    """DEMO_MODE=replay: the fixture to replay, or 503 when none was recorded."""
+def _recorded(note: str | None, nct_id: str | None = None) -> RunFixture:
+    """DEMO_MODE=replay: the match fixture for `note` (with `nct_id`: the closer fixture on
+    that trial, recorded on that patient's match run), or 503 when there is no recording."""
+    directory = get_settings().demo_fixtures_dir
     try:
-        return find_fixture(get_settings().demo_fixtures_dir, kind, nct_id)
+        if nct_id is None:
+            return find_match_fixture(directory, note)
+        return find_closer_fixture(directory, note, nct_id)
     except NoRecordedRun as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -76,7 +87,7 @@ async def start_match(
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     if get_settings().demo_mode == "replay":
-        fixture = _recorded("match")
+        fixture = _recorded(req.note)
         # The recorded request, not this one: the run's request, parse and trace must agree.
         return _start_replay("match", fixture.request, fixture, {})
 
@@ -112,7 +123,10 @@ async def start_closer(
     except CloserToolError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     if get_settings().demo_mode == "replay":
-        fixture = _recorded("closer", req.nct_id)
+        # The patient is the one whose note the match run was on: a replayed match run keeps
+        # the recorded request, so its note is the recorded patient's note.
+        match_run = store.get_run(req.run_id)
+        fixture = _recorded(match_run.request.get("note") if match_run else None, req.nct_id)
         # The recorded agent read the recorded match run; the replay points at this one.
         ids = {str(fixture.request["run_id"]): req.run_id}
         return _start_replay("closer", req.model_dump(mode="json"), fixture, ids)

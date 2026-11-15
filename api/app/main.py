@@ -15,7 +15,7 @@ from app.routers import eval as eval_routes
 from app.routers import feasibility, match, runs, trials
 from app.schemas import Health, RunDone
 from app.sources.cohort import get_cohort
-from app.trace.replay import load_fixtures
+from app.trace.replay import recorded_patients
 
 SSE_MODELS = [RunDone]  # TraceEvent is already referenced by /trace
 
@@ -74,14 +74,21 @@ app.openapi = _openapi  # type: ignore[method-assign]
 
 @app.get("/api/health", response_model=Health, tags=["health"])
 async def health() -> Health:
-    """`ok` is false in DEMO_MODE=replay until a match and a closer run have been recorded
-    (and every fixture file loads)."""
+    """In DEMO_MODE=replay `ok` is true once at least one demo patient is recorded, every
+    patient with a match recording also has its closer recording, and every fixture file
+    loads; `demo_patients` lists the fully recorded patient ids."""
     settings = get_settings()
     ok = True
+    patients: list[str] = []
     if settings.demo_mode == "replay":
         try:
-            kinds = {f.kind for f in load_fixtures(settings.demo_fixtures_dir)}
+            patients, complete = recorded_patients(settings.demo_fixtures_dir)
         except ValueError:  # a file that isn't a valid RunFixture (pydantic ValidationError)
-            kinds = set()
-        ok = {"match", "closer"} <= kinds
-    return Health(ok=ok, demo_mode=settings.demo_mode, model_ids=settings.model_ids())
+            patients, complete = [], False
+        ok = bool(patients) and complete
+    return Health(
+        ok=ok,
+        demo_mode=settings.demo_mode,
+        model_ids=settings.model_ids(),
+        demo_patients=patients,
+    )

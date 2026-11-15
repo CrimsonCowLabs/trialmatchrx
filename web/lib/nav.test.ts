@@ -38,15 +38,15 @@ test("count hint shows the count, or cap+ when the list was cut off at the cap",
 });
 
 test("health line: healthy, not ready, unreachable, each with its mode", () => {
-  assert.deepEqual(healthLine({ ok: true, demo_mode: "off", model_ids: {} }, null), {
+  assert.deepEqual(healthLine({ ok: true, demo_mode: "off", model_ids: {}, demo_patients: [] }, null), {
     tone: "ok",
     text: "API healthy · live mode",
   });
-  assert.deepEqual(healthLine({ ok: true, demo_mode: "replay", model_ids: {} }, null), {
+  assert.deepEqual(healthLine({ ok: true, demo_mode: "replay", model_ids: {}, demo_patients: [] }, null), {
     tone: "ok",
     text: "API healthy · replay mode",
   });
-  assert.deepEqual(healthLine({ ok: false, demo_mode: "replay", model_ids: {} }, null), {
+  assert.deepEqual(healthLine({ ok: false, demo_mode: "replay", model_ids: {}, demo_patients: [] }, null), {
     tone: "warn",
     text: "API not ready · replay mode",
   });

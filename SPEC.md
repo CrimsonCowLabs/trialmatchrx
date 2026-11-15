@@ -12,7 +12,7 @@ TrialMatch Rx screens a patient against recruiting trials on ClinicalTrials.gov,
 2. **Feasibility:** pick one trial and see how many of 1,000 synthetic patients qualify, as a waterfall of criteria. Moving a slider (e.g. eGFR ≥ 60 to ≥ 45) updates the count instantly.
 3. **Proof:** an eval page with precision and nDCG@10 against expert labels from the TREC Clinical Trials track.
 
-**Disease area: type 2 diabetes with chronic kidney disease.** Synthea generates realistic diabetes, CKD and hypertension records with labs (HbA1c, eGFR, BMI, blood pressure), so the feasibility simulator has real numbers to work with. Its oncology data is thin. ClinicalTrials.gov also lists many recruiting T2D/CKD trials, with numeric criteria that compile cleanly.
+**Disease areas (revised 2026-11-15 for the demo): ALS, idiopathic pulmonary fibrosis (IPF) and pulmonary arterial hypertension (PAH, the rare disease), with type 2 diabetes + chronic kidney disease kept as a fourth area.** The demo has one preset synthetic patient per area, shown as cards that fill an editable note. Each shows a different payoff: ALS a clean likely match on numeric rules (ALSFRS-R, FVC), IPF an exclusion catch (FEV1/FVC), PAH the closer agent with a Spanish summary. The search keeps only trials whose listed conditions match the patient's (a traced rule with a small synonym table). The predicate vocabulary adds lung-function, ALS and PAH measures (`fvc_pct`, `fev1_pct`, `fev1_fvc`, `svc_pct`, `dlco_pct`, `alsfrs_r`, `six_mwd`, `pvr`, `pcwp`). Synthea has no ALS, IPF or PAH module, so the 1,000-patient Synthea cohort stays T2D/CKD; a synthetic IPF cohort for feasibility is a stretch goal, marked `HACK(demo)`. Originally the single area was T2D/CKD, chosen because Synthea generates realistic diabetes, CKD and hypertension records with labs.
 
 **In scope:** one disease area, a Sacramento-centered radius search, English criteria, synthetic data only, and a closer agent (follow-up questions, coordinator email, patient summary in Spanish).
 
@@ -152,7 +152,7 @@ Seven pipelines, of which only the criteria compiler, the judge and the closer a
 **2. Trial search** (`sources/ctgov.py`)
 
 - `GET https://clinicaltrials.gov/api/v2/studies` with `query.cond`, `filter.overallStatus=RECRUITING`, `filter.geo=distance(38.5816,-121.4944,50mi)` (Sacramento), `pageSize=50`, and `fields` limited to identification, status, eligibility, contacts and locations.
-- Cache raw JSON in SQLite keyed by NCT ID + `lastUpdatePostDate`. `seed_trials.py` pre-fetches about 150 T2D/CKD trials so the demo never depends on venue Wi-Fi.
+- Cache raw JSON in SQLite keyed by NCT ID + `lastUpdatePostDate`. `seed_trials.py` pre-fetches the recruiting T2D/CKD, ALS, pulmonary fibrosis and PAH trials so the demo never depends on venue Wi-Fi. `fields` also includes the conditions module, which the condition filter reads.
 
 **3. Criteria compiler** (`compile_criteria.py`): the core of the project
 
@@ -168,7 +168,7 @@ Seven pipelines, of which only the criteria compiler, the judge and the closer a
 - `outcome` is relative to eligibility, so UI icons never need inverting: `pass` means the patient is fine on this criterion (an inclusion is met, or an exclusion doesn't apply), `fail` means it disqualifies them, and `unknown` means the data is missing.
 - A missing fact gives `unknown`, never `fail`.
 - Then `verify.py` checks every quote (see Agent transparency).
-- Ranking: tier first (Likely eligible = no fails and at most 2 unknowns; Needs info = no fails, more unknowns; Ineligible = any fail), then fewer unknowns, then distance.
+- Ranking: tier first (Likely eligible = no fails and at most 2 unknowns; Needs info = no fails, more unknowns; Ineligible = any fail), then more confirmed (pass) criteria, then fewer unknowns, then distance. Confirmed count comes first because a short note leaves most of a real trial's criteria unknown.
 - Concurrency: `asyncio.Semaphore(8)` across trials and criteria. Expect about 20 trials in under 30 seconds with a warm compile cache.
 
 **5. Closer agent** (`closer_agent.py`), the only real agent
@@ -396,9 +396,9 @@ Finish with: what works, what is stubbed (# HACK), test results, and the demo co
 The pitch is 3 minutes. Open with the number, show the agent working, and end on the slider.
 
 1. **0:00 – Hook (20 s).** "Most trials miss their enrollment targets, and screening one patient against one trial takes a coordinator about an hour. On expert-labeled TREC cases, our matcher scores nDCG@10 of X, versus Y for keyword search."
-2. **0:20 – Match (60 s).** Paste the demo patient: 61M, T2D, HbA1c 8.4%, eGFR 48, on metformin, Sacramento. The trace panel fills live. Open the top trial, click "Why?" on one ❌, and show both quotes and the exact prompt.
-3. **1:20 – Closer (35 s).** Click "Next steps." The agent calls its tools in the trace and produces follow-up tests for the ❓ criteria, a coordinator email, and the Spanish patient summary.
-4. **1:55 – Feasibility (45 s).** Flip to the trial-designer view: 1,000 synthetic patients, and the waterfall shows eGFR ≥ 60 removes the most. Drag the slider to 45 and watch the eligible count jump.
+2. **0:20 – Match (60 s).** Click the ALS patient card (54M, ALSFRS-R 41, FVC 82%, on riluzole, Davis) and run it live. The trace panel fills live; the top trial is a likely match with code-checked numeric rules. Then the IPF card (replay is fine): open the trial that excludes FEV1/FVC < 0.7, click "Why?" on the ❌, and show both quotes and the exact prompt.
+3. **1:20 – Closer (35 s).** The PAH patient card (47F, Spanish-speaking, PVR 7 WU, 6MWD 380 m, Rancho Cordova): many ❓ and an access-barrier tag. Click "Next steps." The agent calls its tools in the trace and produces follow-up tests for the ❓ criteria, a coordinator email, and the Spanish patient summary.
+4. **1:55 – Feasibility (45 s).** Flip to the trial-designer view: with the synthetic IPF cohort (stretch), the waterfall on the Sacramento IPF trial shows which rule removes the most; drag FVC ≥ 45 to 40 and watch the count jump. Fallback: the same view on a T2D/CKD trial and the 1,000-patient Synthea cohort (eGFR ≥ 60 to 45).
 5. **2:40 – Close (20 s).** Who pays (cancer centers, CROs, sponsors), what's next (SMART on FHIR launch), and that it was built in a day with every agent step auditable.
 
 | Risk | Likelihood | Fallback |
