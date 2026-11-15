@@ -1,0 +1,205 @@
+{
+  "criteria": [
+    {
+      "type": "inclusion",
+      "text": "confirmed chronic kidney disease (with eGFR between 60 and 20 ml/min/1.73 m2 and/or proteinuria >500 mg/g urinary creatinine)",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "confirmed type 2 Diabetes Mellitus",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "type 2 diabetes"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "stable kidney function for at least 12 weeks before enrollment (defined as decrease in eGFR < 5 ml/min/1.73 m2/year according to KDIGO 2012 guideline)",
+      "category": "history",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "treatment with ACE/ARBs and/or MRAs for at least 3 months",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "no previous treatment with SGLT2i",
+      "category": "medication",
+      "predicate": {
+        "field": "meds",
+        "op": "not_has",
+        "value": "sglt2 inhibitor"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "good nutritional status",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "declared and anticipated good compliance with the prescribed diet",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "signed informed consent",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "eGFR < 25 ml/min/1.73 m2",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.egfr",
+        "op": "<",
+        "value": 25,
+        "unit": "mL/min/1.73m2"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "poorly controlled arterial blood pressure (mean BP≥145/85 mm Hg)",
+      "category": "lab",
+      "predicate": {
+        "field": "vitals.sbp",
+        "op": ">=",
+        "value": 145,
+        "unit": "mmHg"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "poorly controlled arterial blood pressure (mean BP≥145/85 mm Hg)",
+      "category": "lab",
+      "predicate": {
+        "field": "vitals.dbp",
+        "op": ">=",
+        "value": 85,
+        "unit": "mmHg"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "class IV NYHA heart failure",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "recent MACE (less than 6 months)",
+      "category": "history",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "active infections (HBV, HCV, HIV)",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "in",
+        "value": [
+          "hepatitis b",
+          "hepatitis c",
+          "hiv"
+        ]
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "active neoplasia",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "digestive diseases with malabsorption",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "malabsorption"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "active autoimmune diseases",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "immunosuppressive therapy",
+      "category": "medication",
+      "predicate": {
+        "field": "meds",
+        "op": "has",
+        "value": "immunosuppressant"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "ADPKD",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "autosomal dominant polycystic kidney disease"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "kidney transplantation with functional graft",
+      "category": "procedure",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "kidney transplant"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "BMI<18 kg/me",
+      "category": "lab",
+      "predicate": {
+        "field": "vitals.bmi",
+        "op": "<",
+        "value": 18,
+        "unit": "kg/m2"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "eight loss >10% during the last 6 months",
+      "category": "history",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "serum albumin <3 g/dL",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.albumin",
+        "op": "<",
+        "value": 3,
+        "unit": "g/dL"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "feeding inability (anorexia, nausea)",
+      "category": "other",
+      "predicate": null
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "criteria": [
+    {
+      "type": "inclusion",
+      "text": "Scheduled to be seen in a participating clinic with a physician or advanced practice provider in a primary care specialty or a clinic pharmacist",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "Medical history of acute kidney injury during a hospitalization with discharge within 1 year before the scheduled appointment",
+      "category": "history",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "Medical history of type 2 diabetes mellitus (by billing code)",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "type 2 diabetes"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "Available eGFR from labs more than 3 business days before the scheduled appointment and after AKI onset that is at least 30 mL/min/1.73 m²",
+      "category": "lab",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "Either a serum creatinine lab measured after discharge from the hospitalization including the AKI, or the last serum creatinine lab during the hospitalization with AKI is less than 0.3 mg/dL above the patient's baseline serum creatinine concentration",
+      "category": "lab",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Opted out of research use of AHC/M Health Fairview data shelter data",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "History of kidney transplantation as a recipient(by billing code)",
+      "category": "procedure",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "kidney transplant"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Pregnancy documented in AHC/M Health Fairview data shelter data (by billing code)",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "pregnant",
+        "op": "==",
+        "value": "true"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "SGLT2i allergy in the EHR allergy list",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Medical history of diabetic ketoacidosis",
+      "category": "history",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "diabetic ketoacidosis"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "dementia",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "dementia"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "hospice care",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "oncology care",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Medical history in the prior 1 year of indwelling Foley urinary catheter, cystitis, pyelonephritis, prostatitis, or urinary tract infection (by billing code)",
+      "category": "history",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Serum creatinine rise of at least 0.3 mg/dL between the two most recent serum creatinine measurements",
+      "category": "lab",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Prisoners",
+      "category": "demographic",
+      "predicate": null
+    }
+  ]
+}

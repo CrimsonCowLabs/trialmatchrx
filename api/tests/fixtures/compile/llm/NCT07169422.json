@@ -1,0 +1,95 @@
+{
+  "criteria": [
+    {
+      "type": "inclusion",
+      "text": "T2D",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "type 2 diabetes"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "DKD (eGFR≥ 30-60 ml/min/1.73m2 and/or UACR≥3 mg/mmol)",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "Adults who do not have primary care provider",
+      "category": "demographic",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "Adults who are eligible for initiation of treatment with RASi, SGLT2i or nsMRA",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Hypotension",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Type 1 diabetes",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "type 1 diabetes"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "History of allergy or intolerance to either, renin angiotensin system inhibitor (RASi), SGLT2 inhibitor (SGLT2i) and nonsteroidal mineralocorticoid receptor antagonist (nsMRA).",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Already receiving all three medications: RASi, SGLT2i, and nsMRA",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Exceed algorithm thresholds for potassium levels",
+      "category": "lab",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "eGFR less than 30 mL/min/1.73m²",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.egfr",
+        "op": "<",
+        "value": 30,
+        "unit": "mL/min/1.73m2"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Limited life expectancy of less than 1 year",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Followed by a subspecialty physician (e.g., nephrologist or endocrinologist)",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Unable to give consent",
+      "category": "other",
+      "predicate": null
+    }
+  ]
+}

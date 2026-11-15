@@ -1,0 +1,228 @@
+{
+  "criteria": [
+    {
+      "type": "inclusion",
+      "text": "Informed consent signed by the subject",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "Type 2 diabetes diagnosed for at least 12 months",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "Treatment with insulin therapy for at least 6 months",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "CKD defined either as an eGFR 30-59 ml/min/1.73m² or presence of albuminuria > 3 mg/mmol (stage A2 or A3 according to KDIGO) with an eGFR > 30 ml/min/1.73m².",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "CKD must be present for at least 6 months.",
+      "category": "history",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "HbA1c < 12% based on a venous blood sample from the screening visit",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.hba1c",
+        "op": "<",
+        "value": 12,
+        "unit": "%"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "Receiving treatment with an SGLT2 inhibitor and/or GLP-1 receptor agonist for at least 3 months, have been offered these therapies previously, or contraindication/intolerance to receiving these therapies",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "Willing to wear study devices and follow study instructions",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "Capable of giving an informed consent",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Type 1 diabetes",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "type 1 diabetes"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Current use of insulin pump",
+      "category": "procedure",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Current use of any closed-loop system",
+      "category": "procedure",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Alternative cause of CKD according to medical records such as polycystic kidney disease, glomerulonephritis, congenital urogenital tract diseases, etc.",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Known or suspected allergy against insulin",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Pregnancy",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "pregnant",
+        "op": "==",
+        "value": "true"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "planned pregnancy",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "breast feeding",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Severe visual impairment",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Severe hearing impairment",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Two or more episodes of severe hypoglycemia in the last 6 months",
+      "category": "history",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Medically documented allergy towards the adhesive (glue) of plasters",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Serious skin diseases located at places of the body, which potentially are possible to be used for localisation of the glucose sensor",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Any physical/psychological disease or medication(s) likely to interfere with the conduct of the study and interpretation of the study results, as judged by study clinician",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Recent (less than three months) history of myocardial infarction, percutaneous coronary intervention, stroke, or hospitalization for heart failure with reduced ejection fraction",
+      "category": "history",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "History of renal transplantation requiring ongoing immunosuppressive therapy",
+      "category": "procedure",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Known or suspected non-compliance",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "drug or alcohol abuse",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "in",
+        "value": [
+          "substance use disorder",
+          "alcohol use disorder"
+        ]
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Inability to follow the procedures of the investigation, e.g. due to language problems",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Incapacity to give informed consent",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Contra-indication to undergo MR-imaging according to a standard checklist such as the presence of a pacemaker or other implanted metallic device or severe claustrophobia.",
+      "category": "procedure",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Subject refuses to be informed of incidental findings related to their health discovered during imaging or other study-related exams",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Participation in another investigation with an investigational drug or another MD within the 30 days preceding and during the present investigation",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Previous enrolment into the current investigation",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Enrolment of the PI, his/her family members, employees and other dependent persons",
+      "category": "other",
+      "predicate": null
+    }
+  ]
+}

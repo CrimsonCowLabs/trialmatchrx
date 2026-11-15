@@ -23,8 +23,9 @@ criteria that code can evaluate against a patient record. Return them with the
   pieces from different places.
 - Skip section headers, notes about how labs are measured, enrolment caps, and lines such as
   "Other protocol-defined criteria apply" or "None".
-- Skip criteria that only restate the minimum age, maximum age or sex: those come from the
-  trial's structured fields.
+- Skip criteria that only restate the minimum age, maximum age or sex ("Children", "Age 18
+  years and older"): those come from the trial's structured fields.
+- Skip criteria for participants who are not patients (providers, pharmacists, caregivers).
 
 ### Categories
 
@@ -53,8 +54,10 @@ Rules:
 - Condition and medication names are short lowercase generic names ("type 2 diabetes",
   "heart failure", "kidney transplant", "spironolactone"). Use `in` with a list for "any of"
   ("Current treatment with other MRAs (e.g. spironolactone, eplerenone)").
-- Set `predicate` to null when the criterion needs a time window or duration ("within 60
-  days", "for at least 3 months"), a severity grade or class the fields can't hold, a trend,
+- A lab or vital qualified only by when it is measured ("at screening", "within past 12
+  months", "on screening labs") still gets a predicate: the patient's latest value is used.
+- Set `predicate` to null when the criterion needs a time window or duration on an event,
+  diagnosis or treatment ("MI within 60 days", "for at least 3 months"), a severity grade or class the fields can't hold, a trend,
   investigator judgment, consent or logistics, a field not listed above, or an unstated
   threshold ("hypotension", "good nutritional status"). Do not invent thresholds.
 - Never write a predicate that only partly captures the criterion. If in doubt, use null.
