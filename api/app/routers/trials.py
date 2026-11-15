@@ -13,7 +13,6 @@ from app.pipeline.compile_criteria import (
     anthropic_compile_model,
     compile_study,
 )
-from app.pipeline.study_source import StudyNotFound, load_study
 from app.schemas import CompileRequest, Criterion, TrialDetail
 from app.sources import ctgov
 from app.trace.runner import traced_run
@@ -39,7 +38,8 @@ async def get_trial(nct: str, response: Response) -> TrialDetail:
             raise HTTPException(404, f"{nct} not found on ClinicalTrials.gov", headers) from exc
         except httpx.HTTPError as exc:
             raise HTTPException(502, f"ClinicalTrials.gov: {exc}", headers) from exc
-        trial = ctgov.summarize(study).model_copy(update={"criteria": criteria_cache.latest(nct)})
+        trial = ctgov.summarize(study)
+        trial.criteria = criteria_cache.latest(trial.nct_id)
         run.result = {"nct": nct}
     return trial
 
@@ -54,16 +54,19 @@ async def compile_trial(
     """Traced: the compile run's id comes back in the `X-Run-Id` header."""
     async with traced_run("compile", {"nct": nct, "force": req.force}) as run:
         response.headers["X-Run-Id"] = run.run_id
+        headers = {"X-Run-Id": run.run_id}
         try:
-            study = await load_study(nct, recorder=run.recorder)
+            study = await ctgov.get_study(nct, recorder=run.recorder)
             criteria = await compile_study(
                 study, run.recorder, model_factory=model_factory, force=req.force
             )
-        except StudyNotFound as exc:
-            raise HTTPException(404, f"trial {nct} not found") from exc
+        except ctgov.StudyNotFoundError as exc:
+            raise HTTPException(404, f"{nct} not found on ClinicalTrials.gov", headers) from exc
+        except httpx.HTTPError as exc:
+            raise HTTPException(502, f"ClinicalTrials.gov: {exc}", headers) from exc
         except CompileModelUnavailable as exc:
-            raise HTTPException(503, str(exc)) from exc
+            raise HTTPException(503, str(exc), headers) from exc
         except CompileFailed as exc:
-            raise HTTPException(502, str(exc)) from exc
+            raise HTTPException(502, str(exc), headers) from exc
         run.result = {"criteria": [c.model_dump(mode="json") for c in criteria]}
     return criteria

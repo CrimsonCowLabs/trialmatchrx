@@ -8,7 +8,7 @@ import pytest
 
 from app.pipeline.compile_criteria import compile_rate, compile_study
 from app.pipeline.fixture_model import FixtureChatModel, load_llm_fixture
-from app.pipeline.study_source import StudyNotFound, fixture_nct_ids, load_study
+from app.pipeline.study_source import StudyNotFound, fixture_nct_ids, load_fixture_study
 from app.schemas import Criterion
 from app.trace import store
 from app.trace.bus import EventBus
@@ -25,7 +25,7 @@ def test_there_are_ten_fixture_trials_each_with_a_saved_llm_output() -> None:
 
 @pytest.mark.parametrize("nct", NCT_IDS)
 async def test_fixture_trial_compiles_to_valid_criteria(nct: str) -> None:
-    study = await load_study(nct)
+    study = load_fixture_study(nct)
     rec = TraceRecorder(store.create_run("compile", {"nct": nct}), EventBus())
     model = FixtureChatModel(output=load_llm_fixture(nct))
 
@@ -47,6 +47,6 @@ async def test_fixture_trial_compiles_to_valid_criteria(nct: str) -> None:
 
 async def test_unknown_study_is_not_found() -> None:
     with pytest.raises(StudyNotFound):
-        await load_study("NCT99999999")
+        load_fixture_study("NCT99999999")
     with pytest.raises(StudyNotFound):
-        await load_study("../secrets")
+        load_fixture_study("../secrets")

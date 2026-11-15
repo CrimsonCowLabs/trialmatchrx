@@ -7,7 +7,7 @@ import pytest
 from app.config import get_settings
 from app.main import app
 from app.pipeline.fixture_model import FixtureChatModel, load_llm_fixture
-from app.pipeline.study_source import load_study
+from app.pipeline.study_source import load_fixture_study
 from app.routers.trials import compile_model_factory
 from app.schemas import (
     Criterion,
@@ -19,6 +19,7 @@ from app.schemas import (
     TrialDetail,
 )
 from app.sources import ctgov
+from tests.ctgov_fake import FakeCtgov
 from tests.sse import client, parse_sse
 
 MATCH_BODY = {"note": "61M, T2D, HbA1c 8.4%, eGFR 48, on metformin", "condition": "t2d"}
@@ -95,7 +96,7 @@ def fixture_compile_model() -> Iterator[FixtureChatModel]:
 
 
 async def test_trial_and_compile(fixture_compile_model: FixtureChatModel) -> None:
-    ctgov.cache_study(await load_study(FIXTURE_NCT))
+    ctgov.cache_study(load_fixture_study(FIXTURE_NCT))
     async with client() as c:
         before = TrialDetail.model_validate((await c.get(f"/api/trials/{FIXTURE_NCT}")).json())
         compiled = await c.post(f"/api/trials/{FIXTURE_NCT}/compile", json={"force": False})
@@ -111,11 +112,13 @@ async def test_trial_and_compile(fixture_compile_model: FixtureChatModel) -> Non
     assert after.criteria == criteria
     assert again.json() == compiled.json()
     assert fixture_compile_model.calls == 1
+    assert any(e["name"] == "ctgov.cache_lookup" and e["cache_hit"] for e in trace)
     lookup = next(e for e in trace if e["name"] == "cache_lookup")
     assert lookup["cache_hit"] is True
 
 
 async def test_compile_unknown_trial_is_404() -> None:
+    FakeCtgov().install()  # answers 404 for any study it doesn't hold
     async with client() as c:
         response = await c.post("/api/trials/NCT99999999/compile", json={"force": True})
     assert response.status_code == 404
@@ -124,6 +127,7 @@ async def test_compile_unknown_trial_is_404() -> None:
 async def test_compile_without_api_key_on_a_cache_miss_is_503() -> None:
     settings = get_settings()
     original, settings.anthropic_api_key = settings.anthropic_api_key, None
+    ctgov.cache_study(load_fixture_study(FIXTURE_NCT))
     try:
         async with client() as c:
             response = await c.post(f"/api/trials/{FIXTURE_NCT}/compile", json={"force": True})

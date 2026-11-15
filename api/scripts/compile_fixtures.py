@@ -24,7 +24,7 @@ from app.pipeline.compile_criteria import (
     predicate_count,
 )
 from app.pipeline.fixture_model import FixtureChatModel, load_llm_fixture
-from app.pipeline.study_source import fixture_nct_ids, load_study
+from app.pipeline.study_source import fixture_nct_ids, load_fixture_study
 from app.trace.runner import traced_run
 
 
@@ -40,7 +40,7 @@ async def run(ncts: list[str], *, use_fixtures: bool, force: bool) -> None:
     total = with_predicate = 0
     print(f"{'nct':<12} {'criteria':>8} {'predicate':>9} {'rate':>6}  run_id")
     for nct in ncts:
-        study = await load_study(nct)
+        study = load_fixture_study(nct)
         async with traced_run("compile", {"nct": nct, "force": force}) as trace:
             criteria = await compile_study(
                 study,
