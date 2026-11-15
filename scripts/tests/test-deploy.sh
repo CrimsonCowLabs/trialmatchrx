@@ -13,6 +13,8 @@
 # The docker stub keeps state under $WORK/state - which images are local, which
 # "repository tag" pairs the registry holds, which tag is running - and logs every call to
 # $WORK/docker-calls, prefixed with the TRIALMATCH_API_IMAGE it was called with.
+# flock is a stub too (macOS has none): it fails, as `flock -n` does on a held lock, while
+# state/lock-held exists.
 # FAKE_UP_FAILS names a tag whose `compose up --wait` fails; FAKE_UNREADY names a tag whose
 # /api/health answers `ok: false`; FAKE_UP_LOCKS makes the stack directory read-only once
 # compose up has succeeded.
@@ -32,11 +34,12 @@ BIN="$WORK/bin"
 mkdir -p "$BIN"
 
 # git: a clean tree at commit 0123456789ab unless FAKE_GIT_STATUS says not.
-cat > "$BIN/git" <<'STUB'
+cat > "$BIN/git" <<STUB
 #!/bin/sh
-case "$*" in
-  *status*) printf '%s' "${FAKE_GIT_STATUS:-}" ;;
-  *rev-parse*) echo "${FAKE_COMMIT:-0123456789ab}" ;;
+echo "\$*" >> "$WORK/git-calls"
+case "\$*" in
+  *status*) printf '%s' "\${FAKE_GIT_STATUS:-}" ;;
+  *rev-parse*) echo "\${FAKE_COMMIT:-0123456789ab}" ;;
 esac
 exit 0
 STUB
@@ -45,6 +48,12 @@ cat > "$BIN/date" <<'STUB'
 #!/bin/sh
 case "$*" in *%Y%m%d%H%M%S*) echo "${FAKE_NOW:-20261115120000}"; exit 0 ;; esac
 exec /bin/date "$@"
+STUB
+
+cat > "$BIN/flock" <<STUB
+#!/bin/sh
+echo "\$*" >> "$WORK/flock-calls"
+[ ! -e "$WORK/state/lock-held" ]
 STUB
 
 cat > "$BIN/ssh" <<STUB
@@ -164,7 +173,7 @@ deploy() { # [NAME=value...] [--flag...]
     settings+=("$1"); shift
   done
   env PATH="$(sandbox_path "$BIN")" HOST=box REGISTRY="$R" STACK_DIR="$WORK/stack" \
-    REGISTRY_URL=http://127.0.0.1:5000 ${settings[@]+"${settings[@]}"} bash "$SCRIPT" "$@" 2>&1
+    REGISTRY_URL=http://127.0.0.1:5000 REGISTRY_LOCK="$WORK/gc.lock" ${settings[@]+"${settings[@]}"} bash "$SCRIPT" "$@" 2>&1
 }
 calls() { cat "$WORK/$1-calls" 2>/dev/null; }
 file_mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }
@@ -181,10 +190,30 @@ assert_contains "$out" 'data/fixtures/runs/' 'names what is uncommitted, untrack
 assert_equals "$(calls docker)" '' 'docker was not called'
 assert_equals "$(calls ssh)" '' 'the box was not touched'
 
+section 'an uncommitted edit to the scripts is refused too: their box half runs from the working tree'
+
+fresh_box "$OLD"
+out="$(deploy FAKE_GIT_STATUS=' M scripts/deploy.sh')"
+assert_status "$?" 1 'exits 1'
+assert_contains "$out" 'scripts/deploy.sh' 'names the script'
+assert_contains "$(calls git | grep status)" ' scripts' 'git status is asked about scripts/'
+assert_equals "$(calls docker)$(calls ssh)" '' 'nothing was built or sent'
+
+section 'an .env anyone else on the box could read is refused, naming it, before anything is built'
+
+fresh_box "$OLD"
+chmod 644 "$WORK/stack/.env"
+out="$(deploy)"
+assert_status "$?" 1 'exits 1'
+assert_contains "$out" "$WORK/stack/.env on the box is mode 644" 'names the file and its mode'
+assert_contains "$out" "chmod 600 $WORK/stack/.env" 'says how to fix it'
+assert_equals "$(file_mode "$WORK/stack/.env")" 644 'and does not change it itself'
+assert_missing "$(calls docker)" 'buildx' 'nothing was built or pushed'
+
 section 'an .env missing a required value is refused, naming it, before anything is built'
 
 fresh_box
-printf 'ANTHROPIC_API_KEY=\nMODEL_COMPILE=claude-sonnet-4-5\nMODEL_JUDGE=claude-sonnet-4-5\n' > "$WORK/stack/.env"
+(umask 077; printf 'ANTHROPIC_API_KEY=\nMODEL_COMPILE=claude-sonnet-4-5\nMODEL_JUDGE=claude-sonnet-4-5\n' > "$WORK/stack/.env")
 out="$(deploy)"
 assert_status "$?" 1 'exits 1'
 assert_contains "$out" 'ANTHROPIC_API_KEY' 'names an ANTHROPIC_API_KEY that is there but empty'
@@ -345,6 +374,7 @@ assert_contains "$out" 'left trialmatchrx-api:2222aaaaaaaa: it shares its manife
 assert_contains "$(calls docker)" 'exec registry registry garbage-collect --delete-untagged /etc/docker/registry/config.yml' \
   'the registry collects its garbage'
 assert_contains "$(calls docker)" 'restart registry' 'then is restarted'
+assert_equals "$(calls flock)" '-n 9' 'all under flock -n on the registry lock'
 left="$(sort "$WORK/state/local-images" | tr '\n' ' ')"
 assert_equals "$left" "$R/trialmatchrx-api:$T $R/trialmatchrx-api:4444aaaaaaaa $R/trialmatchrx-web:$T $R/trialmatchrx-web:4444aaaaaaaa someone/else:latest " \
   'the box keeps the current and previous images, and what is not ours'
@@ -360,6 +390,20 @@ assert_status "$?" 0 'exits 0, the deploy itself having worked'
 assert_contains "$out" 'keyidpro-api:50750369b312 is an index' 'says which tag is an index'
 assert_missing "$(calls curl)" 'DELETE' 'deletes nothing from the registry'
 assert_missing "$(calls docker)" 'garbage-collect' 'does not garbage-collect'
+
+section 'a registry lock held elsewhere skips the registry prune, and the deploy still succeeds'
+
+fresh_box "$OLD"
+echo "trialmatchrx-api 1111aaaaaaaa" >> "$WORK/state/registry-tags"
+touch "$WORK/state/lock-held"
+out="$(deploy)"
+assert_status "$?" 0 'exits 0'
+assert_contains "$out" "SKIP  $WORK/gc.lock is held by another prune" 'says the prune was skipped, and why'
+assert_missing "$out" 'the prune did not finish' 'which is not reported as a failed prune'
+assert_missing "$(calls curl)" 'DELETE' 'deletes nothing from the registry'
+assert_missing "$(calls docker)" 'garbage-collect' 'does not garbage-collect'
+assert_missing "$(calls docker)" 'restart registry' 'does not restart the registry'
+assert_contains "$(cat "$WORK/stack/.env")" "TRIALMATCH_API_IMAGE=$R/trialmatchrx-api:$T" 'the new images are still recorded'
 
 # --- --help and --dry-run ---------------------------------------------------
 

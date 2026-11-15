@@ -12,6 +12,7 @@
 #   REGISTRY=ccl-vps.tailc2e228.ts.net:5000  where to push, and where the box pulls
 #   REGISTRY_URL=http://127.0.0.1:5000       the registry's API, from the box
 #   REGISTRY_CONTAINER=registry              the registry's container on the box
+#   REGISTRY_LOCK=/app/registry/.gc.lock     flock held on the box while the registry is pruned
 #   STACK_DIR=/app/trialmatchrx              the stack on the box: .env, compose.yaml
 #   KEEP=3                                   tags the registry keeps, at least 2
 #   WAIT_TIMEOUT=150                         seconds `compose up --wait` may take
@@ -35,7 +36,10 @@
 # local compose.override.yaml (a second Caddy) can never load on the box.
 #
 # Old images go only after a deploy that worked: on the box, every image of ours but the
-# current and previous; in the registry, every tag but the newest KEEP by deploys.log.
+# current and previous; in the registry, every tag but the newest KEEP by deploys.log. The
+# registry is shared with KeyIDPro, so its delete + garbage-collect runs under `flock -n` on
+# REGISTRY_LOCK, and a deploy that finds the lock held skips that prune. KeyIDPro's deploy
+# does not take the lock yet, so until it does the guard only stops two of these at once.
 #
 # `set -e` lives inside main() so that the tests and load-data.sh can source this file.
 
@@ -45,6 +49,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 : "${REGISTRY:=ccl-vps.tailc2e228.ts.net:5000}"
 : "${REGISTRY_URL:=http://127.0.0.1:5000}"
 : "${REGISTRY_CONTAINER:=registry}"
+# Beside the registry's own compose.yaml, where either app's deploy can reach it.
+: "${REGISTRY_LOCK:=/app/registry/.gc.lock}"
 : "${STACK_DIR:=/app/trialmatchrx}"
 : "${KEEP:=3}"
 # Five of the healthchecks' 30-second intervals: start, the first check, room for retries.
@@ -64,9 +70,15 @@ die()  { printf '\n%s: %s\n' "${SCRIPT_NAME:-deploy}" "$*" >&2; exit 1; }
 
 # Changes, tracked or untracked (not ignored), in what goes into an image or onto the box.
 # Untracked counts: the build context is the working tree, so an unrecorded
-# data/fixtures/runs would ship under a tag that names a commit without it.
+# data/fixtures/runs would ship under a tag that names a commit without it. scripts/ counts
+# because the box half of this file and load-data.sh runs from the working tree too.
 uncommitted() {
-  git -C "$REPO_ROOT" status --porcelain -- api web data/fixtures compose.yaml .dockerignore
+  git -C "$REPO_ROOT" status --porcelain -- api web data/fixtures compose.yaml .dockerignore scripts
+}
+
+# One of our images, by repository and tag.
+image_ref() { # repository tag
+  printf '%s/%s:%s\n' "$REGISTRY" "$1" "$2"
 }
 
 # --- the half that runs on the box ------------------------------------------
@@ -87,10 +99,17 @@ box_current_tag() {
   [ -z "$image" ] || printf '%s\n' "${image##*:}"
 }
 
-# The stack directory is made here (mode 700, like /app/keyidpro); its .env never is.
+# The stack directory is made here (mode 700, like /app/keyidpro); its .env never is, and
+# one anyone else on the box could read is refused rather than fixed behind the user's back.
 box_preflight() {
-  local name missing=''
+  local name missing='' mode
   mkdir -p "$STACK_DIR" && chmod 700 "$STACK_DIR" || die "could not make $STACK_DIR"
+  if [ -f "$STACK_DIR/.env" ]; then
+    # GNU stat on the box; BSD stat where the tests run.
+    mode="$(stat -c %a "$STACK_DIR/.env" 2>/dev/null || stat -f %Lp "$STACK_DIR/.env")"
+    [ "$mode" = 600 ] || die "$STACK_DIR/.env on the box is mode $mode; it holds the API key, so it has to be 600.
+Run: chmod 600 $STACK_DIR/.env. Nothing was built."
+  fi
   for name in $REQUIRED_ENV; do
     [ -n "$(box_env_value "$name")" ] || missing="$missing $name"
   done
@@ -112,8 +131,8 @@ box_set_tag() { # tag
     || { say "could not make a temporary file in $STACK_DIR"; return 1; }
   if ! {
     grep -v -e '^TRIALMATCH_API_IMAGE=' -e '^TRIALMATCH_WEB_IMAGE=' "$STACK_DIR/.env" || true
-    printf 'TRIALMATCH_API_IMAGE=%s\n' "$REGISTRY/trialmatchrx-api:$1"
-    printf 'TRIALMATCH_WEB_IMAGE=%s\n' "$REGISTRY/trialmatchrx-web:$1"
+    printf 'TRIALMATCH_API_IMAGE=%s\n' "$(image_ref trialmatchrx-api "$1")"
+    printf 'TRIALMATCH_WEB_IMAGE=%s\n' "$(image_ref trialmatchrx-web "$1")"
   } > "$tmp"; then
     rm -f "$tmp"; say "could not write $tmp"; return 1
   fi
@@ -125,8 +144,8 @@ box_set_tag() { # tag
 box_compose() { # tag compose-args...
   local tag="$1"; shift
   (cd "$STACK_DIR" \
-    && TRIALMATCH_API_IMAGE="$REGISTRY/trialmatchrx-api:$tag" \
-       TRIALMATCH_WEB_IMAGE="$REGISTRY/trialmatchrx-web:$tag" \
+    && TRIALMATCH_API_IMAGE="$(image_ref trialmatchrx-api "$tag")" \
+       TRIALMATCH_WEB_IMAGE="$(image_ref trialmatchrx-web "$tag")" \
        docker compose -f compose.yaml "$@")
 }
 
@@ -148,25 +167,28 @@ box_health() {
   return 1
 }
 
+# Give up on a release before anything is brought up: drop the staged compose.yaml and fail.
+box_abandon_release() { # message
+  rm -f "$STACK_DIR/compose.yaml.next"
+  die "$1"
+}
+
 # Bring a tag up, and either record it or put the previous one back.
 box_release() { # tag previous
   local new="$1" previous="$2" repo
   say "Running now: ${previous:-nothing, this is the first deploy}"
-  if [ "$new" = "$previous" ]; then
-    rm -f "$STACK_DIR/compose.yaml.next"
-    die "$new is already what .env names, so a failure would have nothing to roll back to. Nothing was changed on the box"
-  fi
+  [ "$new" != "$previous" ] \
+    || box_abandon_release "$new is already what .env names, so a failure would have nothing to roll back to. Nothing was changed on the box"
 
   step "Pulling $new on the box"
   for repo in $REPOSITORIES; do
-    docker pull "$REGISTRY/$repo:$new" \
-      || { rm -f "$STACK_DIR/compose.yaml.next"; die "the box could not pull $REGISTRY/$repo:$new"; }
+    docker pull "$(image_ref "$repo" "$new")" \
+      || box_abandon_release "the box could not pull $(image_ref "$repo" "$new")"
   done
 
   if [ -f "$STACK_DIR/compose.yaml" ] \
       && ! cp -p "$STACK_DIR/compose.yaml" "$STACK_DIR/compose.yaml.previous"; then
-    rm -f "$STACK_DIR/compose.yaml.next"
-    die "could not keep a copy of $STACK_DIR/compose.yaml to roll back to. Nothing was changed"
+    box_abandon_release "could not keep a copy of $STACK_DIR/compose.yaml to roll back to. Nothing was changed"
   fi
   mv "$STACK_DIR/compose.yaml.next" "$STACK_DIR/compose.yaml" \
     || die "could not put the new compose.yaml in place. Nothing was brought up"
@@ -175,8 +197,8 @@ box_release() { # tag previous
   if box_up "$new" && box_health; then
     box_set_tag "$new" || die "$new is running, but $STACK_DIR/.env still names ${previous:-no image}.
 Fix it by hand on the box: in $STACK_DIR/.env (keep it mode 600), set
-TRIALMATCH_API_IMAGE=$REGISTRY/trialmatchrx-api:$new
-TRIALMATCH_WEB_IMAGE=$REGISTRY/trialmatchrx-web:$new"
+TRIALMATCH_API_IMAGE=$(image_ref trialmatchrx-api "$new")
+TRIALMATCH_WEB_IMAGE=$(image_ref trialmatchrx-web "$new")"
     printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$new" >> "$STACK_DIR/deploys.log"
     rm -f "$STACK_DIR/compose.yaml.previous"
     say "$new is up and healthy, and .env names it"
@@ -280,7 +302,8 @@ box_prune_registry() { # tags-to-keep
     done
   done
 
-  # Safe while nothing pushes: run one deploy (of either app) at a time.
+  # Safe while nothing pushes. box_prune holds REGISTRY_LOCK around this, which stops a second
+  # TrialMatch deploy pruning at once; KeyIDPro's deploy doesn't take it yet.
   local gc_out
   if ! gc_out="$(docker exec "$REGISTRY_CONTAINER" registry garbage-collect --delete-untagged \
       /etc/docker/registry/config.yml 2>&1)"; then
@@ -321,7 +344,15 @@ box_prune() { # current previous
   step "Pruning the registry to the newest $KEEP tags"
   keep="$(box_tags_to_keep "$current" "$previous")"
   say "keeping: $keep"
-  box_prune_registry "$keep" || failed=1
+  # The lock is held on fd 9 for the subshell's life: delete, garbage-collect, restart. Held
+  # elsewhere, this deploy's registry prune is skipped (75); the next deploy's catches up.
+  local status=0
+  ( flock -n 9 || exit 75; box_prune_registry "$keep" ) 9>>"$REGISTRY_LOCK" || status=$?
+  case "$status" in
+    0) ;;
+    75) say "SKIP  $REGISTRY_LOCK is held by another prune; the registry was not pruned this time" ;;
+    *) failed=1 ;;
+  esac
 
   [ "$failed" = 0 ] || say "WARN  the deploy worked, but the prune did not finish; see above"
   return 0
@@ -342,8 +373,9 @@ box_report() { # tag
   free -m || true
 }
 
-BOX_FUNCTIONS='say step die box_env_value box_current_tag box_preflight box_stage_compose
-  box_set_tag box_compose box_up box_health box_release box_tags_to_keep
+BOX_FUNCTIONS='say step die image_ref box_env_value box_current_tag box_preflight
+  box_stage_compose box_set_tag box_compose box_up box_health box_abandon_release
+  box_release box_tags_to_keep
   box_registry_repositories box_registry_tags box_registry_manifest box_prune_registry
   box_prune box_report'
 
@@ -352,6 +384,7 @@ on_box() { # function [args...]
     printf 'set -u -o pipefail\n'
     printf 'SCRIPT_NAME=%q STACK_DIR=%q REGISTRY=%q REGISTRY_URL=%q REGISTRY_CONTAINER=%q\n' \
       "${SCRIPT_NAME:-deploy}" "$STACK_DIR" "$REGISTRY" "$REGISTRY_URL" "$REGISTRY_CONTAINER"
+    printf 'REGISTRY_LOCK=%q\n' "$REGISTRY_LOCK"
     printf 'KEEP=%q WAIT_TIMEOUT=%q REPOSITORIES=%q REQUIRED_ENV=%q\n' \
       "$KEEP" "$WAIT_TIMEOUT" "$REPOSITORIES" "$REQUIRED_ENV"
     printf 'IMAGE_TYPES=%q INDEX_TYPES=%q\n' "$IMAGE_TYPES" "$INDEX_TYPES"
@@ -368,8 +401,8 @@ main() {
   local dry_run=''
   while [ $# -gt 0 ]; do
     case "$1" in
-      # Lines 3-23 are the usage block.
-      -h | --help) sed -n '3,23p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; return 0 ;;
+      # Lines 3-24 are the usage block.
+      -h | --help) sed -n '3,24p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; return 0 ;;
       --dry-run) dry_run=yes ;;
       *) die "unknown option: $1 (see --help)" ;;
     esac
@@ -388,7 +421,9 @@ $changes
 Commit or stash them first. Nothing was built."
   tag="$commit-$(date -u +%Y%m%d%H%M%S)"
 
-  local api="$REGISTRY/trialmatchrx-api:$tag" web="$REGISTRY/trialmatchrx-web:$tag"
+  local api web
+  api="$(image_ref trialmatchrx-api "$tag")"
+  web="$(image_ref trialmatchrx-web "$tag")"
 
   if [ -n "$dry_run" ]; then
     step "Dry run: nothing built, nothing sent"
