@@ -137,6 +137,20 @@ def cached_study(nct: str) -> dict[str, Any] | None:
         return None if row is None else row.data
 
 
+def cached_studies() -> list[dict[str, Any]]:
+    """The newest cached version of every study, without touching the network."""
+    newest: dict[str, dict[str, Any]] = {}
+    with session_scope() as s:
+        rows = s.exec(
+            select(TrialCacheRow).order_by(
+                col(TrialCacheRow.nct_id), col(TrialCacheRow.last_update_post_date)
+            )
+        ).all()
+        for row in rows:
+            newest[row.nct_id] = row.data  # later (newer) versions overwrite older ones
+    return list(newest.values())
+
+
 def cached_count() -> int:
     """Distinct NCT IDs in the cache."""
     with session_scope() as s:
