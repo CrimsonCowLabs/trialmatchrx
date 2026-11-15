@@ -53,3 +53,24 @@ def test_an_out_of_range_topic_count_is_rejected(saved_sample: None, n: int) -> 
         run_eval.main(rebuild=False, bm25_only=False, topics=n)
 
     assert latest_eval().history == []
+
+
+def test_topics_covering_the_whole_sample_is_still_partial_and_unrecorded(
+    saved_sample: None, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # Any --topics run is never recorded (issue #61), even when N is every topic.
+    run_eval.main(rebuild=False, bm25_only=False, topics=2)
+
+    assert "partial run: 2 of 2 topics" in capsys.readouterr().out
+    assert latest_eval().history == []
+
+
+@pytest.mark.parametrize("value", ["0", "-1", "x"])
+def test_the_command_line_rejects_a_topic_count_below_one(
+    value: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # Before main runs, so a --rebuild never fetches anything first.
+    with pytest.raises(SystemExit):
+        run_eval.parse_args(["--rebuild", f"--topics={value}"])
+
+    assert "argument --topics: must be" in capsys.readouterr().err
