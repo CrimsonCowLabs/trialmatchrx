@@ -1,0 +1,21 @@
+import Link from "next/link";
+import { Suspense } from "react";
+
+import { RunView } from "./run-view";
+
+export default function MatchRunPage() {
+  return (
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-4 p-8">
+      <div className="flex items-baseline justify-between">
+        <h1 className="text-2xl font-semibold">Match run</h1>
+        <Link href="/match" className="text-sm underline">
+          New match
+        </Link>
+      </div>
+      {/* useParams suspends for request-time params under cacheComponents */}
+      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading run…</p>}>
+        <RunView />
+      </Suspense>
+    </main>
+  );
+}
