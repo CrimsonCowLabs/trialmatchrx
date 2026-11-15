@@ -65,7 +65,7 @@ def _trial_text(study: dict[str, Any]) -> str:
     return clean_eligibility_text(eligibility.get("eligibilityCriteria") or "")
 
 
-def judges_for_run(
+def _judges(
     rec: TraceRecorder, judge_model_factory: ModelFactory, note: str | None
 ) -> Callable[[CandidateTrial], Judge]:
     """How each trial gets its judge: one model and one semaphore for the whole run."""
@@ -122,6 +122,42 @@ def _counts_text(counts: dict[str, int]) -> str:
     return " / ".join(f"{counts.get(k, 0)} {k}" for k in ("pass", "fail", "unknown"))
 
 
+async def match_trials(
+    rec: TraceRecorder,
+    trials: list[CandidateTrial],
+    facts: PatientFacts,
+    *,
+    note: str | None,
+    model_factory: ModelFactory = anthropic_compile_model,
+    judge_model_factory: ModelFactory = anthropic_judge_model,
+) -> list[TrialMatch | None]:
+    """`match_trial` on every trial (at most TRIAL_CONCURRENCY at once), one judge model and
+    semaphore for them all. Results line up with `trials`; None where compiling failed."""
+    judge_for = _judges(rec, judge_model_factory, note)
+    slots = asyncio.Semaphore(TRIAL_CONCURRENCY)
+
+    async def bounded(trial: CandidateTrial) -> TrialMatch | None:
+        async with slots:
+            return await match_trial(
+                rec, trial, facts, model_factory=model_factory, judge=judge_for(trial)
+            )
+
+    return list(await asyncio.gather(*(bounded(t) for t in trials)))
+
+
+async def rank_step(rec: TraceRecorder, matches: list[TrialMatch]) -> list[TrialMatch]:
+    """`rank_matches` inside the traced `rank` step."""
+    async with rec.step("rank", "step", {"trials": len(matches)}) as s:
+        ranked = rank_matches(matches)
+        tiers = {t: sum(m.tier == t for m in ranked) for t in TIER_ORDER}
+        s.output = {"tiers": tiers, "order": [m.nct_id for m in ranked]}
+        s.note = (
+            f"{tiers['likely']} likely, {tiers['needs_info']} needs info, "
+            f"{tiers['ineligible']} ineligible"
+        )
+    return ranked
+
+
 async def run_match(
     rec: TraceRecorder,
     req: MatchRequest,
@@ -143,26 +179,15 @@ async def run_match(
         condition=req.condition,
     )
 
-    judge_for = judges_for_run(rec, judge_model_factory, req.note)
-    slots = asyncio.Semaphore(TRIAL_CONCURRENCY)
-
-    async def bounded(trial: CandidateTrial) -> TrialMatch | None:
-        async with slots:
-            return await match_trial(
-                rec, trial, facts, model_factory=model_factory, judge=judge_for(trial)
-            )
-
-    results = await asyncio.gather(*(bounded(t) for t in trials))
-    matches = [m for m in results if m is not None]
-
-    async with rec.step("rank", "step", {"trials": len(matches)}) as s:
-        ranked = rank_matches(matches)
-        tiers = {t: sum(m.tier == t for m in ranked) for t in TIER_ORDER}
-        s.output = {"tiers": tiers, "order": [m.nct_id for m in ranked]}
-        s.note = (
-            f"{tiers['likely']} likely, {tiers['needs_info']} needs info, "
-            f"{tiers['ineligible']} ineligible"
-        )
+    results = await match_trials(
+        rec,
+        trials,
+        facts,
+        note=req.note,
+        model_factory=model_factory,
+        judge_model_factory=judge_model_factory,
+    )
+    ranked = await rank_step(rec, [m for m in results if m is not None])
 
     return {
         "patient": facts.model_dump(mode="json"),

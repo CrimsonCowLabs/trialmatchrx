@@ -8,8 +8,9 @@ The matcher runs the full pipeline (parse -> compile -> evaluate -> judge -> ver
 each topic as a traced match run, so it needs ANTHROPIC_API_KEY. The first run is slow and
 costs tokens; criteria land in the compile cache and every parse / judge answer in `llm_cache`,
 so a re-run on the same sample replays them and scores the same. Without a key the matcher is
-skipped (BM25 still runs). A run where any trial fails to compile is printed but not recorded,
-so the history only holds scores over the whole sample.
+skipped (BM25 still runs). An incomplete matcher run (a trial failed to compile, or a judge call
+errored) is printed but not recorded and exits 1: failures aren't cached, so it wouldn't
+reproduce. Re-run to retry just those; the history only holds complete, replayable scores.
 
 The first run builds the sample (network): downloads the TREC 2021 topics + qrels into
 data/trec/, draws 15 topics x 20 judged trials, fetches each trial from ClinicalTrials.gov and
@@ -26,12 +27,13 @@ import httpx
 
 from app.config import get_settings
 from app.db import init_db
-from app.eval.matcher import score_matcher
+from app.eval.matcher import MatcherScore, score_matcher
 from app.eval.runs import (
     ACCURACY,
     BM25,
     COMPILE_RATE,
     MATCHER,
+    K,
     current_git_sha,
     record_eval_run,
     score_bm25,
@@ -74,12 +76,43 @@ def _reasons(sample: trec.TrecSample) -> str:
     return ", ".join(f"{n} {reason}" for reason, n in sorted(counts.items())) or "none"
 
 
-COLUMNS = (("ndcg@10", "nDCG@10"), ("p@10", "P@10"), (ACCURACY, "accuracy"))
+COLUMNS = ((f"ndcg@{K}", f"nDCG@{K}"), (f"p@{K}", f"P@{K}"), (ACCURACY, "accuracy"))
 
 
 def _row(system: str, metrics: dict[str, float]) -> str:
     cells = (f"{metrics[k]:>9.4f}" if k in metrics else f"{'-':>9}" for k, _ in COLUMNS)
     return f"{system:<8} " + " ".join(cells)
+
+
+def _report(matcher: dict[str, float] | None, bm25: dict[str, float]) -> None:
+    """The side-by-side table, then the compile rate and the matcher's lift over BM25."""
+    print()
+    print(f"{'system':<8} " + " ".join(f"{label:>9}" for _, label in COLUMNS))
+    if matcher is not None:
+        print(_row(MATCHER, matcher))
+    print(_row(BM25, bm25))
+    if matcher is None:
+        return
+    rate = matcher.get(COMPILE_RATE)
+    print(f"compile rate: {rate:.1%}" if rate is not None else "compile rate: -")
+    both = [(k, label) for k, label in COLUMNS if k in matcher and k in bm25]
+    print("matcher vs BM25: " + "  ".join(f"{lb} {matcher[k] - bm25[k]:+.4f}" for k, lb in both))
+
+
+def _score_matcher(sample: trec.TrecSample, git_sha: str | None) -> MatcherScore:
+    """Score the matcher; record it only when complete (a re-run would replay every answer)."""
+    print(f"matcher: {len(sample.topics)} topics, one traced match run each ...")
+    score = asyncio.run(score_matcher(sample))
+    if score.complete:
+        row = record_eval_run(MATCHER, score.metrics, sample=sample, git_sha=git_sha)
+        print(f"matcher: eval_runs {row.id[:8]}, git {row.git_sha}")
+    else:
+        print(
+            f"matcher: incomplete, NOT recorded: {len(score.uncompiled)} trials could not be "
+            f"compiled ({', '.join(score.uncompiled) or 'none'}), {score.judge_errors} judge "
+            "calls failed. Re-run to retry them (everything else replays from the cache)."
+        )
+    return score
 
 
 def main(rebuild: bool, bm25_only: bool) -> None:
@@ -97,41 +130,17 @@ def main(rebuild: bool, bm25_only: bool) -> None:
     bm25_row = record_eval_run(BM25, bm25, sample=sample, git_sha=git_sha)
     print(f"bm25: eval_runs {bm25_row.id[:8]}, git {bm25_row.git_sha}")
 
-    matcher: dict[str, float] | None = None
-    uncompiled: list[str] = []
+    score: MatcherScore | None = None
     if bm25_only:
         print("matcher: skipped (--bm25-only)")
     elif not get_settings().anthropic_api_key:
         print("matcher: skipped, ANTHROPIC_API_KEY is not set (it parses and judges with the LLM)")
     else:
-        print(f"matcher: {len(sample.topics)} topics, one traced match run each ...")
-        score = asyncio.run(score_matcher(sample))
-        matcher, uncompiled = score.metrics, score.uncompiled
-        if uncompiled:
-            print(
-                f"matcher: {len(uncompiled)} trials could not be compiled "
-                f"({', '.join(uncompiled)}); its scores below are NOT recorded"
-            )
-        else:
-            row = record_eval_run(MATCHER, matcher, sample=sample, git_sha=git_sha)
-            print(f"matcher: eval_runs {row.id[:8]}, git {row.git_sha}")
+        score = _score_matcher(sample, git_sha)
 
-    print()
-    print(f"{'system':<8} " + " ".join(f"{label:>9}" for _, label in COLUMNS))
-    if matcher is not None:
-        print(_row(MATCHER, matcher))
-    print(_row(BM25, bm25))
-    if matcher is not None:
-        rate = matcher.get(COMPILE_RATE)
-        print(f"compile rate: {rate:.1%}" if rate is not None else "compile rate: -")
-        lift = "  ".join(
-            f"{label} {matcher[k] - bm25[k]:+.4f}"
-            for k, label in COLUMNS
-            if k in matcher and k in bm25
-        )
-        print(f"matcher vs BM25: {lift}")
+    _report(score.metrics if score else None, bm25)
     print(f"prompts: {bm25_row.prompt_version}")
-    if uncompiled:
+    if score is not None and not score.complete:
         sys.exit(1)
 
 

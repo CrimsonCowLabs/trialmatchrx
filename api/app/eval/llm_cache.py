@@ -21,9 +21,10 @@ from langchain_core._api import LangChainBetaWarning
 from langchain_core.caches import RETURN_VAL_TYPE, BaseCache
 from langchain_core.language_models import BaseChatModel
 from langchain_core.load import dumps, loads
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlmodel import delete
 
-from app.db import LlmCacheRow, session_scope
+from app.db import LlmCacheRow, session_scope, utcnow
 
 
 def _key(prompt: str, llm_string: str) -> str:
@@ -44,11 +45,14 @@ class SqliteLlmCache(BaseCache):
             return [loads(g, allowed_objects="all") for g in stored]
 
     def update(self, prompt: str, llm_string: str, return_val: RETURN_VAL_TYPE) -> None:
-        key = _key(prompt, llm_string)
+        # One atomic upsert: two identical prompts in flight at once both write, neither fails.
+        values = {"key": _key(prompt, llm_string), "generations": [dumps(g) for g in return_val]}
+        stmt = sqlite_insert(LlmCacheRow).values(**values, created_at=utcnow())
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["key"], set_={"generations": stmt.excluded.generations}
+        )
         with session_scope() as s:
-            row = s.get(LlmCacheRow, key) or LlmCacheRow(key=key)
-            row.generations = [dumps(g) for g in return_val]
-            s.add(row)
+            s.exec(stmt)
 
     def clear(self, **kwargs: Any) -> None:
         with session_scope() as s:

@@ -200,3 +200,35 @@ async def test_a_trial_that_cannot_compile_is_reported_and_ranked_last() -> None
     assert score.uncompiled == ["NCT01", "NCT02", "NCT03", "NCT04"]
     assert score.rankings[2] == ["NCT01", "NCT02", "NCT04"]
     assert "compile_rate" not in score.metrics
+    assert not score.complete
+
+
+class Unreachable(FixtureChatModel):
+    """A judge whose API call fails (network, 5xx): the verdict falls back to unknown."""
+
+    def _result(self, messages: list[BaseMessage]) -> ChatResult:
+        raise ConnectionError("api unreachable")
+
+
+async def test_a_judge_error_marks_the_score_incomplete() -> None:
+    # Nothing is cached for a failed call, so a re-run would ask again and could score
+    # differently: the score must say so rather than pass as reproducible.
+    models = Models()
+    judge = Unreachable(output={"x": 1}, tool_name="JudgeOutput", model_name="judge-model")
+
+    score = await score_matcher(
+        _sample(),
+        compile_model_factory=lambda: models.compile,
+        parse_model_factory=lambda: models.parse,
+        judge_model_factory=lambda: judge,
+    )
+
+    assert score.judge_errors == 1  # NCT03's consent line, topic 1
+    assert score.uncompiled == []
+    assert not score.complete
+
+
+async def test_a_clean_run_is_complete() -> None:
+    score = await Models().score(_sample())
+
+    assert (score.judge_errors, score.complete) == (0, True)
