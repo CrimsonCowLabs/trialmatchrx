@@ -80,6 +80,7 @@ async def search_cached_trials(
         "limit": limit,
     }
     async with rec.step("search_trials", "tool", tool_input) as s:
+        # HACK(demo): `condition` doesn't filter; every recruiting cached trial is a candidate.
         cached = ctgov.cached_studies()
         recruiting = [
             st

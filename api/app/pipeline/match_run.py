@@ -20,7 +20,7 @@ from app.pipeline.compile_criteria import (
     compile_study,
 )
 from app.pipeline.evaluate import Judge, evaluate_trial, no_judge
-from app.pipeline.rank import build_match, rank_matches
+from app.pipeline.rank import TIER_ORDER, build_match, rank_matches
 from app.pipeline.trial_search import CandidateTrial, search_cached_trials
 from app.schemas import MatchRequest, PatientFacts, TrialMatch
 from app.sources import ctgov
@@ -107,9 +107,7 @@ async def run_match(
 
     async with rec.step("rank", "step", {"trials": len(matches)}) as s:
         ranked = rank_matches(matches)
-        tiers = {
-            t: sum(m.tier == t for m in ranked) for t in ("likely", "needs_info", "ineligible")
-        }
+        tiers = {t: sum(m.tier == t for m in ranked) for t in TIER_ORDER}
         s.output = {"tiers": tiers, "order": [m.nct_id for m in ranked]}
         s.note = (
             f"{tiers['likely']} likely, {tiers['needs_info']} needs info, "

@@ -112,14 +112,19 @@ async def test_listed_condition_or_med_is_evidence_either_way() -> None:
     assert await outcome(criterion("meds", "not_has", "metformin")) == "fail"
 
 
-async def test_absent_condition_can_clear_but_never_disqualify() -> None:
-    # Not in the list: an exclusion doesn't apply, but an unmet inclusion is only unknown.
-    assert await outcome(criterion("conditions", "has", "type 1 diabetes", type="exclusion")) == (
-        "pass"
-    )
+async def test_unlisted_condition_or_med_is_unknown_either_way() -> None:
+    # The note not mentioning something is missing data, not evidence of absence.
+    t1d_excluded = criterion("conditions", "has", "type 1 diabetes", type="exclusion")
+    assert await outcome(t1d_excluded) == "unknown"
     assert await outcome(criterion("conditions", "has", "chronic kidney disease")) == "unknown"
-    assert await outcome(criterion("meds", "not_has", "insulin")) == "pass"
-    assert await outcome(criterion("meds", "not_has", "insulin", type="exclusion")) == "unknown"
+    assert await outcome(criterion("meds", "not_has", "insulin")) == "unknown"
+
+
+async def test_names_match_whole_words_only() -> None:
+    facts = patient(conditions=[Fact(value="archived hivelike rash")])
+    assert await outcome(criterion("conditions", "has", "hiv", type="exclusion"), facts) == (
+        "unknown"
+    )
 
 
 async def test_empty_list_is_unknown() -> None:

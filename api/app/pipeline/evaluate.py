@@ -12,11 +12,12 @@ Verdict's `trace_event_id` points at it.
 """
 
 import asyncio
+import re
 from dataclasses import dataclass
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
-from app.pipeline.predicate_fields import NUMERIC_OPS
-from app.schemas import Criterion, Fact, PatientFacts, Predicate, Verdict
+from app.pipeline.predicate_fields import NUMERIC_OPS, normalize_unit
+from app.schemas import Criterion, Fact, PatientFacts, Predicate, TraceStatus, Verdict
 from app.trace.recorder import TraceRecorder
 
 Outcome = Literal["pass", "fail", "unknown"]
@@ -33,14 +34,6 @@ class PredicateResult:
     holds: bool | None
     evidence: str | None
     reason: str
-    # True when the answer rests on a name *not* being in conditions / meds. A note that
-    # doesn't mention something is not proof it's absent, so this can clear a criterion but
-    # never disqualify on it.
-    from_absence: bool = False
-
-
-def _norm_unit(unit: str | None) -> str | None:
-    return None if unit is None else unit.replace("²", "2").replace(" ", "").lower()
 
 
 def _evidence(fact: Fact, label: str) -> str:
@@ -60,7 +53,9 @@ def _compare(actual: float, op: str, target: float) -> bool:
             return actual > target
         case "<":
             return actual < target
-    return actual == target
+        case "==":
+            return actual == target
+    raise ValueError(f"op {op!r} is not numeric")  # callers check NUMERIC_OPS first
 
 
 def _numeric(fact: Fact | None, label: str, p: Predicate) -> PredicateResult:
@@ -69,7 +64,11 @@ def _numeric(fact: Fact | None, label: str, p: Predicate) -> PredicateResult:
     value = fact.value
     if isinstance(value, bool) or not isinstance(value, int | float):
         return PredicateResult(None, _evidence(fact, label), f"{label} is not a number")
-    if p.unit is not None and fact.unit is not None and _norm_unit(fact.unit) != _norm_unit(p.unit):
+    if (
+        p.unit is not None
+        and fact.unit is not None
+        and normalize_unit(fact.unit) != normalize_unit(p.unit)
+    ):
         return PredicateResult(
             None, _evidence(fact, label), f"{label} is in {fact.unit}, criterion uses {p.unit}"
         )
@@ -84,21 +83,27 @@ def _names(value: float | str | list[str]) -> list[str]:
     return [" ".join(v.lower().split()) for v in items]
 
 
+def _mentions(fact: Fact, name: str) -> bool:
+    """Whole-word containment: "type 2 diabetes" is in "type 2 diabetes mellitus", "hiv" is
+    not in "archive"."""
+    text = " ".join(str(fact.value).lower().split())
+    return re.search(rf"\b{re.escape(name)}\b", text) is not None
+
+
 def _membership(items: list[Fact], label: str, p: Predicate) -> PredicateResult:
-    """`has` / `in` / `not_has` on conditions or meds. A wanted name matches a listed fact
-    when it is contained in it ("type 2 diabetes" matches "type 2 diabetes mellitus")."""
-    if not items:
-        return PredicateResult(None, None, f"no {label} in the patient facts")
+    """`has` / `in` / `not_has` on conditions or meds.
+
+    Only a listed name is evidence. A name the facts don't list is `holds=None` (unknown) in
+    both directions: a note's silence about pancreatitis neither proves nor rules it out.
+    """
     wanted = _names(p.value)
-    hits = [f for f in items if any(w in " ".join(str(f.value).lower().split()) for w in wanted)]
-    present = bool(hits)
-    holds = not present if p.op == "not_has" else present
-    if present:
-        evidence = "; ".join(_evidence(f, label) for f in hits)
-        return PredicateResult(holds, evidence, f"{label} include {', '.join(wanted)}")
-    listed = ", ".join(str(f.value) for f in items)
-    reason = f"{', '.join(wanted)} not among {label} ({listed})"
-    return PredicateResult(holds, None, reason, from_absence=True)
+    hits = [f for f in items if any(_mentions(f, w) for w in wanted)]
+    if not hits:
+        listed = ", ".join(str(f.value) for f in items) or "none listed"
+        return PredicateResult(None, None, f"{', '.join(wanted)} not among {label} ({listed})")
+    evidence = "; ".join(_evidence(f, label) for f in hits)
+    holds = p.op != "not_has"
+    return PredicateResult(holds, evidence, f"{label} include {', '.join(wanted)}")
 
 
 def check_predicate(p: Predicate, facts: PatientFacts) -> PredicateResult:
@@ -132,8 +137,6 @@ def outcome_for(criterion: Criterion, result: PredicateResult) -> Outcome:
     if result.holds is None:
         return "unknown"
     met = result.holds if criterion.type == "inclusion" else not result.holds
-    if not met and result.from_absence:
-        return "unknown"
     return "pass" if met else "fail"
 
 
@@ -147,29 +150,54 @@ class Judge(Protocol):
     ) -> Verdict: ...
 
 
+def _traced_verdict(
+    nct_id: str,
+    criterion: Criterion,
+    rec: TraceRecorder,
+    *,
+    outcome: Outcome,
+    evidence: str | None,
+    rationale: str,
+    trace_input: dict[str, Any],
+    trace_output: dict[str, Any],
+    status: TraceStatus = "ok",
+) -> Verdict:
+    """Record one `rule:<nct>:<criterion id>` event and the Verdict that points at it."""
+    event = rec.event(
+        f"rule:{nct_id}:{criterion.id}",
+        "rule",
+        status=status,
+        input={"criterion_id": criterion.id, "type": criterion.type, **trace_input},
+        output={"outcome": outcome, **trace_output},
+        note=f"{criterion.id}: {rationale}",
+    )
+    return Verdict(
+        criterion_id=criterion.id,
+        outcome=outcome,
+        method="rule",
+        criterion_quote=criterion.text,
+        patient_evidence=evidence,
+        rationale=rationale,
+        verified=True,
+        trace_event_id=event.id,
+    )
+
+
 async def no_judge(
     nct_id: str, criterion: Criterion, facts: PatientFacts, rec: TraceRecorder
 ) -> Verdict:
     """The default Judge: `unknown`, recorded as a skipped `rule` event."""
     # HACK(demo): no LLM judge yet (issue #6); criteria without a predicate are `unknown`.
-    rationale = "needs judgment; no rule can decide it and the LLM judge is not wired in yet"
-    event = rec.event(
-        f"rule:{nct_id}:{criterion.id}",
-        "rule",
-        status="skipped",
-        input={"criterion_id": criterion.id, "type": criterion.type, "predicate": None},
-        output={"outcome": "unknown"},
-        note=f"{criterion.id}: no predicate -> unknown",
-    )
-    return Verdict(
-        criterion_id=criterion.id,
+    return _traced_verdict(
+        nct_id,
+        criterion,
+        rec,
         outcome="unknown",
-        method="rule",
-        criterion_quote=criterion.text,
-        patient_evidence=None,
-        rationale=rationale,
-        verified=True,
-        trace_event_id=event.id,
+        evidence=None,
+        rationale="needs judgment; no rule can decide it and the LLM judge is not wired in yet",
+        trace_input={"predicate": None},
+        trace_output={},
+        status="skipped",
     )
 
 
@@ -179,27 +207,15 @@ def rule_verdict(
     """Run a criterion's predicate and record it as one `rule` event."""
     result = check_predicate(predicate, facts)
     outcome = outcome_for(criterion, result)
-    rationale = f"{result.reason} -> {outcome} ({criterion.type})"
-    event = rec.event(
-        f"rule:{nct_id}:{criterion.id}",
-        "rule",
-        input={
-            "criterion_id": criterion.id,
-            "type": criterion.type,
-            "predicate": predicate.model_dump(mode="json"),
-        },
-        output={"outcome": outcome, "holds": result.holds, "evidence": result.evidence},
-        note=f"{criterion.id}: {rationale}",
-    )
-    return Verdict(
-        criterion_id=criterion.id,
+    return _traced_verdict(
+        nct_id,
+        criterion,
+        rec,
         outcome=outcome,
-        method="rule",
-        criterion_quote=criterion.text,
-        patient_evidence=result.evidence,
-        rationale=rationale,
-        verified=True,
-        trace_event_id=event.id,
+        evidence=result.evidence,
+        rationale=f"{result.reason} -> {outcome} ({criterion.type})",
+        trace_input={"predicate": predicate.model_dump(mode="json")},
+        trace_output={"holds": result.holds, "evidence": result.evidence},
     )
 
 

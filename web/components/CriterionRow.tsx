@@ -1,4 +1,6 @@
 // One criterion's verdict: outcome icon, the trial's quote, the patient evidence and why.
+// Outcomes are relative to eligibility (an exclusion that applies is a `fail`), so the labels
+// say "OK" / "Disqualifies", never "met" / "not met", which would read backwards for exclusions.
 // Self-contained on purpose: badges (e.g. "unverified quote") and the "Why?" link go here.
 import { CircleCheck, CircleQuestionMark, CircleX, type LucideIcon } from "lucide-react";
 
@@ -7,8 +9,8 @@ import type { Schemas } from "@/lib/api";
 export type Verdict = Schemas["Verdict"];
 
 const OUTCOME: Record<Verdict["outcome"], { icon: LucideIcon; label: string; color: string }> = {
-  pass: { icon: CircleCheck, label: "Met", color: "text-emerald-600" },
-  fail: { icon: CircleX, label: "Not met", color: "text-red-600" },
+  pass: { icon: CircleCheck, label: "OK", color: "text-emerald-600" },
+  fail: { icon: CircleX, label: "Disqualifies", color: "text-red-600" },
   unknown: { icon: CircleQuestionMark, label: "Unknown", color: "text-amber-500" },
 };
 
