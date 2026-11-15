@@ -313,6 +313,20 @@ def test_the_closer_model_asks_for_its_answer_as_a_json_schema(
     finally:
         get_settings.cache_clear()
 
-    kwargs = bound.first.kwargs  # type: ignore[attr-defined]
+    kwargs = bound.steps[1].kwargs  # type: ignore[attr-defined]
     assert "tool_choice" not in kwargs
     assert kwargs["output_config"]["format"]["type"] == "json_schema"
+
+
+def test_the_final_answer_request_ends_on_a_user_turn() -> None:
+    # create_react_agent asks for the structured answer with the agent's last AI turn at the end;
+    # Anthropic's output format refuses a request that ends on an assistant message (a prefill).
+    from langchain_core.messages import HumanMessage, SystemMessage
+
+    from app.pipeline.closer_agent import end_on_user_turn
+
+    history = [SystemMessage("s"), HumanMessage("go"), AIMessage("Writing the answer.")]
+    out = end_on_user_turn(history)
+    assert out[:3] == history
+    assert isinstance(out[-1], HumanMessage)
+    assert end_on_user_turn(history[:2]) == history[:2]

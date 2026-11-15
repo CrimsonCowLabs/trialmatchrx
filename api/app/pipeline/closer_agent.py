@@ -25,7 +25,7 @@ from typing import Any
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
-from langchain_core.runnables import RunnableConfig
+from langchain_core.runnables import RunnableConfig, RunnableLambda
 from langchain_core.tools import BaseTool, tool
 from langgraph.errors import GraphRecursionError
 from langgraph.prebuilt import ToolNode, create_react_agent
@@ -190,15 +190,28 @@ def closer_tools() -> list[BaseTool]:
 # --------------------------------------------------------------------------------------------
 
 
+FINAL_ANSWER_TURN = "Give your final answer now, in the required format."
+
+
+def end_on_user_turn(messages: list[BaseMessage]) -> list[BaseMessage]:
+    """`messages`, plus a user turn asking for the answer when the last one is the agent's own:
+    Anthropic's output format refuses a request that ends on an assistant message (a prefill)."""
+    if messages and isinstance(messages[-1], AIMessage):
+        return [*messages, HumanMessage(FINAL_ANSWER_TURN)]
+    return messages
+
+
 class _JsonSchemaChatAnthropic(ChatAnthropic):
-    """ChatAnthropic whose structured output defaults to `json_schema`, like every other LLM step.
-    `create_react_agent` asks for the final answer with no method, and the langchain-anthropic
-    default (forced tool calling) is refused by newer Sonnet models."""
+    """ChatAnthropic whose structured output defaults to `json_schema`, like every other LLM step,
+    and always ends on a user turn. `create_react_agent` asks for the final answer with no method
+    (langchain-anthropic's default, forced tool calling, is refused by newer Sonnet models) and
+    with the agent's last AI turn at the end of the conversation."""
 
     def with_structured_output(
         self, schema: Any, *, method: Any = "json_schema", **kwargs: Any
     ) -> Any:
-        return super().with_structured_output(schema, method=method, **kwargs)
+        structured = super().with_structured_output(schema, method=method, **kwargs)
+        return RunnableLambda(end_on_user_turn) | structured
 
 
 def anthropic_closer_model() -> BaseChatModel:
