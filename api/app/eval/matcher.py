@@ -19,15 +19,17 @@ trials (no site search, no distance).
 Reproducible on a warm cache: compiled criteria come from `compiled_criteria`, and every parse
 and judge answer from `llm_cache` (`app/eval/llm_cache.py`), so a complete re-run calls no
 model. Failures are not cached (a compile that failed, a judge call that errored and fell back
-to `unknown`), so a score with any of them is not `complete`: a re-run would ask again.
-A parse failure fails the whole eval (the topic can't be scored at all).
+to `unknown`, every answer of a topic whose match run failed), so a score with any of them is
+not `complete`: a re-run would ask again.
+A topic whose match run raises (a parse failure, or any other error) is reported in `failed` with
+the step it broke and is left out of the metrics; the other topics are still matched.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from langchain_core.caches import BaseCache
 
-from app.eval.llm_cache import SqliteLlmCache, with_cache
+from app.eval.llm_cache import PendingCache, SqliteLlmCache, with_cache
 from app.eval.runs import COMPILE_RATE, score_rankings, topic_labels
 from app.pipeline import criteria_cache
 from app.pipeline.compile_criteria import PROMPT_NAME as COMPILE_PROMPT
@@ -40,7 +42,18 @@ from app.prompts import load_prompt
 from app.sources import ctgov
 from app.sources.trec import Topic, TrecSample
 from app.trace import store
+from app.trace.recorder import describe_error
 from app.trace.runner import traced_run
+
+
+@dataclass
+class TopicFailure:
+    """A topic whose match run raised: it has no ranking, and the score is not complete."""
+
+    topic_id: int
+    run_id: str  # the failed match run
+    step: str  # the steps the error failed, outermost first ("trial:NCT01 > compile_criteria")
+    error: str  # `describe_error` of what was raised
 
 
 @dataclass
@@ -50,11 +63,13 @@ class MatcherScore:
     uncompiled: list[str]  # NCT IDs whose criteria couldn't be compiled
     judge_errors: int  # judge calls that errored (verdict fell back to unknown, not cached)
     run_ids: dict[int, str]  # topic id -> its traced match run
+    failed: list[TopicFailure] = field(default_factory=list)  # topics whose match run raised
 
     @property
     def complete(self) -> bool:
-        """Every trial compiled and every judge call answered, so a re-run replays it all."""
-        return not self.uncompiled and not self.judge_errors
+        """Every topic matched, every trial compiled and every judge call answered, so a
+        re-run replays it all."""
+        return not self.failed and not self.uncompiled and not self.judge_errors
 
 
 @dataclass
@@ -87,24 +102,30 @@ async def _match_topic(
     compile_model_factory: ModelFactory,
     parse_model_factory: ModelFactory,
     judge_model_factory: ModelFactory,
-) -> _TopicResult:
+) -> _TopicResult | TopicFailure:
+    """The topic's match run, or how it failed: any error fails this topic, not the eval."""
     ncts = sorted(topic_labels(sample, topic.id))
     request = {"note": topic.text, "eval": {"topic": topic.id}}
-    async with traced_run("match", request) as run:
-        facts = await parse_patient(run.recorder, topic.text, model_factory=parse_model_factory)
-        results = await match_trials(
-            run.recorder,
-            [_candidate(n, sample) for n in ncts],
-            facts,
-            note=topic.text,
-            model_factory=compile_model_factory,
-            judge_model_factory=judge_model_factory,
-        )
-        ranked = await rank_step(run.recorder, [m for m in results if m is not None])
-        run.result = {
-            "patient": facts.model_dump(mode="json"),
-            "matches": [m.model_dump(mode="json") for m in ranked],
-        }
+    run_id = store.create_run("match", request)
+    try:
+        async with traced_run("match", request, run_id=run_id) as run:
+            facts = await parse_patient(run.recorder, topic.text, model_factory=parse_model_factory)
+            results = await match_trials(
+                run.recorder,
+                [_candidate(n, sample) for n in ncts],
+                facts,
+                note=topic.text,
+                model_factory=compile_model_factory,
+                judge_model_factory=judge_model_factory,
+            )
+            ranked = await rank_step(run.recorder, [m for m in results if m is not None])
+            run.result = {
+                "patient": facts.model_dump(mode="json"),
+                "matches": [m.model_dump(mode="json") for m in ranked],
+            }
+    except Exception as exc:  # `traced_run` has marked the run failed
+        error = describe_error(exc)
+        return TopicFailure(topic.id, run_id, _failed_steps(run_id, error), error)
 
     uncompiled = [nct for nct, m in zip(ncts, results, strict=True) if m is None]
     called = {m.nct_id: m.tier != "ineligible" for m in ranked} | dict.fromkeys(uncompiled, True)
@@ -115,6 +136,26 @@ async def _match_topic(
         uncompiled,
         _judge_errors(run.run_id),
     )
+
+
+def _failed_steps(run_id: str, error: str) -> str:
+    """Where `error` broke the run: the steps it failed on its way out, outermost first, or
+    `match` when it was raised outside any step. Each level takes the step that closed last
+    (the error closes its steps after any handled failure), so a trial that failed earlier and
+    was handled, even with the same error, is left out."""
+    failed = [
+        e
+        for e in store.latest_events(run_id)
+        if e.kind == "step" and e.status == "failed" and (e.output or {}).get("error") == error
+    ]
+    path: list[str] = []
+    parent: str | None = None
+    while step := max(
+        (e for e in failed if e.parent_id == parent), key=lambda e: e.seq, default=None
+    ):
+        path.append(step.name)
+        parent = step.id
+    return " > ".join(path) or "match"
 
 
 def compile_rate(sample: TrecSample, ncts: set[str]) -> float | None:
@@ -146,22 +187,33 @@ async def score_matcher(
     run_ids: dict[int, str] = {}
     uncompiled: set[str] = set()
     judge_errors = 0
+    failed: list[TopicFailure] = []
     for topic in sample.topics:
+        pending = PendingCache(cache)  # a failed topic's answers are dropped, not cached
         result = await _match_topic(
             topic,
             sample,
             compile_model_factory=compile_model_factory,
-            parse_model_factory=with_cache(parse_model_factory, cache),
-            judge_model_factory=with_cache(judge_model_factory, cache),
+            parse_model_factory=with_cache(parse_model_factory, pending),
+            judge_model_factory=with_cache(judge_model_factory, pending),
         )
-        rankings[topic.id] = result.ranking
         run_ids[topic.id] = result.run_id
+        if isinstance(result, TopicFailure):
+            failed.append(result)
+            continue
+        pending.commit()
+        rankings[topic.id] = result.ranking
         uncompiled.update(result.uncompiled)
         judge_errors += result.judge_errors
         called |= {(topic.id, nct): ok for nct, ok in result.called_eligible.items()}
 
-    metrics = score_rankings(sample, rankings, lambda topic_id, nct: called[(topic_id, nct)])
-    rate = compile_rate(sample, {j.nct_id for j in sample.judgments} - uncompiled)
+    # Failed topics have no ranking: the metrics are over the matched topics only.
+    matched = sample.model_copy(update={"topics": [t for t in sample.topics if t.id in rankings]})
+    metrics: dict[str, float] = {}
+    if matched.topics:
+        metrics = score_rankings(matched, rankings, lambda topic_id, nct: called[(topic_id, nct)])
+    ncts = {j.nct_id for j in matched.judgments if j.topic_id in rankings} - uncompiled
+    rate = compile_rate(matched, ncts)
     if rate is not None:
         metrics[COMPILE_RATE] = rate
-    return MatcherScore(metrics, rankings, sorted(uncompiled), judge_errors, run_ids)
+    return MatcherScore(metrics, rankings, sorted(uncompiled), judge_errors, run_ids, failed)
