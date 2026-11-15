@@ -1,23 +1,31 @@
 "use client";
 
-// Ranked trials grouped by tier; each trial lists its criterion verdicts.
-// The API already returns matches in rank order, so grouping keeps that order within a tier.
+// Ranked trials behind a tier switch (likely / needs info / ineligible) with the rule that puts
+// a trial in the shown tier. Each trial is a card that expands to its criterion verdicts and a
+// "Next steps" block; the first likely trial starts expanded. The API returns matches in rank
+// order, so filtering by tier keeps that order.
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 import { CriterionRow } from "@/components/CriterionRow";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import type { Schemas, Tier } from "@/lib/api";
+import {
+  countLabel,
+  initialView,
+  locateVerdict,
+  tierCounts,
+  tierHint,
+} from "@/lib/match-results";
 
 type TrialMatch = Schemas["TrialMatch"];
 
-const TIERS: { tier: Tier; title: string; hint: string }[] = [
-  { tier: "likely", title: "Likely eligible", hint: "No criterion fails, at most 2 unknown" },
-  { tier: "needs_info", title: "Needs info", hint: "No criterion fails, more data needed" },
-  { tier: "ineligible", title: "Ineligible", hint: "At least one criterion fails" },
+const TIER_TABS: { tier: Tier; label: string; count: string }[] = [
+  { tier: "likely", label: "Likely eligible", count: "text-tier-likely" },
+  { tier: "needs_info", label: "Needs info", count: "text-tier-needs-info" },
+  { tier: "ineligible", label: "Ineligible", count: "text-tier-ineligible" },
 ];
 
 interface Linking {
@@ -29,120 +37,212 @@ interface Linking {
   onNextSteps?: (nctId: string) => void;
 }
 
+/** Pass / fail / unknown as proportional segments; the label beside it carries the numbers. */
+function CountBar({ counts }: { counts: Record<string, number> }) {
+  const segments = [
+    { n: counts.pass ?? 0, tone: "bg-verdict-pass" },
+    { n: counts.fail ?? 0, tone: "bg-verdict-fail" },
+    { n: counts.unknown ?? 0, tone: "bg-verdict-unknown" },
+  ].filter((s) => s.n > 0);
+  return (
+    <div aria-hidden className="flex min-w-0 flex-1 gap-1">
+      {segments.map((s) => (
+        <div key={s.tone} className={`h-1.5 rounded-full ${s.tone}`} style={{ flex: s.n }} />
+      ))}
+    </div>
+  );
+}
+
+function TrialMeta({ match }: { match: TrialMatch }) {
+  const parts = [
+    match.nct_id,
+    match.phase,
+    match.distance_mi === null ? null : `${match.distance_mi} mi`,
+  ].filter(Boolean);
+  return <span className="font-mono text-[0.8125rem] text-ink-4">{parts.join(" · ")}</span>;
+}
+
 function TrialCard({
   match,
+  open,
+  onToggle,
   highlightedEventId,
   onWhy,
   onNextSteps,
-}: { match: TrialMatch } & Linking) {
-  const [open, setOpen] = useState(match.tier !== "ineligible");
-  // When this card starts holding the highlighted verdict, open it (once; the user can still
-  // collapse it). State adjusted during render, React's pattern for reacting to a prop change.
-  const holdsHighlight = match.verdicts.some((v) => v.trace_event_id === highlightedEventId);
-  const [heldHighlight, setHeldHighlight] = useState(false);
-  if (holdsHighlight !== heldHighlight) {
-    setHeldHighlight(holdsHighlight);
-    if (holdsHighlight) setOpen(true);
-  }
-  const { pass = 0, fail = 0, unknown = 0 } = match.counts;
+}: { match: TrialMatch; open: boolean; onToggle: () => void } & Linking) {
+  const nextSteps = match.tier !== "ineligible" ? onNextSteps : undefined;
   return (
-    <li data-testid="trial-match" data-nct={match.nct_id} className="rounded-md border">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex w-full flex-wrap items-baseline gap-x-2 gap-y-1 px-3 py-2 text-left hover:bg-muted"
-      >
-        <span className="font-mono text-xs">{match.nct_id}</span>
-        <span className="flex-1 text-sm font-medium">{match.title}</span>
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {match.phase ?? "phase n/a"} ·{" "}
-          {match.distance_mi === null ? "distance n/a" : `${match.distance_mi} mi`}
-        </span>
-        <span className="text-xs tabular-nums">
-          <span className="text-verdict-pass">{pass} ok</span> ·{" "}
-          <span className="text-verdict-fail">{fail} disqualifying</span> ·{" "}
-          <span className="text-verdict-unknown">{unknown} unknown</span>
-        </span>
-      </button>
-      {open && (
-        <ul className="border-t px-3">
-          {match.verdicts.map((v) => (
-            <CriterionRow
-              key={v.criterion_id}
-              verdict={v}
-              highlighted={!!highlightedEventId && v.trace_event_id === highlightedEventId}
-              onWhy={onWhy}
-            />
-          ))}
-          <li className="flex flex-wrap items-center gap-3 py-2 text-xs">
-            {onNextSteps && match.tier !== "ineligible" && (
-              <Button
-                size="sm"
-                onClick={() => onNextSteps(match.nct_id)}
-                data-testid="next-steps"
-                title="Agent: follow-ups for the unknowns, a coordinator email, a Spanish summary"
+    <li data-testid="trial-match" data-nct={match.nct_id}>
+      <Card className="gap-0 py-0">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          className={`grid w-full gap-x-5 gap-y-2 px-4 py-4 text-left hover:bg-muted/50 sm:px-5 ${open ? "" : "sm:grid-cols-[minmax(0,1fr)_14rem] sm:items-center"}`}
+        >
+          <span className="flex min-w-0 flex-col gap-1.5">
+            <span className="flex items-center gap-3">
+              <TrialMeta match={match} />
+              <span className="ml-auto text-[0.8125rem] font-medium text-ink-5">
+                {open ? "Collapse" : "Expand"}
+              </span>
+            </span>
+            <span
+              className={`text-pretty ${open ? "text-lg leading-snug font-semibold" : "text-base leading-snug font-medium"}`}
+            >
+              {match.title}
+            </span>
+          </span>
+          <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
+            <CountBar counts={match.counts} />
+            <span className="text-[0.8125rem] font-medium whitespace-nowrap text-ink-2">
+              {countLabel(match.counts)}
+            </span>
+          </span>
+        </button>
+        {open && (
+          <>
+            <ul className="border-t border-line-soft">
+              {match.verdicts.map((v) => (
+                <CriterionRow
+                  key={v.criterion_id}
+                  verdict={v}
+                  highlighted={!!highlightedEventId && v.trace_event_id === highlightedEventId}
+                  onWhy={onWhy}
+                />
+              ))}
+            </ul>
+            <div
+              data-testid="trial-next-steps"
+              className="flex flex-wrap items-center gap-3 border-t border-line-soft px-4 py-3.5 sm:px-5"
+            >
+              {nextSteps && (
+                <Button
+                  size="lg"
+                  className="px-4"
+                  onClick={() => nextSteps(match.nct_id)}
+                  data-testid="next-steps"
+                >
+                  <Sparkles /> Next steps
+                </Button>
+              )}
+              <Link
+                href={`/feasibility/${encodeURIComponent(match.nct_id)}`}
+                className={buttonVariants({ variant: "outline", size: "lg", className: "px-4" })}
               >
-                <Sparkles /> Next steps
-              </Button>
-            )}
-            <Link href={`/feasibility/${encodeURIComponent(match.nct_id)}`} className="underline">
-              Feasibility over the 1,000-patient cohort
-            </Link>
-          </li>
-        </ul>
-      )}
+                Cohort feasibility
+              </Link>
+              {nextSteps && (
+                <span className="text-[0.8125rem] text-ink-4 sm:ml-auto">
+                  Follow-ups, coordinator email, Spanish summary
+                </span>
+              )}
+            </div>
+          </>
+        )}
+      </Card>
     </li>
   );
 }
 
 export function MatchResults({
   matches,
+  maxUnknownsForLikely,
   highlightedEventId,
   onWhy,
   onNextSteps,
-}: { matches: TrialMatch[] } & Linking) {
+}: {
+  matches: TrialMatch[];
+  /** The run's tier rule threshold (`RunSummary.max_unknowns_for_likely`). */
+  maxUnknownsForLikely: number;
+} & Linking) {
+  const [view, setView] = useState(() => {
+    const { tier, expanded } = initialView(matches);
+    return { tier, expanded: new Set(expanded ? [expanded] : []) };
+  });
+  // When a selected trace event points at a verdict, show its tier and open its card (once per
+  // selection; the user can still switch away or collapse). State adjusted during render,
+  // React's pattern for reacting to a prop change.
+  const located = locateVerdict(matches, highlightedEventId ?? null);
+  const locatedKey = located ? `${located.tier}/${located.nctId}/${highlightedEventId}` : null;
+  const [shownKey, setShownKey] = useState<string | null>(null);
+  if (locatedKey !== shownKey) {
+    setShownKey(locatedKey);
+    if (located) {
+      setView((v) => ({ tier: located.tier, expanded: new Set([...v.expanded, located.nctId]) }));
+    }
+  }
+
   if (matches.length === 0) {
     return (
       <Card>
-        <CardContent className="py-6 text-sm text-muted-foreground">
+        <CardContent className="py-2 text-sm text-muted-foreground">
           No trials matched. Seed the cache (`make seed`) or widen the radius.
         </CardContent>
       </Card>
     );
   }
+
+  const counts = tierCounts(matches);
+  const inTier = matches.filter((m) => m.tier === view.tier);
+  const toggle = (nct: string) =>
+    setView((v) => {
+      const expanded = new Set(v.expanded);
+      if (!expanded.delete(nct)) expanded.add(nct);
+      return { ...v, expanded };
+    });
+
   return (
-    <div className="flex flex-col gap-4">
-      {TIERS.map(({ tier, title, hint }) => {
-        const inTier = matches.filter((m) => m.tier === tier);
-        return (
-          <Card key={tier} data-testid={`tier-${tier}`}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {title} <Badge variant="outline">{inTier.length}</Badge>
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">{hint}</p>
-            </CardHeader>
-            <CardContent>
-              {inTier.length === 0 ? (
-                <p className="text-sm text-muted-foreground">None.</p>
-              ) : (
-                <ul className="flex flex-col gap-2">
-                  {inTier.map((m) => (
-                    <TrialCard
-                      key={m.nct_id}
-                      match={m}
-                      highlightedEventId={highlightedEventId}
-                      onWhy={onWhy}
-                      onNextSteps={onNextSteps}
-                    />
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
+    <section aria-label="Match results" className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <div
+          role="tablist"
+          aria-label="Match tier"
+          className="flex flex-wrap gap-0.5 rounded-lg bg-surface-sunken p-0.5 text-sm font-medium"
+        >
+          {TIER_TABS.map(({ tier, label, count }) => {
+            const selected = tier === view.tier;
+            return (
+              <button
+                key={tier}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                data-testid={`tier-${tier}`}
+                onClick={() => setView((v) => ({ ...v, tier }))}
+                className={`rounded-md px-3.5 py-1.5 ${selected ? "bg-surface shadow-xs" : "text-ink-3 hover:text-foreground"}`}
+              >
+                {label}{" "}
+                <span className={`font-mono tabular-nums ${selected ? count : ""}`}>
+                  {counts[tier]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-[0.8125rem] text-ink-4">{tierHint(view.tier, maxUnknownsForLikely)}</p>
+      </div>
+      {inTier.length === 0 ? (
+        <Card>
+          <CardContent className="py-2 text-sm text-muted-foreground">
+            No trials in this tier.
+          </CardContent>
+        </Card>
+      ) : (
+        <ul role="tabpanel" className="flex flex-col gap-4">
+          {inTier.map((m) => (
+            <TrialCard
+              key={m.nct_id}
+              match={m}
+              open={view.expanded.has(m.nct_id)}
+              onToggle={() => toggle(m.nct_id)}
+              highlightedEventId={highlightedEventId}
+              onWhy={onWhy}
+              onNextSteps={onNextSteps}
+            />
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

@@ -23,11 +23,18 @@ function CloserRun({ runId, matchRunId }: { runId: string; matchRunId: string | 
       events={events}
       live={state !== "done" && state !== "error"}
       status={{ label: state, variant: STREAM_VARIANT[state] }}
+      summary={summary}
       matches={null}
       closer={summary?.closer ?? null}
       totals={summary?.totals}
       runStatus={runStatus ?? "running"}
       link={finished ? { href: `/runs/${encodeURIComponent(runId)}`, label: "Replay" } : undefined}
+      title="Next steps"
+      breadcrumb={
+        matchRunId
+          ? [{ label: "Runs", href: "/runs" }, { label: "Match run", href: `/match/${encodeURIComponent(matchRunId)}` }]
+          : [{ label: "Runs", href: "/runs" }]
+      }
     >
       {matchRunId && (
         <Link href={`/match/${encodeURIComponent(matchRunId)}`} className="text-sm underline">
