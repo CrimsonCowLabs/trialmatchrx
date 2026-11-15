@@ -1,6 +1,7 @@
 # HACK(demo): a fake chat model that replays saved compile outputs; used by pytest and by
 # `scripts/compile_fixtures.py --fixtures` because no ANTHROPIC_API_KEY exists here yet.
-"""FixtureChatModel: answers every call with one saved `CompiledCriteria` tool call.
+"""FixtureChatModel: answers every call with one saved tool call (`CompiledCriteria` by
+default), or with a scripted sequence of `replies` (the judge's retry tests).
 
 It goes through the same `with_structured_output` path as ChatAnthropic (bind_tools ->
 tool call -> PydanticToolsParser), so the compiler and the trace callbacks see a real-shaped
@@ -35,7 +36,10 @@ def _estimate_tokens(text: str) -> int:
 
 
 class FixtureChatModel(BaseChatModel):
-    output: dict[str, Any]  # the tool-call args, i.e. a CompiledCriteria payload
+    output: dict[str, Any] = {}  # the tool-call args, i.e. a CompiledCriteria payload
+    # Optional script, one reply per call (the last repeats): tool-call args, or None for a
+    # prose answer with no tool call. Overrides `output` when set.
+    replies: list[dict[str, Any] | None] = []
     tool_name: str = "CompiledCriteria"
     # Reported as the model id so the trace shows what the real call would cost.
     model_name: str = ""
@@ -54,13 +58,16 @@ class FixtureChatModel(BaseChatModel):
 
     def _result(self, messages: list[BaseMessage]) -> ChatResult:
         self.calls += 1
+        args = self.replies[min(self.calls, len(self.replies)) - 1] if self.replies else self.output
         prompt = "".join(str(m.content) for m in messages)
         tokens_in = _estimate_tokens(prompt)
-        tokens_out = _estimate_tokens(json.dumps(self.output))
+        tokens_out = _estimate_tokens(json.dumps(args))
         call_id = f"fixture-{self.calls}"
         message = AIMessage(
-            content="",
-            tool_calls=[{"name": self.tool_name, "args": self.output, "id": call_id}],
+            content="" if args is not None else "I cannot answer with the tool.",
+            tool_calls=(
+                [] if args is None else [{"name": self.tool_name, "args": args, "id": call_id}]
+            ),
             usage_metadata={
                 "input_tokens": tokens_in,
                 "output_tokens": tokens_out,

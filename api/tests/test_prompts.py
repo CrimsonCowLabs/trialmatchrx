@@ -16,6 +16,23 @@ def test_compile_prompt_has_a_version_and_both_sections() -> None:
     assert "NCT1" in user and "* T2DM" in user
 
 
+def test_judge_prompt_has_a_version_and_fills_every_placeholder() -> None:
+    prompt = load_prompt("judge")
+
+    assert prompt.version == "judge-v1"
+    assert "{{" not in prompt.render_system()
+    user = prompt.render_user(
+        nct_id="NCT1",
+        trial_text="* T2DM",
+        criterion_type="inclusion",
+        criterion_id="inc-1",
+        criterion_text="T2DM",
+        patient_facts="age: 61",
+        patient_note="61M",
+    )
+    assert "{{" not in user and "age: 61" in user and "61M" in user
+
+
 def test_missing_placeholder_value_is_an_error() -> None:
     with pytest.raises(PromptError, match="vocabulary"):
         load_prompt("compile_criteria").render_system()
