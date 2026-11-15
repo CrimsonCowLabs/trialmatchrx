@@ -20,7 +20,7 @@ import {
 } from "@/lib/match-form";
 import { useLoad } from "@/lib/use-load";
 
-// HACK(demo): prefilled synthetic demo patient from SPEC.md; condition and radius defaults too.
+// HACK(demo): prefilled synthetic demo patient from SPEC.md; default condition too.
 const DEMO_NOTE =
   "61-year-old man with type 2 diabetes, HbA1c 8.4%, eGFR 48, on metformin. Lives in Sacramento.";
 
@@ -71,7 +71,7 @@ export default function MatchPage() {
                       <button
                         type="button"
                         onClick={() => setNote("")}
-                        className="font-medium text-teal hover:underline"
+                        className="font-medium text-teal hover:text-teal-strong hover:underline"
                       >
                         Clear
                       </button>
@@ -81,7 +81,7 @@ export default function MatchPage() {
                       <button
                         type="button"
                         onClick={() => setNote(DEMO_NOTE)}
-                        className="text-xs font-medium text-teal hover:underline"
+                        className="text-xs font-medium text-teal hover:text-teal-strong hover:underline"
                       >
                         Load demo patient
                       </button>
