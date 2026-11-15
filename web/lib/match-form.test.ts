@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import type { RunStats } from "./api.ts";
-import { DEMO_MATCH } from "./demo.ts";
+import { DEMO_RADIUS_MI } from "./demo.ts";
 import {
   AGENT_STEPS,
   DEFAULT_RADIUS_MI,
@@ -29,7 +29,7 @@ test("radius choices are 25, 50 and 100 miles", () => {
 
 test("the form and the demo request search 100 miles, the seeded reach", () => {
   assert.equal(DEFAULT_RADIUS_MI, 100);
-  assert.equal(DEMO_MATCH.radius_mi, 100);
+  assert.equal(DEMO_RADIUS_MI, 100);
 });
 
 test("the agent panel lists the six pipeline steps in order", () => {

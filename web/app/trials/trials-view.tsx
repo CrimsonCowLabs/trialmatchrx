@@ -294,7 +294,7 @@ export function TrialsView() {
       ) : data.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           No trials cached yet. Run <code className="font-mono">make seed</code> to fetch the
-          T2D/CKD trials.
+          recruiting trials for the demo conditions.
         </p>
       ) : (
         <div className="flex flex-col gap-4">

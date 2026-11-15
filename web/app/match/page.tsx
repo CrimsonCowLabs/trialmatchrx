@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 import { Page } from "@/components/AppShell";
+import { DemoPatientCards } from "@/components/DemoPatientCards";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
-import { DEMO_MATCH } from "@/lib/demo";
+import { DEMO_PATIENTS, demoPatientForNote, type DemoPatient } from "@/lib/demo";
 import {
   AGENT_STEPS,
   DEFAULT_RADIUS_MI,
@@ -21,17 +22,22 @@ import {
 } from "@/lib/match-form";
 import { useLoad } from "@/lib/use-load";
 
-const DEMO_NOTE = DEMO_MATCH.note;
-
 const loadStats = () => api.getRunStats();
 
 export default function MatchPage() {
   const router = useRouter();
-  const [note, setNote] = useState(DEMO_NOTE);
-  const [condition, setCondition] = useState(DEMO_MATCH.condition);
+  const [note, setNote] = useState(DEMO_PATIENTS[0].note);
+  const [condition, setCondition] = useState(DEMO_PATIENTS[0].searchCondition);
   const [radius, setRadius] = useState<RadiusMi>(DEFAULT_RADIUS_MI);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // The card stays highlighted only while the note is exactly that patient's.
+  const loaded = demoPatientForNote(note);
+
+  function pick(p: DemoPatient) {
+    setNote(p.note);
+    setCondition(p.searchCondition);
+  }
   // A failed stats call only hides the hint; it must not block matching.
   const hint = runStatsHint(useLoad(loadStats).data);
 
@@ -53,20 +59,24 @@ export default function MatchPage() {
       <PageHeader
         breadcrumb={[{ label: "Home", href: "/" }]}
         title="Match a patient"
-        description="Paste a note; the agent finds recruiting trials nearby and checks every criterion."
+        description="Pick a demo patient or paste a note; the agent finds recruiting trials nearby and checks every criterion."
       />
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <Card>
           <CardContent>
             <form onSubmit={onSubmit} className="flex flex-col gap-5">
               <div className="flex flex-col gap-1.5">
+                <span className="text-sm font-medium">Demo patients · synthetic</span>
+                <DemoPatientCards selectedId={loaded?.id ?? null} onSelect={pick} />
+              </div>
+              <div className="flex flex-col gap-1.5">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                   <label htmlFor="note" className="text-sm font-medium">
                     Patient note
                   </label>
-                  {note === DEMO_NOTE ? (
+                  {loaded ? (
                     <span className="text-xs text-ink-3" data-testid="demo-loaded">
-                      Demo patient loaded ·{" "}
+                      {loaded.name} loaded ·{" "}
                       <button
                         type="button"
                         onClick={() => setNote("")}
@@ -76,14 +86,10 @@ export default function MatchPage() {
                       </button>
                     </span>
                   ) : (
-                    !note && (
-                      <button
-                        type="button"
-                        onClick={() => setNote(DEMO_NOTE)}
-                        className="link text-xs font-medium hover:underline"
-                      >
-                        Load demo patient
-                      </button>
+                    note && (
+                      <span className="text-xs text-ink-4" data-testid="demo-edited">
+                        Edited note
+                      </span>
                     )
                   )}
                 </div>
