@@ -39,8 +39,11 @@ const share = (n: number, total: number) =>
 
 /** CSS widths of a waterfall bar on the shared cohort scale: the patients a rule keeps, then
  *  the faint tail it drops. */
-export function barWidths(step: WaterfallStep, cohortSize: number): { kept: string; dropped: string } {
-  return { kept: share(step.remaining, cohortSize), dropped: share(step.dropped, cohortSize) };
+export function barWidths(
+  counts: Pick<WaterfallStep, "remaining" | "dropped">,
+  cohortSize: number,
+): { kept: string; dropped: string } {
+  return { kept: share(counts.remaining, cohortSize), dropped: share(counts.dropped, cohortSize) };
 }
 
 export interface SliderRange {

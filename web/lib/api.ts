@@ -14,6 +14,7 @@ export type FeasibilityResult = Schemas["FeasibilityResult"];
 export type CloserRequest = Schemas["CloserRequest"];
 export type CloserOutput = Schemas["CloserOutput"];
 export type TrialListItem = Schemas["TrialListItem"];
+export type TrialDetail = Schemas["TrialDetail"];
 export type RunListItem = Schemas["RunListItem"];
 export type RunStats = Schemas["RunStats"];
 export type RunKind = RunListItem["kind"];
@@ -71,6 +72,7 @@ export const api = {
     request<RunListItem[]>(
       `/api/runs?${new URLSearchParams({ kind, ...(limit && { limit: String(limit) }) })}`,
     ),
+  getTrial: (nct: string) => request<TrialDetail>(`/api/trials/${encodeURIComponent(nct)}`),
   getHealth: () => request<Health>("/api/health"),
   getRunStats: () => request<RunStats>("/api/runs/stats"),
   getEvalLatest: () => request<EvalLatest>("/api/eval/latest"),
