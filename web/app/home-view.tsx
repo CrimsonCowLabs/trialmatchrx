@@ -21,9 +21,7 @@ import { useLoad } from "@/lib/use-load";
 
 const RECENT_RUNS = 5;
 
-// HACK(demo): inline teal link classes until the shared link style from the app-shell ticket (#31)
-// lands; swap these for it then.
-const LINK = "font-medium text-teal hover:text-teal-strong hover:underline";
+const LINK = "link font-medium hover:underline";
 
 const loadTrials = () => api.listTrials();
 const loadRuns = () => api.listRuns({ kind: "match", limit: RECENT_RUNS });
