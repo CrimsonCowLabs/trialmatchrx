@@ -74,7 +74,7 @@ function ReplayBar({
         aria-valuemin={0}
         aria-valuemax={lastSeq}
         aria-valuenow={seq}
-        className="relative order-last h-1 w-full rounded-full bg-replay-line sm:order-none sm:mx-2 sm:w-auto sm:flex-1"
+        className="relative order-last h-1 w-full rounded-full bg-replay-line sm:order-none sm:mx-2 sm:w-auto sm:min-w-16 sm:flex-1"
       >
         <div
           className="absolute inset-y-0 left-0 rounded-full bg-replay-progress"

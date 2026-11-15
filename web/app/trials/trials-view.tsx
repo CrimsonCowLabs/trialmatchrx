@@ -22,7 +22,7 @@ import {
   withCompiled,
   type TrialFilter,
 } from "@/lib/browse";
-import { countNoun } from "@/lib/format";
+import { formatCount } from "@/lib/format";
 import { useLoad } from "@/lib/use-load";
 
 const loadTrials = () => api.listTrials();
@@ -208,7 +208,11 @@ function TrialCards({
             </div>
             <p className="text-[0.9375rem] leading-snug font-medium">{trial.title}</p>
             <p className="flex flex-wrap items-center gap-x-1.5 text-[0.8125rem] text-ink-4">
-              {trial.phase ?? "–"} <span aria-hidden>·</span>
+              {trial.phase && (
+                <>
+                  {trial.phase} <span aria-hidden>·</span>
+                </>
+              )}
               <TrialStatus status={trial.overall_status} />
             </p>
             <CompileError state={compiles[trial.nct_id]} />
@@ -267,8 +271,10 @@ export function TrialsView() {
 
   const description = data ? (
     <span data-testid="trials-count">
-      <span className="font-mono font-semibold text-foreground tabular-nums">{data.length}</span>{" "}
-      {countNoun(data.length, "trial", "trials")} in the cache
+      <span className="font-mono font-semibold text-foreground tabular-nums">
+        {formatCount(data.length)}
+      </span>{" "}
+      {data.length === 1 ? "trial" : "trials"} in the cache
     </span>
   ) : (
     "Every trial in the local trials cache, the pool a match searches."

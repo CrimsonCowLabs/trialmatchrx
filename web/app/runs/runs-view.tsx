@@ -151,7 +151,7 @@ function Body({ data, error }: { data: RunListItem[] | null; error: string | nul
 /** "The 50 most recent runs, newest first" when the list is full, else "3 runs, newest first". */
 function countLine(runs: RunListItem[]): string {
   if (runs.length === LIMIT) return `The ${LIMIT} most recent runs, newest first`;
-  return `${runs.length} ${countNoun(runs.length, "run", "runs")}, newest first`;
+  return `${countNoun(runs.length, "run", "runs")}, newest first`;
 }
 
 export function RunsView() {
