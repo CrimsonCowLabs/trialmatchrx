@@ -2,20 +2,16 @@
 // page frame every route renders in. The frame owns the 16px mobile gutters and padding; a page
 // picks its width with <Page width=...>. The route-aware nav suspends under cacheComponents on
 // dynamic routes, so each nav has a static fallback (same items, nothing highlighted).
+import Image from "next/image";
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 
 import { SidebarNav, SidebarNavFallback, TabBarNav, TabBarNavFallback } from "./ShellNav";
 
-function RxMark() {
-  return (
-    <span
-      aria-hidden
-      className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-teal font-mono text-sm font-semibold text-primary-foreground"
-    >
-      Rx
-    </span>
-  );
+/** The brand icon (public/brand, see its README): two rings = patient + trial, the lens = the
+ *  match. Decorative; the wordmark beside it names the link. */
+function BrandMark() {
+  return <Image src="/brand/icon.svg" alt="" width={26} height={26} className="shrink-0" />;
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -23,7 +19,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-full flex-1">
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-6 border-r bg-surface p-4 md:flex">
         <Link href="/" className="flex items-center gap-2.5 px-1 font-semibold tracking-tight">
-          <RxMark />
+          <BrandMark />
           TrialMatch Rx
         </Link>
         <Suspense fallback={<SidebarNavFallback />}>
