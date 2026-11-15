@@ -24,8 +24,7 @@ async def get_trial(nct: str, response: Response) -> TrialDetail:
             raise HTTPException(404, f"{nct} not found on ClinicalTrials.gov", headers) from exc
         except httpx.HTTPError as exc:
             raise HTTPException(502, f"ClinicalTrials.gov: {exc}", headers) from exc
-        trial = ctgov.summarize(study)
-        # HACK(demo): criteria stay empty until the compiler (issue #3) fills them from its cache.
+        trial = ctgov.summarize(study)  # criteria=[] for now, see the HACK in summarize()
         run.result = {"nct": nct}
     return trial
 

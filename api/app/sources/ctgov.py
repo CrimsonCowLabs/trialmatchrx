@@ -6,14 +6,17 @@ Tests never hit the network: `set_transport()` swaps the transport every client 
 """
 
 import asyncio
+import re
 from dataclasses import dataclass
 from typing import Any
 
 import httpx
+from sqlalchemy import distinct, func
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlmodel import col, select
 
 from app.config import get_settings
-from app.db import TrialCacheRow, session_scope
+from app.db import TrialCacheRow, session_scope, utcnow
 from app.schemas import TrialDetail
 from app.trace.recorder import TraceRecorder
 
@@ -22,8 +25,10 @@ SACRAMENTO = (38.5816, -121.4944)
 # The four modules SPEC.md names, plus `Phase` (designModule.phases) because TrialDetail and
 # TrialMatch both carry `phase`. Everything else in designModule is left out.
 FIELDS = "IdentificationModule,StatusModule,EligibilityModule,ContactsLocationsModule,Phase"
+NCT_ID = re.compile(r"NCT\d{8}")
 RETRIES = 5
 RETRY_BACKOFF_S = 2.0  # doubles per attempt unless the API sends Retry-After
+RETRY_MAX_WAIT_S = 30.0  # cap on any single wait, Retry-After included
 
 _transport: httpx.AsyncBaseTransport | None = None
 
@@ -46,7 +51,7 @@ async def _get(client: httpx.AsyncClient, path: str, params: dict[str, Any]) -> 
             return resp
         retry_after = resp.headers.get("Retry-After", "")
         delay = float(retry_after) if retry_after.isdigit() else RETRY_BACKOFF_S * 2**attempt
-        await asyncio.sleep(delay)
+        await asyncio.sleep(min(delay, RETRY_MAX_WAIT_S))
     raise AssertionError("unreachable")
 
 
@@ -106,13 +111,19 @@ def study_key(study: dict[str, Any]) -> tuple[str, str]:
 
 
 def cache_study(study: dict[str, Any]) -> bool:
-    """Store a study under its key. Returns False if that exact version was already cached."""
+    """Store a study under its key. Returns False if that exact version was already cached.
+
+    INSERT OR IGNORE, so two concurrent misses for the same trial can't collide on the key.
+    """
     nct, date = study_key(study)
+    stmt = (
+        sqlite_insert(TrialCacheRow)
+        .values(nct_id=nct, last_update_post_date=date, fetched_at=utcnow(), data=study)
+        .on_conflict_do_nothing()
+    )
     with session_scope() as s:
-        if s.get(TrialCacheRow, (nct, date)) is not None:
-            return False
-        s.add(TrialCacheRow(nct_id=nct, last_update_post_date=date, data=study))
-        return True
+        result = s.connection().execute(stmt)
+        return bool(result.rowcount)
 
 
 def cached_study(nct: str) -> dict[str, Any] | None:
@@ -129,44 +140,37 @@ def cached_study(nct: str) -> dict[str, Any] | None:
 def cached_count() -> int:
     """Distinct NCT IDs in the cache."""
     with session_scope() as s:
-        return len(set(s.exec(select(TrialCacheRow.nct_id)).all()))
+        count = s.exec(select(func.count(distinct(col(TrialCacheRow.nct_id))))).one()
+        return int(count)
 
 
-async def get_study(
-    nct: str,
-    *,
-    recorder: TraceRecorder | None = None,
-    client: httpx.AsyncClient | None = None,
-) -> dict[str, Any]:
-    """Raw v2 study JSON for `nct`: from the cache, else fetched once and cached.
+async def _fetch(nct: str) -> dict[str, Any] | None:
+    async with make_client() as client:
+        return await fetch_study(nct, client=client)
 
-    With a recorder, a hit is a `ctgov.cache_lookup` tool event (cache_hit=True) and a miss is a
-    `ctgov.fetch_study` tool step. Raises StudyNotFoundError if the API has no such study.
+
+async def get_study(nct: str, *, recorder: TraceRecorder | None = None) -> dict[str, Any]:
+    """Raw v2 study JSON for `nct` (case-insensitive): from the cache, else fetched once and
+    cached.
+
+    With a recorder, a hit is a `ctgov.cache_lookup` tool step (cache_hit=True) and a miss is a
+    `ctgov.fetch_study` tool step. Raises StudyNotFoundError if the id is malformed (no network
+    call) or the API has no such study.
     """
-    study = cached_study(nct)
-    if study is not None:
-        if recorder is not None:
-            recorder.event(
-                "ctgov.cache_lookup",
-                "tool",
-                input={"nct": nct},
-                output=_describe(study),
-                cache_hit=True,
-                note=f"{nct} served from cache",
-            )
-        return study
-
-    async def fetch() -> dict[str, Any] | None:
-        if client is not None:
-            return await fetch_study(nct, client=client)
-        async with make_client() as own:
-            return await fetch_study(nct, client=own)
-
+    nct = nct.strip().upper()
+    if not NCT_ID.fullmatch(nct):
+        raise StudyNotFoundError(nct)
     if recorder is None:
-        study = await fetch()
+        study = cached_study(nct) or await _fetch(nct)
     else:
+        study = cached_study(nct)
+        if study is not None:
+            async with recorder.step("ctgov.cache_lookup", "tool", {"nct": nct}) as s:
+                s.output, s.cache_hit = _describe(study), True
+                s.note = f"{nct} served from cache"
+            return study
         async with recorder.step("ctgov.fetch_study", "tool", {"nct": nct}) as s:
-            study = await fetch()
+            study = await _fetch(nct)
             s.output = {"nct": nct, "found": False} if study is None else _describe(study)
             s.note = f"{nct} fetched from ClinicalTrials.gov (cache miss)"
     if study is None:
@@ -205,7 +209,7 @@ def summarize(study: dict[str, Any]) -> TrialDetail:
         phase="/".join(phases) or None,
         overall_status=proto.get("statusModule", {}).get("overallStatus"),
         eligibility_text=proto.get("eligibilityModule", {}).get("eligibilityCriteria"),
-        criteria=[],
+        criteria=[],  # HACK(demo): empty until the compiler (issue #3) supplies criteria.
     )
 
 

@@ -1,9 +1,6 @@
 """ClinicalTrials.gov client + cache, on recorded responses (tests/fixtures/ctgov/), no network."""
 
 import copy
-import json
-from pathlib import Path
-from typing import Any
 
 import httpx
 import pytest
@@ -12,39 +9,7 @@ from app.sources import ctgov
 from app.trace import store
 from app.trace.bus import EventBus
 from app.trace.recorder import TraceRecorder
-
-FIXTURES = Path(__file__).parent / "fixtures" / "ctgov"
-
-
-def load(name: str) -> dict[str, Any]:
-    data: dict[str, Any] = json.loads((FIXTURES / name).read_text())
-    return data
-
-
-def nct_ids(studies: list[dict[str, Any]]) -> list[str]:
-    return [s["protocolSection"]["identificationModule"]["nctId"] for s in studies]
-
-
-class FakeCtgov:
-    """Serves the recorded fixtures and records every request it sees."""
-
-    def __init__(self) -> None:
-        self.requests: list[httpx.Request] = []
-
-    def __call__(self, request: httpx.Request) -> httpx.Response:
-        self.requests.append(request)
-        path = request.url.path
-        if path == "/api/v2/studies":
-            page = 2 if request.url.params.get("pageToken") else 1
-            return httpx.Response(200, json=load(f"search_page{page}.json"))
-        study = load("study.json")
-        if path == f"/api/v2/studies/{nct_ids([study])[0]}":
-            return httpx.Response(200, json=study)
-        return httpx.Response(404, json={"error": "not found"})
-
-    def client(self) -> httpx.AsyncClient:
-        ctgov.set_transport(httpx.MockTransport(self))
-        return ctgov.make_client()
+from tests.ctgov_fake import FakeCtgov, load, nct_ids
 
 
 async def test_search_follows_next_page_token_with_spec_params() -> None:
@@ -70,7 +35,7 @@ def new_recorder() -> TraceRecorder:
 
 async def test_get_study_fetches_on_miss_then_serves_from_cache() -> None:
     fake = FakeCtgov()
-    fake.client()  # installs the fake transport get_study's own client will use
+    fake.install()
     study = load("study.json")
     nct = nct_ids([study])[0]
     rec = new_recorder()
@@ -93,10 +58,20 @@ async def test_get_study_fetches_on_miss_then_serves_from_cache() -> None:
 
 async def test_get_study_unknown_nct_raises_not_found() -> None:
     fake = FakeCtgov()
-    fake.client()
+    fake.install()
 
     with pytest.raises(ctgov.StudyNotFoundError):
         await ctgov.get_study("NCT00000000")
+
+
+async def test_get_study_ids_are_case_insensitive_and_malformed_ids_never_hit_the_network() -> None:
+    study = load("study.json")
+    ctgov.cache_study(study)
+    nct = nct_ids([study])[0]
+
+    assert await ctgov.get_study(f" {nct.lower()} ") == study
+    with pytest.raises(ctgov.StudyNotFoundError):
+        await ctgov.get_study("not-an-nct")  # conftest's transport raises on any request
 
 
 async def test_cache_serves_the_newest_version_of_a_study() -> None:

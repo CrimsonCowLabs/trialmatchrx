@@ -4,8 +4,8 @@ import httpx
 
 from app.schemas import TraceEvent, TrialDetail
 from app.sources import ctgov
+from tests.ctgov_fake import FakeCtgov, load
 from tests.sse import client
-from tests.test_ctgov import FakeCtgov, load
 
 STUDY = load("study.json")
 NCT = STUDY["protocolSection"]["identificationModule"]["nctId"]
@@ -34,7 +34,7 @@ async def test_cached_trial_is_served_without_any_network_call() -> None:
 
 async def test_cache_miss_fetches_once_and_caches() -> None:
     fake = FakeCtgov()
-    fake.client()
+    fake.install()
 
     async with client() as c:
         first = await c.get(f"/api/trials/{NCT}")
@@ -46,7 +46,7 @@ async def test_cache_miss_fetches_once_and_caches() -> None:
 
 
 async def test_unknown_trial_is_404() -> None:
-    FakeCtgov().client()
+    FakeCtgov().install()
 
     async with client() as c:
         resp = await c.get("/api/trials/NCT00000000")

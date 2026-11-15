@@ -15,8 +15,8 @@ from app.schemas import (
     TrialDetail,
 )
 from app.sources import ctgov
+from tests.ctgov_fake import load
 from tests.sse import client, parse_sse
-from tests.test_ctgov import load
 
 MATCH_BODY = {"note": "61M, T2D, HbA1c 8.4%, eGFR 48, on metformin", "condition": "t2d"}
 
