@@ -6,6 +6,8 @@
     uv run python -m scripts.run_eval --topics 2  # partial: first 2 topics only, not recorded
     uv run python -m scripts.run_eval --offline   # from the caches only: no API calls, no key
     uv run python -m scripts.run_eval --fail-fast # stop at the first model failure
+    make eval-smoke                             # --topics 1 --fail-fast: after a pipeline change
+    make eval-offline                           # --offline: re-score for free
 
 The matcher runs the full pipeline (parse -> compile -> evaluate -> judge -> verify -> rank) on
 each topic as a traced match run, so it needs ANTHROPIC_API_KEY. The first run is slow and
