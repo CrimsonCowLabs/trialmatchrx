@@ -13,6 +13,7 @@ from sqlmodel import col, select
 
 from app.config import get_settings
 from app.db import TrialCacheRow, session_scope
+from app.schemas import TrialDetail
 from app.trace.recorder import TraceRecorder
 
 BASE_URL = "https://clinicaltrials.gov/api/v2"
@@ -176,6 +177,21 @@ async def seed_cache(
             seen += 1
             new += cache_study(study)
     return SeedStats(seen=seen, new=new, cached_total=cached_count())
+
+
+def summarize(study: dict[str, Any]) -> TrialDetail:
+    """The `TrialDetail` view of a raw study. `criteria` is left empty for the compiler."""
+    proto = study["protocolSection"]
+    ident = proto.get("identificationModule", {})
+    phases = proto.get("designModule", {}).get("phases") or []
+    return TrialDetail(
+        nct_id=ident["nctId"],
+        title=ident.get("briefTitle") or ident.get("officialTitle") or ident["nctId"],
+        phase="/".join(phases) or None,
+        overall_status=proto.get("statusModule", {}).get("overallStatus"),
+        eligibility_text=proto.get("eligibilityModule", {}).get("eligibilityCriteria"),
+        criteria=[],
+    )
 
 
 def _describe(study: dict[str, Any]) -> dict[str, Any]:
