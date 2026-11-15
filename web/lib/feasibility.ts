@@ -76,12 +76,31 @@ const RANGES: Record<string, SliderRange> = {
   "vitals.sbp": { min: 70, max: 220, step: 1 },
   "vitals.dbp": { min: 40, max: 130, step: 1 },
   "vitals.weight": { min: 30, max: 250, step: 1 },
+  // Pulmonary function, ALS and PAH measures (percent predicted, ratio, metres, Wood units,
+  // mmHg, score). Keyed by measure name so a lab or a vital gets the same range.
+  fvc_pct: { min: 30, max: 100, step: 1 },
+  fev1_pct: { min: 20, max: 100, step: 1 },
+  svc_pct: { min: 30, max: 100, step: 1 },
+  dlco_pct: { min: 15, max: 100, step: 1 },
+  fev1_fvc: { min: 0.5, max: 0.9, step: 0.01 },
+  six_mwd: { min: 100, max: 600, step: 10 },
+  pvr: { min: 2, max: 15, step: 0.5 },
+  pcwp: { min: 5, max: 30, step: 1 },
+  alsfrs_r: { min: 20, max: 48, step: 1 },
 };
+
+/** A field with no known range: [0, 2 x its largest value], stepped to fit that scale. */
+function fallbackRange(values: number[]): SliderRange {
+  const top = Math.max(0, ...values);
+  const max = top > 0 ? top * 2 : 1;
+  return { min: 0, max, step: max <= 1 ? 0.01 : max <= 10 ? 0.1 : 1 };
+}
 
 /** Slider bounds for a numeric step: the field's range, widened to include its values. */
 export function sliderRange(step: WaterfallStep): SliderRange {
   const values = [step.value, step.default_value].filter((v): v is number => typeof v === "number");
-  const base = RANGES[step.field] ?? { min: 0, max: Math.max(1, ...values) * 2, step: 1 };
+  const measure = step.field.replace(/^(labs|vitals)\./, "");
+  const base = RANGES[step.field] ?? RANGES[measure] ?? fallbackRange(values);
   return {
     min: Math.min(base.min, ...values),
     max: Math.max(base.max, ...values),

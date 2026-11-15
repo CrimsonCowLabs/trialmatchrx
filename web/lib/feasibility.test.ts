@@ -119,6 +119,29 @@ test("slider range is the field's clinical range, widened to fit the values", ()
   });
 });
 
+test("pulmonary, ALS and PAH fields have clinical slider ranges", () => {
+  const [, egfr] = waterfallSteps(RESULT);
+  const at = (field: string, value: number) =>
+    sliderRange({ ...egfr, field, value, default_value: value });
+  assert.deepEqual(at("labs.fvc_pct", 50), { min: 30, max: 100, step: 1 });
+  assert.deepEqual(at("labs.dlco_pct", 40), { min: 15, max: 100, step: 1 });
+  assert.deepEqual(at("labs.fev1_fvc", 0.7), { min: 0.5, max: 0.9, step: 0.01 });
+  assert.deepEqual(at("labs.six_mwd", 150), { min: 100, max: 600, step: 10 });
+  assert.deepEqual(at("labs.pvr", 5), { min: 2, max: 15, step: 0.5 });
+  assert.deepEqual(at("labs.alsfrs_r", 24), { min: 20, max: 48, step: 1 });
+  // The same measure recorded as a vital gets the same range.
+  assert.deepEqual(at("vitals.six_mwd", 150), { min: 100, max: 600, step: 10 });
+});
+
+test("an unknown field's slider steps fit its scale", () => {
+  const [, egfr] = waterfallSteps(RESULT);
+  const at = (value: number) =>
+    sliderRange({ ...egfr, field: "labs.unknown", value, default_value: value });
+  assert.deepEqual(at(0.4), { min: 0, max: 0.8, step: 0.01 });
+  assert.deepEqual(at(3), { min: 0, max: 6, step: 0.1 });
+  assert.deepEqual(at(40), { min: 0, max: 80, step: 1 });
+});
+
 test("rule labels read like the predicate", () => {
   const [t2d, egfr] = waterfallSteps(RESULT);
   assert.equal(ruleLabel(egfr), "egfr >= 45 mL/min/1.73m2");

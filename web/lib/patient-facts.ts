@@ -5,6 +5,7 @@
 import type { Schemas, TraceEvent } from "./api.ts";
 import { countNoun, formatCount } from "./format.ts";
 import { factValue } from "./match-results.ts";
+import { measureLabel } from "./measures.ts";
 
 type PatientFacts = Schemas["PatientFacts"];
 
@@ -37,23 +38,6 @@ export interface FactRow {
   date: string | null;
   quote: FactQuote;
 }
-
-const MEASURE_LABELS: Record<string, string> = {
-  hba1c: "HbA1c",
-  egfr: "eGFR",
-  uacr: "UACR",
-  upcr: "UPCR",
-  potassium: "Potassium",
-  ldl: "LDL",
-  creatinine: "Creatinine",
-  albumin: "Albumin",
-  alt: "ALT",
-  hscrp: "hs-CRP",
-  bmi: "BMI",
-  sbp: "Systolic BP",
-  dbp: "Diastolic BP",
-  weight: "Weight",
-};
 
 const yesNo = (b: boolean) => (b ? "yes" : "no");
 
@@ -92,7 +76,7 @@ export function patientFactRows(
       kept.push({
         key: `${head}.${name}`,
         group,
-        label: MEASURE_LABELS[name] ?? name,
+        label: measureLabel(name),
         value: factValue(f),
         date: f.date ?? null,
         quote: quoteOf(f.source_span),
@@ -167,7 +151,7 @@ function unverifiedRow({ path, fact }: UnverifiedFact, i: number): FactRow | nul
     return {
       ...base,
       group: measure[1] === "labs" ? "Labs" : "Vitals",
-      label: MEASURE_LABELS[measure[2]] ?? measure[2],
+      label: measureLabel(measure[2]),
       value: factValue({ value: str(fact.value), unit }),
       date: typeof fact.date === "string" ? fact.date : null,
     };
