@@ -330,3 +330,20 @@ def test_the_final_answer_request_ends_on_a_user_turn() -> None:
     assert out[:3] == history
     assert isinstance(out[-1], HumanMessage)
     assert end_on_user_turn(history[:2]) == history[:2]
+
+
+def test_the_closer_model_has_room_for_one_followup_per_unknown(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # ROC-101 (NCT07175038) leaves 67 criteria unknown for the PAH demo patient; 4,000 output
+    # tokens cut the answer mid-JSON.
+    from app.config import get_settings
+    from app.pipeline.closer_agent import anthropic_closer_model
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    get_settings.cache_clear()
+    try:
+        model = anthropic_closer_model()
+    finally:
+        get_settings.cache_clear()
+    assert model.max_tokens >= 16000  # type: ignore[attr-defined]
