@@ -91,6 +91,13 @@ export function RunWithTrace({
   const wallTime = runStatus === "running" ? null : (summary?.totals.wall_time_s ?? null);
   const [traceChoice, setTraceChoice] = useState<boolean | null>(null);
   const showTrace = !collapsibleTrace || traceShown(traceChoice, closer !== null);
+  const header =
+    summary?.kind === "closer"
+      ? { title: closerTitle(summary), description: summary.trial_title }
+      : {
+          title: patientTitle(summary) ?? title,
+          description: summary && <FactsStrip patient={summary.patient} />,
+        };
 
   return (
     <>
@@ -124,12 +131,8 @@ export function RunWithTrace({
             </span>
           </>
         }
-        title={summary?.kind === "closer" ? closerTitle(summary) : (patientTitle(summary) ?? title)}
-        description={
-          summary?.kind === "closer"
-            ? summary.trial_title
-            : summary && <FactsStrip patient={summary.patient} />
-        }
+        title={header.title}
+        description={header.description}
       />
       <div
         className={`grid grid-cols-[minmax(0,1fr)] items-start gap-6 ${showTrace ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)]" : ""}`}
@@ -139,7 +142,7 @@ export function RunWithTrace({
           {runStatus === "failed" && (
             <p className="text-sm text-destructive">Run failed; the error event is in the trace.</p>
           )}
-          {closer && <CloserResult output={closer} />}
+          {closer && <CloserResult key={closer.nct_id} output={closer} />}
           {matches && summary && (
             <MatchResults
               matches={matches}

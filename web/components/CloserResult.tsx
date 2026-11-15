@@ -69,9 +69,10 @@ function Followups({ items, className }: { items: FollowupItem[]; className: str
         <p className="px-4 py-4 text-sm text-ink-4 sm:px-5">No unknown criteria to follow up.</p>
       ) : (
         <ul className="divide-y divide-line-soft">
-          {items.map((f) => (
+          {items.map((f, i) => (
             <li
-              key={f.criterionId}
+              // Index too: nothing in CloserOutput stops two follow-ups for one criterion.
+              key={`${i}-${f.criterionId}`}
               data-testid="followup"
               className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-start gap-3.5 px-4 py-4 sm:px-5"
             >

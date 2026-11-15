@@ -126,7 +126,8 @@ def _closer_source(run: RunRow) -> tuple[str | None, PatientFacts | None, str | 
         return source_id, None, None
     result: dict[str, Any] = source.result or {}
     nct = run.request.get("nct_id")
-    title = next((m.get("title") for m in result.get("matches", []) if m["nct_id"] == nct), None)
+    matches = result.get("matches", [])
+    title = next((m.get("title") for m in matches if m.get("nct_id") == nct), None)
     return source_id, _patient(result), title
 
 
@@ -135,11 +136,11 @@ async def get_run(run_id: str) -> RunSummary:
     run = _require_run(run_id)
     result: dict[str, Any] = run.result or {}
     patient = _patient(result)
-    source_run_id = trial_title = None
-    label = patient_label(patient)
+    source_run_id: str | None = None
+    trial_title: str | None = None
+    label_patient = patient  # a closer run stores no patient: label it with its match run's
     if run.kind == "closer":
-        source_run_id, source_patient, trial_title = _closer_source(run)
-        label = patient_label(source_patient)
+        source_run_id, label_patient, trial_title = _closer_source(run)
     return RunSummary(
         run_id=run.id,
         kind=cast(RunKind, run.kind),
@@ -148,7 +149,7 @@ async def get_run(run_id: str) -> RunSummary:
         matches=result.get("matches", []),
         totals=compute_totals(run, store.latest_events(run_id)),
         closer=result.get("closer"),
-        patient_label=label,
+        patient_label=patient_label(label_patient),
         condition=run.request.get("condition") if run.kind == "match" else None,
         max_unknowns_for_likely=MAX_UNKNOWNS_FOR_LIKELY,
         source_run_id=source_run_id,
