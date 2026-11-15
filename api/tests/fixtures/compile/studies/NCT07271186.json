@@ -1,0 +1,1081 @@
+{
+  "protocolSection": {
+    "identificationModule": {
+      "nctId": "NCT07271186",
+      "orgStudyIdInfo": {
+        "id": "ALN-ANG3-CKD-2502"
+      },
+      "secondaryIdInfos": [
+        {
+          "id": "2026-527519-41-00",
+          "type": "CTIS"
+        }
+      ],
+      "organization": {
+        "fullName": "Regeneron Pharmaceuticals",
+        "class": "INDUSTRY"
+      },
+      "briefTitle": "Study to Assess the Effects of ALN-ANG3 in Adult Participants With Diabetic Kidney Disease",
+      "officialTitle": "A Phase 2 Randomized, Double-Blind, Placebo-Controlled Study to Assess the Efficacy, Safety, Pharmacokinetics, and Pharmacodynamic Effects of ALN-ANG3 in Participants With Diabetic Kidney Disease",
+      "acronym": "ANCHOR-POC"
+    },
+    "statusModule": {
+      "statusVerifiedDate": "2026-10",
+      "overallStatus": "RECRUITING",
+      "expandedAccessInfo": {
+        "hasExpandedAccess": false
+      },
+      "startDateStruct": {
+        "date": "2026-01-09",
+        "type": "ACTUAL"
+      },
+      "primaryCompletionDateStruct": {
+        "date": "2028-10-13",
+        "type": "ESTIMATED"
+      },
+      "completionDateStruct": {
+        "date": "2028-10-13",
+        "type": "ESTIMATED"
+      },
+      "studyFirstSubmitDate": "2025-11-21",
+      "studyFirstSubmitQcDate": "2025-12-07",
+      "studyFirstPostDateStruct": {
+        "date": "2025-12-09",
+        "type": "ACTUAL"
+      },
+      "lastUpdateSubmitDate": "2026-10-26",
+      "lastUpdatePostDateStruct": {
+        "date": "2026-10-27",
+        "type": "ACTUAL"
+      }
+    },
+    "sponsorCollaboratorsModule": {
+      "responsibleParty": {
+        "type": "SPONSOR"
+      },
+      "leadSponsor": {
+        "name": "Regeneron Pharmaceuticals",
+        "class": "INDUSTRY"
+      }
+    },
+    "oversightModule": {
+      "oversightHasDmc": false,
+      "isFdaRegulatedDrug": true,
+      "isFdaRegulatedDevice": false
+    },
+    "descriptionModule": {
+      "briefSummary": "This study is researching an experimental drug called ALN-ANG3 (called \"study drug\"). The study is focused on participants who have diabetic kidney disease.\n\nThe aim of the study is to see how safe and effective the study drugs are.\n\nThe study is looking at several other research questions, including:\n\n* What side effects may happen from taking the study drug\n* How much study drug is in the blood at different times"
+    },
+    "conditionsModule": {
+      "conditions": [
+        "Diabetic Kidney Disease (DKD)"
+      ],
+      "keywords": [
+        "Diabetic Nephropathy",
+        "Chronic Kidney Disease (CKD)",
+        "Type 2 Diabetes",
+        "Lipid Management",
+        "Renal Impairment",
+        "Gene Silencing",
+        "siRNA",
+        "small-interfering RNA"
+      ]
+    },
+    "designModule": {
+      "studyType": "INTERVENTIONAL",
+      "phases": [
+        "PHASE2"
+      ],
+      "designInfo": {
+        "allocation": "RANDOMIZED",
+        "interventionModel": "PARALLEL",
+        "primaryPurpose": "TREATMENT",
+        "maskingInfo": {
+          "masking": "QUADRUPLE",
+          "whoMasked": [
+            "PARTICIPANT",
+            "CARE_PROVIDER",
+            "INVESTIGATOR",
+            "OUTCOMES_ASSESSOR"
+          ]
+        }
+      },
+      "enrollmentInfo": {
+        "count": 195,
+        "type": "ESTIMATED"
+      }
+    },
+    "armsInterventionsModule": {
+      "armGroups": [
+        {
+          "label": "ALN-ANG3 + evinacumab",
+          "type": "EXPERIMENTAL",
+          "description": "This arm has been closed",
+          "interventionNames": [
+            "Drug: ALN-ANG3",
+            "Drug: Evinacumab"
+          ]
+        },
+        {
+          "label": "ALN-ANG3",
+          "type": "EXPERIMENTAL",
+          "interventionNames": [
+            "Drug: ALN-ANG3"
+          ]
+        },
+        {
+          "label": "Placebo",
+          "type": "PLACEBO_COMPARATOR",
+          "interventionNames": [
+            "Drug: Placebo"
+          ]
+        }
+      ],
+      "interventions": [
+        {
+          "type": "DRUG",
+          "name": "ALN-ANG3",
+          "description": "Administered per the protocol",
+          "armGroupLabels": [
+            "ALN-ANG3",
+            "ALN-ANG3 + evinacumab"
+          ]
+        },
+        {
+          "type": "DRUG",
+          "name": "Evinacumab",
+          "description": "No longer being administered",
+          "armGroupLabels": [
+            "ALN-ANG3 + evinacumab"
+          ],
+          "otherNames": [
+            "Evkeeza\u00ae",
+            "R1500"
+          ]
+        },
+        {
+          "type": "DRUG",
+          "name": "Placebo",
+          "description": "Administered per the protocol",
+          "armGroupLabels": [
+            "Placebo"
+          ]
+        }
+      ]
+    },
+    "outcomesModule": {
+      "primaryOutcomes": [
+        {
+          "measure": "Percent Change in Urine Albumin to Creatinine Ratio (UACR)",
+          "timeFrame": "Baseline to Week 24"
+        }
+      ],
+      "secondaryOutcomes": [
+        {
+          "measure": "Change in Estimated Glomerular Filtration Rate (eGFR)",
+          "timeFrame": "Baseline to Week 24"
+        },
+        {
+          "measure": "Change in Total Cholesterol",
+          "timeFrame": "Baseline to Week 24"
+        },
+        {
+          "measure": "Change in Low-Density Lipoprotein-Cholesterol (LDL-C)",
+          "timeFrame": "Baseline to Week 24"
+        },
+        {
+          "measure": "Change in High-Density Lipoprotein-Cholesterol (HDL-C)",
+          "timeFrame": "Baseline to Week 24"
+        },
+        {
+          "measure": "Change in Non-High-Density Lipoprotein-Cholesterol (non-HDL-C)",
+          "timeFrame": "Baseline to Week 24"
+        },
+        {
+          "measure": "Change in Triglycerides",
+          "timeFrame": "Baseline to Week 24"
+        },
+        {
+          "measure": "Change in Apolipoprotein B (ApoB)",
+          "timeFrame": "Baseline to Week 24"
+        },
+        {
+          "measure": "Concentration of Combined ALN-ANG3 and Metabolite(s)",
+          "timeFrame": "Up to Week 24"
+        },
+        {
+          "measure": "Change in Concentration of Angiopoietin-Like Protein-3 (ANGPTL-3)",
+          "timeFrame": "Baseline to Week 24"
+        },
+        {
+          "measure": "Occurrence of Treatment-Emergent Adverse Events (TEAEs)",
+          "timeFrame": "Up to Week 48"
+        },
+        {
+          "measure": "Severity of TEAEs",
+          "timeFrame": "Up to Week 48"
+        },
+        {
+          "measure": "Occurence of Anti-Drug Antibodies (ADAs) to ALN-ANG3",
+          "timeFrame": "Through Week 24"
+        },
+        {
+          "measure": "Magnitude of ADAs to ALN-ANG3",
+          "timeFrame": "Through Week 24"
+        }
+      ]
+    },
+    "eligibilityModule": {
+      "eligibilityCriteria": "Key Inclusion Criteria:\n\n1. Medical history of type 2 diabetes and receiving medical therapy or lifestyle interventions for glucose management\n2. Hemoglobin A1C (HbA1c) of 6.5 to 10% at screening\n3. eGFR 30 to 90 mL/min/1.73 m\\^2 using 2021 Chronic Kidney Disease-Epidemiology Collaboration-Estimated Glomerular Filtration Rate using Creatinine and Cystatin C (CKD-EPI eGFRcr-cys) equation at screening\n4. Albuminuria: Urine Albumin to Creatinine Ratio (UACR) of 500 to 5000 mg/g at screening\n\nKey Exclusion Criteria:\n\n1. Known medical history or clinical evidence indicative of non-diabetic renal disease\n2. Renal disease that required treatment with systemic immunosuppressive therapy (prior or current), or a history of end-stage kidney disease requiring treatment with chronic dialysis or kidney transplantation\n3. Medically unstable as assessed by the investigator or hospitalization (ie, \\>24 hours) within 30 days of the screening visit\n\nNOTE: Other Protocol-Defined Inclusion/Exclusion Criteria Apply",
+      "healthyVolunteers": false,
+      "sex": "ALL",
+      "minimumAge": "18 Years",
+      "maximumAge": "80 Years",
+      "stdAges": [
+        "ADULT",
+        "OLDER_ADULT"
+      ]
+    },
+    "contactsLocationsModule": {
+      "centralContacts": [
+        {
+          "name": "Clinical Trials Administrator",
+          "role": "CONTACT",
+          "phone": "844-734-6643",
+          "email": "clinicaltrials@regeneron.com"
+        }
+      ],
+      "overallOfficials": [
+        {
+          "name": "Clinical Trial Management",
+          "affiliation": "Regeneron Pharmaceuticals",
+          "role": "STUDY_DIRECTOR"
+        }
+      ],
+      "locations": [
+        {
+          "facility": "Apogee Clinical Research, LLC",
+          "status": "RECRUITING",
+          "city": "Huntsville",
+          "state": "Alabama",
+          "zip": "35801",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 34.7304,
+            "lon": -86.58594
+          }
+        },
+        {
+          "facility": "Applied Research Center of Arkansas",
+          "status": "RECRUITING",
+          "city": "Little Rock",
+          "state": "Arkansas",
+          "zip": "72205",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 34.74648,
+            "lon": -92.28959
+          }
+        },
+        {
+          "facility": "AME Clinical Research",
+          "status": "RECRUITING",
+          "city": "Huntington Beach",
+          "state": "California",
+          "zip": "92647",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 33.6603,
+            "lon": -117.99923
+          }
+        },
+        {
+          "facility": "Amicis Research Center",
+          "status": "RECRUITING",
+          "city": "Northridge",
+          "state": "California",
+          "zip": "91325",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 34.22834,
+            "lon": -118.53675
+          }
+        },
+        {
+          "facility": "FOMAT - Vista del Mar Medical Group",
+          "status": "RECRUITING",
+          "city": "Oxnard",
+          "state": "California",
+          "zip": "93036",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 34.1975,
+            "lon": -119.17705
+          }
+        },
+        {
+          "facility": "Central Coast Nephrology",
+          "status": "WITHDRAWN",
+          "city": "Salinas",
+          "state": "California",
+          "zip": "93901",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 36.67774,
+            "lon": -121.6555
+          }
+        },
+        {
+          "facility": "North America Research Institute",
+          "status": "RECRUITING",
+          "city": "San Dimas",
+          "state": "California",
+          "zip": "91773",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 34.10668,
+            "lon": -117.80673
+          }
+        },
+        {
+          "facility": "Amicis Research Center",
+          "status": "RECRUITING",
+          "city": "Santa Clarita",
+          "state": "California",
+          "zip": "91355",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 34.39166,
+            "lon": -118.54259
+          }
+        },
+        {
+          "facility": "Valiance Clinical Research",
+          "status": "RECRUITING",
+          "city": "Tarzana",
+          "state": "California",
+          "zip": "91356",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 34.17334,
+            "lon": -118.55397
+          }
+        },
+        {
+          "facility": "Amicis Research Center",
+          "status": "RECRUITING",
+          "city": "Valencia",
+          "state": "California",
+          "zip": "91355",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 34.44361,
+            "lon": -118.60953
+          }
+        },
+        {
+          "facility": "National Institute of Clinical Research, Inc.",
+          "status": "RECRUITING",
+          "city": "Victorville",
+          "state": "California",
+          "zip": "92392",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 34.53611,
+            "lon": -117.29116
+          }
+        },
+        {
+          "facility": "Yale University",
+          "status": "RECRUITING",
+          "city": "New Haven",
+          "state": "Connecticut",
+          "zip": "06510",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 41.30815,
+            "lon": -72.92816
+          }
+        },
+        {
+          "facility": "D&H Doral Research Center",
+          "status": "RECRUITING",
+          "city": "Doral",
+          "state": "Florida",
+          "zip": "33122",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 25.81954,
+            "lon": -80.35533
+          }
+        },
+        {
+          "facility": "AGA Clinical Trials",
+          "status": "RECRUITING",
+          "city": "Hialeah",
+          "state": "Florida",
+          "zip": "33012",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 25.8576,
+            "lon": -80.27811
+          }
+        },
+        {
+          "facility": "Convenient Medical Center",
+          "status": "RECRUITING",
+          "city": "Hialeah",
+          "state": "Florida",
+          "zip": "33013",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 25.8576,
+            "lon": -80.27811
+          }
+        },
+        {
+          "facility": "Elixia Hollywood",
+          "status": "RECRUITING",
+          "city": "Hollywood",
+          "state": "Florida",
+          "zip": "33024",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 26.0112,
+            "lon": -80.14949
+          }
+        },
+        {
+          "facility": "D&H Pompano Research Center",
+          "status": "RECRUITING",
+          "city": "Margate",
+          "state": "Florida",
+          "zip": "33063",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 26.24453,
+            "lon": -80.20644
+          }
+        },
+        {
+          "facility": "LCC Medical Research Institute",
+          "status": "RECRUITING",
+          "city": "Miami",
+          "state": "Florida",
+          "zip": "33126",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 25.77427,
+            "lon": -80.19366
+          }
+        },
+        {
+          "facility": "D&H National Research Centers, Inc",
+          "status": "RECRUITING",
+          "city": "Miami",
+          "state": "Florida",
+          "zip": "33155",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 25.77427,
+            "lon": -80.19366
+          }
+        },
+        {
+          "facility": "Regenerate Primary Medical Research, LLC",
+          "status": "RECRUITING",
+          "city": "Miami",
+          "state": "Florida",
+          "zip": "33155",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 25.77427,
+            "lon": -80.19366
+          }
+        },
+        {
+          "facility": "Ocean Blue Medical Research Center - Internal Medicine",
+          "status": "RECRUITING",
+          "city": "Miami Springs",
+          "state": "Florida",
+          "zip": "33166",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 25.82232,
+            "lon": -80.2895
+          }
+        },
+        {
+          "facility": "Innovia Research Center",
+          "status": "RECRUITING",
+          "city": "Miramar",
+          "state": "Florida",
+          "zip": "33027",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 25.98731,
+            "lon": -80.23227
+          }
+        },
+        {
+          "facility": "Central Florida Kidney Specialists Oakwater",
+          "status": "RECRUITING",
+          "city": "Orlando",
+          "state": "Florida",
+          "zip": "32806",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 28.53834,
+            "lon": -81.37924
+          }
+        },
+        {
+          "facility": "Bolanos Clinical Research",
+          "status": "RECRUITING",
+          "city": "Pembroke Pines",
+          "state": "Florida",
+          "zip": "33026",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 26.00315,
+            "lon": -80.22394
+          }
+        },
+        {
+          "facility": "Progressive Medical Research",
+          "status": "RECRUITING",
+          "city": "Port Orange",
+          "state": "Florida",
+          "zip": "32127",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 29.13832,
+            "lon": -80.99561
+          }
+        },
+        {
+          "facility": "CDC Research Institute",
+          "status": "RECRUITING",
+          "city": "Port Saint Lucie",
+          "state": "Florida",
+          "zip": "34952",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 27.29393,
+            "lon": -80.35033
+          }
+        },
+        {
+          "facility": "D&H Tamarac Research Center",
+          "status": "RECRUITING",
+          "city": "Tamarac",
+          "state": "Florida",
+          "zip": "33321",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 26.21286,
+            "lon": -80.24977
+          }
+        },
+        {
+          "facility": "Metabolic Research Institute",
+          "status": "RECRUITING",
+          "city": "West Palm Beach",
+          "state": "Florida",
+          "zip": "33401",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 26.71534,
+            "lon": -80.05337
+          }
+        },
+        {
+          "facility": "Privia Medical Group of Georgia, LLC",
+          "status": "RECRUITING",
+          "city": "Savannah",
+          "state": "Georgia",
+          "zip": "31406",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 32.08354,
+            "lon": -81.09983
+          }
+        },
+        {
+          "facility": "Research by Design, LLC - Internal Medicine",
+          "status": "RECRUITING",
+          "city": "Chicago",
+          "state": "Illinois",
+          "zip": "60643",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 41.85003,
+            "lon": -87.65005
+          }
+        },
+        {
+          "facility": "IMA Clinical Research",
+          "status": "RECRUITING",
+          "city": "Monroe",
+          "state": "Louisiana",
+          "zip": "71201",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 32.50931,
+            "lon": -92.1193
+          }
+        },
+        {
+          "facility": "University of Michigan",
+          "status": "RECRUITING",
+          "city": "Ann Arbor",
+          "state": "Michigan",
+          "zip": "48109",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 42.27756,
+            "lon": -83.74088
+          }
+        },
+        {
+          "facility": "Elixia Michigan Kidney Consultants",
+          "status": "RECRUITING",
+          "city": "Pontiac",
+          "state": "Michigan",
+          "zip": "48341",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 42.63892,
+            "lon": -83.29105
+          }
+        },
+        {
+          "facility": "Elixia MNA",
+          "status": "RECRUITING",
+          "city": "City of Saint Peters",
+          "state": "Missouri",
+          "zip": "63376",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 38.80033,
+            "lon": -90.62651
+          }
+        },
+        {
+          "facility": "Clinical Research Consultants, LLC",
+          "status": "RECRUITING",
+          "city": "Kansas City",
+          "state": "Missouri",
+          "zip": "64111",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 39.09973,
+            "lon": -94.57857
+          }
+        },
+        {
+          "facility": "University of Nebraska Medical Center",
+          "status": "RECRUITING",
+          "city": "Omaha",
+          "state": "Nebraska",
+          "zip": "68198",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 41.25626,
+            "lon": -95.94043
+          }
+        },
+        {
+          "facility": "DaVita Clinical Research",
+          "status": "RECRUITING",
+          "city": "Las Vegas",
+          "state": "Nevada",
+          "zip": "89107",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 36.17497,
+            "lon": -115.13722
+          }
+        },
+        {
+          "facility": "Velocity Clinical Research",
+          "status": "RECRUITING",
+          "city": "Binghamton",
+          "state": "New York",
+          "zip": "13905",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 42.09869,
+            "lon": -75.91797
+          }
+        },
+        {
+          "facility": "CHEAR Center LLC",
+          "status": "RECRUITING",
+          "city": "The Bronx",
+          "state": "New York",
+          "zip": "10455",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 40.84985,
+            "lon": -73.86641
+          }
+        },
+        {
+          "facility": "Eastern Nephrology Associates - Greenville West",
+          "status": "RECRUITING",
+          "city": "Greenville",
+          "state": "North Carolina",
+          "zip": "27834",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 35.61266,
+            "lon": -77.36635
+          }
+        },
+        {
+          "facility": "Eastern Nephrology Associates - New Bern",
+          "status": "RECRUITING",
+          "city": "New Bern",
+          "state": "North Carolina",
+          "zip": "28562",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 35.10849,
+            "lon": -77.04411
+          }
+        },
+        {
+          "facility": "Brookview Hills Research Associates, LLC",
+          "status": "RECRUITING",
+          "city": "Winston-Salem",
+          "state": "North Carolina",
+          "zip": "27103",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 36.09986,
+            "lon": -80.24422
+          }
+        },
+        {
+          "facility": "Northeast Clinical Research Center",
+          "status": "RECRUITING",
+          "city": "Bethlehem",
+          "state": "Pennsylvania",
+          "zip": "18017",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 40.62593,
+            "lon": -75.37046
+          }
+        },
+        {
+          "facility": "Suburban Research Associates",
+          "status": "RECRUITING",
+          "city": "West Chester",
+          "state": "Pennsylvania",
+          "zip": "19380",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 39.96097,
+            "lon": -75.60804
+          }
+        },
+        {
+          "facility": "Southeast Renal Research Institute",
+          "status": "WITHDRAWN",
+          "city": "Chattanooga",
+          "state": "Tennessee",
+          "zip": "37404",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 35.04563,
+            "lon": -85.30968
+          }
+        },
+        {
+          "facility": "Arlington Nephrology, PLLC.",
+          "status": "RECRUITING",
+          "city": "Arlington",
+          "state": "Texas",
+          "zip": "76015",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 32.73569,
+            "lon": -97.10807
+          }
+        },
+        {
+          "facility": "M3 Wake Research Dallas - Internal Medicine",
+          "status": "RECRUITING",
+          "city": "Dallas",
+          "state": "Texas",
+          "zip": "75224",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 32.78306,
+            "lon": -96.80667
+          }
+        },
+        {
+          "facility": "Revival Research Institute, LLC",
+          "status": "RECRUITING",
+          "city": "Dallas",
+          "state": "Texas",
+          "zip": "75231",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 32.78306,
+            "lon": -96.80667
+          }
+        },
+        {
+          "facility": "Epic Medical Research LLC",
+          "status": "RECRUITING",
+          "city": "DeSoto",
+          "state": "Texas",
+          "zip": "75115",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 32.58986,
+            "lon": -96.85695
+          }
+        },
+        {
+          "facility": "El Paso Kidney Specialists-Davita Clinical Research",
+          "status": "RECRUITING",
+          "city": "El Paso",
+          "state": "Texas",
+          "zip": "79902",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 31.75872,
+            "lon": -106.48693
+          }
+        },
+        {
+          "facility": "Juno Research, LLC",
+          "status": "RECRUITING",
+          "city": "Houston",
+          "state": "Texas",
+          "zip": "77040",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 29.76328,
+            "lon": -95.36327
+          }
+        },
+        {
+          "facility": "Prolato Research LLC",
+          "status": "RECRUITING",
+          "city": "Houston",
+          "state": "Texas",
+          "zip": "77054",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 29.76328,
+            "lon": -95.36327
+          }
+        },
+        {
+          "facility": "Clinical Trial Network, LLC",
+          "status": "RECRUITING",
+          "city": "Houston",
+          "state": "Texas",
+          "zip": "77074",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 29.76328,
+            "lon": -95.36327
+          }
+        },
+        {
+          "facility": "Gulf Coast Clinical Research",
+          "status": "RECRUITING",
+          "city": "Katy",
+          "state": "Texas",
+          "zip": "77450",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 29.78579,
+            "lon": -95.8244
+          }
+        },
+        {
+          "facility": "R & H Clinical Research, Inc.",
+          "status": "RECRUITING",
+          "city": "Katy",
+          "state": "Texas",
+          "zip": "77450",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 29.78579,
+            "lon": -95.8244
+          }
+        },
+        {
+          "facility": "Sunbeam Clinical Research",
+          "status": "RECRUITING",
+          "city": "McKinney",
+          "state": "Texas",
+          "zip": "75069",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 33.19762,
+            "lon": -96.61527
+          }
+        },
+        {
+          "facility": "Clinical Advancement Center",
+          "status": "RECRUITING",
+          "city": "San Antonio",
+          "state": "Texas",
+          "zip": "78212",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 29.42412,
+            "lon": -98.49363
+          }
+        },
+        {
+          "facility": "University of Texas Health - San Antonio",
+          "status": "RECRUITING",
+          "city": "San Antonio",
+          "state": "Texas",
+          "zip": "78229",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 29.42412,
+            "lon": -98.49363
+          }
+        },
+        {
+          "facility": "Providence Medical Research Center",
+          "status": "RECRUITING",
+          "city": "Spokane",
+          "state": "Washington",
+          "zip": "99204",
+          "country": "United States",
+          "geoPoint": {
+            "lat": 47.65966,
+            "lon": -117.42908
+          }
+        }
+      ]
+    },
+    "ipdSharingStatementModule": {
+      "ipdSharing": "YES",
+      "description": "All Individual Patient Data (IPD) that underlie publicly available results will be considered for sharing.",
+      "infoTypes": [
+        "STUDY_PROTOCOL",
+        "SAP",
+        "ICF",
+        "CSR",
+        "ANALYTIC_CODE"
+      ],
+      "timeFrame": "When Regeneron has:\n\n* received marketing authorization from major health authorities (e.g., FDA, European Medicines Agency (EMA), Pharmaceuticals and Medical Devices Agency (PMDA), etc.) for the product and indication or has globally discontinued development of the product for all indications on or after April 2020 and has no plans for future development\n* made the study results publicly available (e.g., scientific publication, scientific conference, clinical trial registry)\n* the legal authority to share the data, and\n* ensured the ability to protect participant privacy",
+      "accessCriteria": "Qualified researchers can submit a proposal for access to individual patient or aggregate level data from a Regeneron-sponsored clinical trial through Vivli. Regeneron's Independent Research Request Evaluation Criteria can be found at: https://www.regeneron.com/sites/default/files/Regeneron-External-Data-Sharing-Policy-and-Independent-Research-Request-Evaluation-Criteria.pdf",
+      "url": "https://vivli.org/"
+    }
+  },
+  "derivedSection": {
+    "miscInfoModule": {
+      "versionHolder": "2026-11-10"
+    },
+    "conditionBrowseModule": {
+      "meshes": [
+        {
+          "id": "D003928",
+          "term": "Diabetic Nephropathies"
+        },
+        {
+          "id": "D051436",
+          "term": "Renal Insufficiency, Chronic"
+        },
+        {
+          "id": "D003924",
+          "term": "Diabetes Mellitus, Type 2"
+        },
+        {
+          "id": "D051437",
+          "term": "Renal Insufficiency"
+        }
+      ],
+      "ancestors": [
+        {
+          "id": "D007674",
+          "term": "Kidney Diseases"
+        },
+        {
+          "id": "D014570",
+          "term": "Urologic Diseases"
+        },
+        {
+          "id": "D052776",
+          "term": "Female Urogenital Diseases"
+        },
+        {
+          "id": "D005261",
+          "term": "Female Urogenital Diseases and Pregnancy Complications"
+        },
+        {
+          "id": "D000091642",
+          "term": "Urogenital Diseases"
+        },
+        {
+          "id": "D052801",
+          "term": "Male Urogenital Diseases"
+        },
+        {
+          "id": "D048909",
+          "term": "Diabetes Complications"
+        },
+        {
+          "id": "D003920",
+          "term": "Diabetes Mellitus"
+        },
+        {
+          "id": "D004700",
+          "term": "Endocrine System Diseases"
+        },
+        {
+          "id": "D002908",
+          "term": "Chronic Disease"
+        },
+        {
+          "id": "D020969",
+          "term": "Disease Attributes"
+        },
+        {
+          "id": "D010335",
+          "term": "Pathologic Processes"
+        },
+        {
+          "id": "D013568",
+          "term": "Pathological Conditions, Signs and Symptoms"
+        },
+        {
+          "id": "D044882",
+          "term": "Glucose Metabolism Disorders"
+        },
+        {
+          "id": "D008659",
+          "term": "Metabolic Diseases"
+        },
+        {
+          "id": "D009750",
+          "term": "Nutritional and Metabolic Diseases"
+        }
+      ]
+    },
+    "interventionBrowseModule": {
+      "meshes": [
+        {
+          "id": "C000621590",
+          "term": "evinacumab"
+        }
+      ]
+    }
+  },
+  "hasResults": false
+}

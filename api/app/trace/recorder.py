@@ -25,6 +25,7 @@ from langchain_core.callbacks import AsyncCallbackHandler
 from langchain_core.messages import BaseMessage
 from langchain_core.outputs import LLMResult
 
+from app.config import get_settings
 from app.schemas import TraceEvent, TraceKind, TraceStatus
 from app.trace import store
 from app.trace.bus import EventBus
@@ -344,7 +345,7 @@ class TraceCallbackHandler(AsyncCallbackHandler):
                         tokens_out += int(usage.get("output_tokens", 0))
         if have_usage:
             step.tokens_in, step.tokens_out = tokens_in, tokens_out
-        # HACK(demo): cost_usd stays None until a price table lands with the real models (M2).
+            step.cost_usd = get_settings().cost_usd(step.model, tokens_in, tokens_out)
         self._finish(run_id, "ok", {"text": "\n".join(texts), "messages": raw})
 
     async def on_llm_error(self, error: BaseException, *, run_id: UUID, **kwargs: Any) -> None:

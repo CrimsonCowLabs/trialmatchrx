@@ -1,0 +1,337 @@
+{
+  "protocolSection": {
+    "identificationModule": {
+      "nctId": "NCT07169422",
+      "orgStudyIdInfo": {
+        "id": "RX4DKD"
+      },
+      "organization": {
+        "fullName": "Nova Scotia Health Authority",
+        "class": "OTHER"
+      },
+      "briefTitle": "Improving Kidney Care in Type 2 Diabetes: A Study of Pharmacist Prescribing Versus Usual Care",
+      "officialTitle": "Community Pharmacist Prescription for Diabetic Kidney Disease (Rx4DKD): A Randomized Controlled Trial and Implementation Study",
+      "acronym": "RX4DKD"
+    },
+    "statusModule": {
+      "statusVerifiedDate": "2026-03",
+      "overallStatus": "RECRUITING",
+      "expandedAccessInfo": {
+        "hasExpandedAccess": false
+      },
+      "startDateStruct": {
+        "date": "2026-03-01",
+        "type": "ESTIMATED"
+      },
+      "primaryCompletionDateStruct": {
+        "date": "2028-01-01",
+        "type": "ESTIMATED"
+      },
+      "completionDateStruct": {
+        "date": "2028-07-01",
+        "type": "ESTIMATED"
+      },
+      "studyFirstSubmitDate": "2025-08-30",
+      "studyFirstSubmitQcDate": "2025-09-09",
+      "studyFirstPostDateStruct": {
+        "date": "2025-09-11",
+        "type": "ACTUAL"
+      },
+      "lastUpdateSubmitDate": "2026-03-16",
+      "lastUpdatePostDateStruct": {
+        "date": "2026-03-18",
+        "type": "ACTUAL"
+      }
+    },
+    "sponsorCollaboratorsModule": {
+      "responsibleParty": {
+        "type": "PRINCIPAL_INVESTIGATOR",
+        "investigatorFullName": "Jo-Anne Wilson",
+        "investigatorTitle": "Associate Professor, Pharmacy, Faculty of Health, College of Pharmacy, Dalhousie University; Scientific Affiliate, Nova Scotia Health Research and Innovation, Associate Scientist, MSSU",
+        "investigatorAffiliation": "Nova Scotia Health Authority"
+      },
+      "leadSponsor": {
+        "name": "Nova Scotia Health Authority",
+        "class": "OTHER"
+      }
+    },
+    "oversightModule": {
+      "oversightHasDmc": false,
+      "isFdaRegulatedDrug": false,
+      "isFdaRegulatedDevice": false
+    },
+    "descriptionModule": {
+      "briefSummary": "Type 2 diabetes is the leading cause of chronic kidney disease, which can result in serious complications such as kidney failure and heart disease. Although effective medications exist to slow the progression of kidney damage, they are often underused in primary care, particularly for individuals without a regular family doctor. In response to this gap, 46 community pharmacy-led primary care clinics were launched across Nova Scotia in 2023 to serve under-resourced areas. Pharmacists at these clinics can prescribe for many chronic conditions, but currently not for diabetic kidney disease. To address this, the research team collaborated with kidney, diabetes, and primary care experts, patient partners and regulatory bodies to develop and validate step-by-step prescribing guide (called algorithms) that support pharmacists in identifying and managing diabetic kidney disease. All medications included are approved, publicly funded in Nova Scotia, target people with earlier categories of diabetic kidney disease and includebuilt-in safety monitoring, nurse practitioner consultation or referral to a kidney doctor. This study will evaluate whether these algorithms improve kidney protective medication use which have shown to be beneficial for people with diabetes and kidney disease. The investigators will recruit 120 adults with type 2 diabetes from a provincial diabetes registry who do not have a primary care provider and screen them at pharmacy clinics for diabetic kidney disease. Those eligible and who wish to participate will be randomly assigned to either an intervention group receiving pharmacist-led care using the algorithms or a control group receiving usual care through walk-in, mobile, or virtual clinics. The investigators will measure how many patients begin and continue recommended medications, as well as any medication-related side effects or hospitalizations. Pharmacist participants will also complete a survey to identify what helps or hinders implementation in real-world practice. This research is relevant because it aims to expand access to kidney-protective treatments for people with diabetes, especially those with early forms of diabetic kidney disease who do not have regular access to primary care provider, ultimately improving long-term health outcomes.",
+      "detailedDescription": "Importance: Diabetes is the leading cause of kidney disease. However, the use of guideline directed medical treatments (GDMT) to slow kidney disease progression and reduce the risk of heart disease remains suboptimal. Health system solutions are urgently needed to optimize treatment for individuals with diabetic kidney disease (DKD). Since 2023, the government of Nova Scotia launched 46 community pharmacist-led primary care clinics (CPPCCs) in medically under served areas and expanded the pharmacist's scope of practice to include medication prescribing, either independently or in virtual consultation with another prescriber. In collaboration with regulatory authorities, the investigators developed and validated algorithms focused on GDMT for DKD to support community pharmacists in its management. As part of the initial implementation, the prescribing algorithms will be integrated into a digital health application familiar to pharmacists delivering care in pharmacy primary care clinics. Herein, the investigators propose a hybrid type 1 effectiveness-implementation study to determine if the pharmacist-led prescription algorithms improve the use of GDMT in pharmacy primary care clinics compared to usual care provided through a walk-in or mobile health clinic or virtual care.\n\nObjectives: This feasibility pilot RCT specifically seeks to: 1) Examine the feasibility of implementing the pharmacist-led prescription algorithms for DKD GDMT based on the number of individuals newly initiated and adherent to at least one of renin-angiotensin system inhibitors (RASi), sodium glucose cotransporter-2 inhibitors (SGLT2i) and nonsteroidal mineralocorticoid receptor antagonists (nsMRA) at the end of the study; 2) Determine the feasibility of conducting a pivotal RCT of the pharmacist-led prescription algorithms versus usual care based on recruitment rates and loss to follow up; and 3) Identify barriers and facilitators to the implementation of the pharmacist-led prescription algorithms in CPPCCs.\n\nResearch Plan: The investigators propose a hybrid type 1 design, combining an open-label parallel-group randomized controlled trial of 120 participants to test the feasibility of implementing pharmacist-led GDMT prescribing algorithms versus usual care. There will be up to 46 CPPCCs participating in the trial, all of which will be trained to use the validated algorithms. Potential participants will be recruited over 12 months from a centralized registry maintained by the Diabetes Care Program Nova Scotia which includes a list of patients with diabetes not rostered to a family physician. From the registry, individuals identified as having T2D will be invited to participate and those agreeing to participate will undergo screening lab tests performed at a pharmacy clinic to collaboratively establish a new diagnosis or confirm a pre-existing diagnosis of DKD (eGFR \\< 60 ml/min/1.73m2 and or UACR \\> 3 mg/mmol, persistence for at least 3 months).\n\nEligible participants will be randomized 1:1 to immediate enrolment with a community pharmacy clinic (intervention group) versus usual care (control group) and followed for 12 months. Barriers and facilitators will be identified through an electronic survey administered to pharmacist participants to capture both individual-level factors and environmental/contextual factors affecting implementation. The outcome measures will be summarized using counts and percentages and compared using chi-square test. Logistic regression will be used to report odds ratio and 95% confidence interval. Additional multivariable models will look at the association between sex, gender, race and ethnicity with adherence rate.\n\nOur primary hypothesis is that there will be a greater than 30% increase in the number of people on at least one new GDMT (RASi, SGLT2i, nsMRA) for DKD at 12 months using the provincial medication database.\n\nSecondary hypotheses include: 1) more than 30% of participants meeting eligibility criteria will undergo consent and randomization; and 2) participant loss to follow-up rate of \\<10% for study duration.\n\nStudy Significance: Population level interventions are needed to improve use of beneficial guideline-directed medical treatments. Validated pharmacist-led prescription algorithms offers an approach to improve DKD health care delivery and coordination of care."
+    },
+    "conditionsModule": {
+      "conditions": [
+        "Diabetic Kidney Disease",
+        "Type 2 Diabetes",
+        "Chronic Kidney Disease"
+      ],
+      "keywords": [
+        "diabetic kidney disease",
+        "pharmacist-led prescribing",
+        "type 2 diabetes",
+        "guideline directed medical treatments",
+        "pharmacy care models",
+        "decision support algorithym",
+        "chronic kidney disease"
+      ]
+    },
+    "designModule": {
+      "studyType": "INTERVENTIONAL",
+      "phases": [
+        "NA"
+      ],
+      "designInfo": {
+        "allocation": "RANDOMIZED",
+        "interventionModel": "PARALLEL",
+        "interventionModelDescription": "This is a type-1 hybrid effectiveness-implementation study, combining a open-label parallel-group, randomized controlled trial with a subsequent process evaluation.",
+        "primaryPurpose": "HEALTH_SERVICES_RESEARCH",
+        "maskingInfo": {
+          "masking": "NONE"
+        }
+      },
+      "enrollmentInfo": {
+        "count": 120,
+        "type": "ESTIMATED"
+      }
+    },
+    "armsInterventionsModule": {
+      "armGroups": [
+        {
+          "label": "Arm 1 ( Intervention group)",
+          "type": "ACTIVE_COMPARATOR",
+          "description": "Participants will receive ongoing clinical care from a community pharmacy primary care clinic, with pharmacists managing diabetic kidney disease using validated prescription algorithms.",
+          "interventionNames": [
+            "Other: Pharmacist-led validated diabetic kidney disease decision support algorithm."
+          ]
+        },
+        {
+          "label": "Arm 2 ( control group)",
+          "type": "PLACEBO_COMPARATOR",
+          "description": "Participants will continue with usual care through, walk-in or mobile clinics for their diabetic kidney disease care.",
+          "interventionNames": [
+            "Other: Usual care for diabetic kidney disease management without primary care provider."
+          ]
+        }
+      ],
+      "interventions": [
+        {
+          "type": "OTHER",
+          "name": "Usual care for diabetic kidney disease management without primary care provider.",
+          "description": "Participants in the control group will receive usual care for diabetic kidney disease which includes virtual care, walk-in clinics, or mobile health clinics for people without a primary care provider.",
+          "armGroupLabels": [
+            "Arm 2 ( control group)"
+          ]
+        },
+        {
+          "type": "OTHER",
+          "name": "Pharmacist-led validated diabetic kidney disease decision support algorithm.",
+          "description": "Pharmacist working in community pharmacy primary care clinic in Nova Scotia will utilize previously validated diabetic kidney disease decision support algorithms for renin-angiotensin system inhibitors (RASi), sodium-glucose co-transporter 2 inhibitors (SGLT2i), or nonsteroidal mineralocorticoid receptor antagonists (nsMRA).",
+          "armGroupLabels": [
+            "Arm 1 ( Intervention group)"
+          ]
+        }
+      ]
+    },
+    "outcomesModule": {
+      "primaryOutcomes": [
+        {
+          "measure": "Effectiveness of Community Pharmacist-Led Prescribing Algorithms to Improve Guideline-Directed Medical Therapy Use in Diabetic Kidney Disease: The Rx4DKD Randomized Controlled Trial",
+          "description": "Number of participants newly initiated on and adherent to a least one of RASi, SGLT2i and nsMRA at 12 months will be calculated for the pharmacist-led community pharmacy primary care clinic using the intervention (validated diabetic kidney disease prescribing algorithms) compared to usual care for people without a family doctor (eg. virtual care, walk-in clinic).",
+          "timeFrame": "From randomization to the end of follow-up period at 12 months."
+        },
+        {
+          "measure": "Effectiveness of Community Pharmacist-Led Prescribing Algorithms to Improve Guideline-Directed Medical Therapy Use in Diabetic Kidney Disease: The Rx4DKD Randomized Controlled Trial",
+          "description": "The number of participants who discontinue use of any newly initiated RASi, SGLT2i, nsRMA during the study follow-up period due to a treatment-related adverse event (specifically hyperkalemia, acute changes in serum creatinine or hypotension) will be calculated.",
+          "timeFrame": "From randomization to the end of the follow-up period at 12 months."
+        }
+      ],
+      "secondaryOutcomes": [
+        {
+          "measure": "Effectiveness of Community Pharmacist-Led Prescribing Algorithms to Improve Guideline-Directed Medical Therapy Use in Diabetic Kidney Disease: The Rx4DKD Randomized Controlled Trial",
+          "description": "1\\. Number of participants who meet eligibility criteria after screening who do not consent to participate.",
+          "timeFrame": "At baseline"
+        },
+        {
+          "measure": "Effectiveness of Community Pharmacy-Led Prescribing Algorithms to Improve Guideline-Directed Medical Therapy Use in Diabetic Kidney Disease: The Rx4DKD Randomized Controlled Trial.",
+          "description": "Number of consenting participants who are lost to follow-up at 12 months.",
+          "timeFrame": "From randomization to end of follow-up period at 12 months."
+        },
+        {
+          "measure": "Effectiveness of Community Pharmacist-Led Prescribing Algorithms to Improve Guideline-Directed Medical Therapy Use in Diabetic Kidney Disease: The Rx4DKD Randomized Controlled Trial",
+          "description": "Barriers and Facilitators using an electronic survey developed utilizing the theoretical domains framework will capture individual-level factors and environmental/contextual factors affecting implementation.",
+          "timeFrame": "From randomization to end of follow-up perio at 12 months."
+        }
+      ]
+    },
+    "eligibilityModule": {
+      "eligibilityCriteria": "Inclusion Criteria:\n\n* Adults \u226518 years with T2D and DKD (eGFR\u2265 30-60 ml/min/1.73m2 and/or UACR\u22653 mg/mmol)\n* Adults who do not have primary care provider,\n* Adults who are eligible for initiation of treatment with RASi, SGLT2i or nsMRA\n\nExclusion Criteria:\n\n* Hypotension\n* Type 1 diabetes\n* History of allergy or intolerance to either, renin angiotensin system inhibitor (RASi), SGLT2 inhibitor (SGLT2i) and nonsteroidal mineralocorticoid receptor antagonist (nsMRA).\n* Already receiving all three medications: RASi, SGLT2i, and nsMRA .\n* Exceed algorithm thresholds for potassium levels or eGFR less than 30 mL/min/1.73m\u00b2\n* Limited life expectancy of less than 1 year\n* Followed by a subspecialty physician (e.g., nephrologist or endocrinologist)\n* Unable to give consent",
+      "healthyVolunteers": false,
+      "sex": "ALL",
+      "minimumAge": "18 Years",
+      "stdAges": [
+        "ADULT",
+        "OLDER_ADULT"
+      ]
+    },
+    "contactsLocationsModule": {
+      "centralContacts": [
+        {
+          "name": "Jo-Anne Wilson, BSc Pharm, ACPR, MEd, PharmD",
+          "role": "CONTACT",
+          "phone": "9024886623",
+          "email": "Jo-Anne.wilson@dal.ca"
+        },
+        {
+          "name": "Laura Sills, RN, BSN",
+          "role": "CONTACT",
+          "phone": "+1-(289)-201-4175",
+          "email": "Laura.Sillis@nshelath.ca"
+        }
+      ],
+      "locations": [
+        {
+          "facility": "Dalhousie University",
+          "status": "RECRUITING",
+          "city": "Halifax",
+          "state": "Nova Scotia",
+          "zip": "b3h 2y9",
+          "country": "Canada",
+          "contacts": [
+            {
+              "name": "Jo-Anne Wilson",
+              "role": "CONTACT",
+              "phone": "9024886623",
+              "email": "jo-anne.wilson@dal.ca"
+            }
+          ],
+          "geoPoint": {
+            "lat": 44.64269,
+            "lon": -63.57688
+          }
+        }
+      ]
+    },
+    "ipdSharingStatementModule": {
+      "ipdSharing": "UNDECIDED"
+    }
+  },
+  "derivedSection": {
+    "miscInfoModule": {
+      "versionHolder": "2026-11-10"
+    },
+    "conditionBrowseModule": {
+      "meshes": [
+        {
+          "id": "D003928",
+          "term": "Diabetic Nephropathies"
+        },
+        {
+          "id": "D003924",
+          "term": "Diabetes Mellitus, Type 2"
+        },
+        {
+          "id": "D051436",
+          "term": "Renal Insufficiency, Chronic"
+        }
+      ],
+      "ancestors": [
+        {
+          "id": "D007674",
+          "term": "Kidney Diseases"
+        },
+        {
+          "id": "D014570",
+          "term": "Urologic Diseases"
+        },
+        {
+          "id": "D052776",
+          "term": "Female Urogenital Diseases"
+        },
+        {
+          "id": "D005261",
+          "term": "Female Urogenital Diseases and Pregnancy Complications"
+        },
+        {
+          "id": "D000091642",
+          "term": "Urogenital Diseases"
+        },
+        {
+          "id": "D052801",
+          "term": "Male Urogenital Diseases"
+        },
+        {
+          "id": "D048909",
+          "term": "Diabetes Complications"
+        },
+        {
+          "id": "D003920",
+          "term": "Diabetes Mellitus"
+        },
+        {
+          "id": "D004700",
+          "term": "Endocrine System Diseases"
+        },
+        {
+          "id": "D044882",
+          "term": "Glucose Metabolism Disorders"
+        },
+        {
+          "id": "D008659",
+          "term": "Metabolic Diseases"
+        },
+        {
+          "id": "D009750",
+          "term": "Nutritional and Metabolic Diseases"
+        },
+        {
+          "id": "D051437",
+          "term": "Renal Insufficiency"
+        },
+        {
+          "id": "D002908",
+          "term": "Chronic Disease"
+        },
+        {
+          "id": "D020969",
+          "term": "Disease Attributes"
+        },
+        {
+          "id": "D010335",
+          "term": "Pathologic Processes"
+        },
+        {
+          "id": "D013568",
+          "term": "Pathological Conditions, Signs and Symptoms"
+        }
+      ]
+    },
+    "interventionBrowseModule": {
+      "meshes": [
+        {
+          "id": "D058007",
+          "term": "Physicians, Primary Care"
+        }
+      ],
+      "ancestors": [
+        {
+          "id": "D010820",
+          "term": "Physicians"
+        },
+        {
+          "id": "D006282",
+          "term": "Health Personnel"
+        },
+        {
+          "id": "D005159",
+          "term": "Health Care Facilities Workforce and Services"
+        }
+      ]
+    }
+  },
+  "hasResults": false
+}

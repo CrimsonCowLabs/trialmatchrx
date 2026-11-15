@@ -209,7 +209,7 @@ def summarize(study: dict[str, Any]) -> TrialDetail:
         phase="/".join(phases) or None,
         overall_status=proto.get("statusModule", {}).get("overallStatus"),
         eligibility_text=proto.get("eligibilityModule", {}).get("eligibilityCriteria"),
-        criteria=[],  # HACK(demo): empty until the compiler (issue #3) supplies criteria.
+        criteria=[],  # the trials route fills this from the compile cache
     )
 
 

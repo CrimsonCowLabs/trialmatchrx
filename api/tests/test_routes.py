@@ -5,6 +5,10 @@ from collections.abc import Iterator
 import pytest
 
 from app.config import get_settings
+from app.main import app
+from app.pipeline.fixture_model import FixtureChatModel, load_llm_fixture
+from app.pipeline.study_source import load_fixture_study
+from app.routers.trials import compile_model_factory
 from app.schemas import (
     Criterion,
     EvalLatest,
@@ -15,7 +19,7 @@ from app.schemas import (
     TrialDetail,
 )
 from app.sources import ctgov
-from tests.ctgov_fake import load
+from tests.ctgov_fake import FakeCtgov
 from tests.sse import client, parse_sse
 
 MATCH_BODY = {"note": "61M, T2D, HbA1c 8.4%, eGFR 48, on metformin", "condition": "t2d"}
@@ -80,19 +84,57 @@ async def test_closer_starts_a_streamed_run() -> None:
     assert any(m.data.get("kind") == "tool" for m in messages if m.event == "trace")
 
 
-async def test_trial_and_compile() -> None:
-    study = load("study.json")
-    ctgov.cache_study(study)
-    nct, _ = ctgov.study_key(study)
-    async with client() as c:
-        trial = TrialDetail.model_validate((await c.get(f"/api/trials/{nct}")).json())
-        compiled = await c.post(f"/api/trials/{nct}/compile", json={"force": True})
-        run_id = compiled.headers["x-run-id"]
-        trace = (await c.get(f"/api/runs/{run_id}/trace")).json()
+FIXTURE_NCT = "NCT07271186"
 
-    assert trial.nct_id == nct
-    assert [Criterion.model_validate(c) for c in compiled.json()]
-    assert [e["name"] for e in trace] == ["compile_criteria"]
+
+@pytest.fixture
+def fixture_compile_model() -> Iterator[FixtureChatModel]:
+    model = FixtureChatModel(output=load_llm_fixture(FIXTURE_NCT))
+    app.dependency_overrides[compile_model_factory] = lambda: lambda: model
+    yield model
+    app.dependency_overrides.pop(compile_model_factory)
+
+
+async def test_trial_and_compile(fixture_compile_model: FixtureChatModel) -> None:
+    ctgov.cache_study(load_fixture_study(FIXTURE_NCT))
+    async with client() as c:
+        before = TrialDetail.model_validate((await c.get(f"/api/trials/{FIXTURE_NCT}")).json())
+        compiled = await c.post(f"/api/trials/{FIXTURE_NCT}/compile", json={"force": False})
+        again = await c.post(f"/api/trials/{FIXTURE_NCT}/compile", json={})
+        after = TrialDetail.model_validate((await c.get(f"/api/trials/{FIXTURE_NCT}")).json())
+        trace = (await c.get(f"/api/runs/{again.headers['x-run-id']}/trace")).json()
+
+    assert before.nct_id == FIXTURE_NCT
+    assert before.criteria == []  # not compiled yet
+    assert compiled.status_code == 200
+    criteria = [Criterion.model_validate(c) for c in compiled.json()]
+    assert criteria[:2] == [c for c in criteria if c.id.startswith("inc-age")]
+    assert after.criteria == criteria
+    assert again.json() == compiled.json()
+    assert fixture_compile_model.calls == 1
+    assert any(e["name"] == "ctgov.cache_lookup" and e["cache_hit"] for e in trace)
+    lookup = next(e for e in trace if e["name"] == "cache_lookup")
+    assert lookup["cache_hit"] is True
+
+
+async def test_compile_unknown_trial_is_404() -> None:
+    FakeCtgov().install()  # answers 404 for any study it doesn't hold
+    async with client() as c:
+        response = await c.post("/api/trials/NCT99999999/compile", json={"force": True})
+    assert response.status_code == 404
+
+
+async def test_compile_without_api_key_on_a_cache_miss_is_503() -> None:
+    settings = get_settings()
+    original, settings.anthropic_api_key = settings.anthropic_api_key, None
+    ctgov.cache_study(load_fixture_study(FIXTURE_NCT))
+    try:
+        async with client() as c:
+            response = await c.post(f"/api/trials/{FIXTURE_NCT}/compile", json={"force": True})
+    finally:
+        settings.anthropic_api_key = original
+    assert response.status_code == 503
+    assert "ANTHROPIC_API_KEY" in response.json()["detail"]
 
 
 async def test_feasibility_eval_health() -> None:

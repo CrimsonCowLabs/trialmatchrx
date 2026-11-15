@@ -1,0 +1,339 @@
+{
+  "protocolSection": {
+    "identificationModule": {
+      "nctId": "NCT07868666",
+      "orgStudyIdInfo": {
+        "id": "NEPH-2026-34567"
+      },
+      "secondaryIdInfos": [
+        {
+          "id": "1K23DK144716-01",
+          "type": "NIH",
+          "link": "https://reporter.nih.gov/quickSearch/1K23DK144716-01"
+        }
+      ],
+      "organization": {
+        "fullName": "University of Minnesota",
+        "class": "OTHER"
+      },
+      "briefTitle": "Clinical Decision Support for SGLT2i After AKI in Type 2 Diabetes",
+      "officialTitle": "Clinical Decision Support for SGLT2i After AKI in Type 2 Diabetes Pilot Study"
+    },
+    "statusModule": {
+      "statusVerifiedDate": "2026-11",
+      "overallStatus": "RECRUITING",
+      "expandedAccessInfo": {
+        "hasExpandedAccess": false
+      },
+      "startDateStruct": {
+        "date": "2026-11-02",
+        "type": "ACTUAL"
+      },
+      "primaryCompletionDateStruct": {
+        "date": "2032-10-31",
+        "type": "ESTIMATED"
+      },
+      "completionDateStruct": {
+        "date": "2032-10-31",
+        "type": "ESTIMATED"
+      },
+      "studyFirstSubmitDate": "2026-10-05",
+      "studyFirstSubmitQcDate": "2026-10-05",
+      "studyFirstPostDateStruct": {
+        "date": "2026-10-09",
+        "type": "ACTUAL"
+      },
+      "lastUpdateSubmitDate": "2026-11-02",
+      "lastUpdatePostDateStruct": {
+        "date": "2026-11-04",
+        "type": "ACTUAL"
+      }
+    },
+    "sponsorCollaboratorsModule": {
+      "responsibleParty": {
+        "type": "SPONSOR"
+      },
+      "leadSponsor": {
+        "name": "University of Minnesota",
+        "class": "OTHER"
+      },
+      "collaborators": [
+        {
+          "name": "National Institute of Diabetes and Digestive and Kidney Diseases (NIDDK)",
+          "class": "NIH"
+        }
+      ]
+    },
+    "oversightModule": {
+      "isFdaRegulatedDrug": false,
+      "isFdaRegulatedDevice": false
+    },
+    "descriptionModule": {
+      "briefSummary": "This pilot study will evaluate the feasibility of using a clinical decision support(CDS) message to support consideration of SGLT2 inhibitor prescribing in patients with type 2 diabetes who recently had acute kidney injury.\n\nParticipating M Health Fairview primary care clinics will be randomized to either receive the clinical decision support intervention or continue usual care. In intervention clinics, providers or clinic pharmacists will receive a message before a scheduled encounter with an eligible patient. The message is intended to support clinical decision-making about SGLT2 inhibitor use, but prescribing decisions will remain with the patient's usual clinical care team.\n\nThe study will assess feasibility outcomes, including identification of eligible patients, delivery of clinical decision support (CDS) messages, provider/pharmacist receipt of CDS messages, SGLT2i consideration, SGLT2i prescribing, and availability of follow-up kidney function data in the electronic health record.",
+      "detailedDescription": "Sodium-glucose co-transporter-2 inhibitors are FDA-approved medications for type 2 diabetes and have been shown to reduce kidney and cardiovascular risks in several patient populations. However, providers may be hesitant to prescribe SGLT2 inhibitors to patients who have recently experienced acute kidney injury because of concerns about kidney function changes after initiation.\n\nThis study is a pilot adaptive cluster randomized clinical trial conducted in participating M Health Fairview primary care clinics. Clinics will be randomized 1:1 to receive a clinical decision support intervention or continue usual care. The intervention consists of a message sent to the primary care provider or clinic pharmacist before a scheduled encounter with an eligible patient.\n\nEligible patients will be adults aged 30 to 75 years with type 2 diabetes, a history of acute kidney injury during a hospitalization with discharge within the prior year, and kidney function meeting study criteria. The study team will not provide SGLT2 inhibitors or direct treatment. All prescribing decisions, including whether to prescribe an SGLT2 inhibitor and which medication to use, will remain with the patient's usual provider and clinical care team.\n\nThe adaptive component applies only within the intervention arm. Patients in intervention clinics who attend a qualifying encounter but have no evidence of SGLT2i consideration may be randomized before a later qualifying encounter to receive either no further CDS messages or additional CDS messages.\n\nThe primary focus of this pilot study is feasibility. Outcomes will be collected from the electronic health record and the AHC/M Health Fairview data shelter. Feasibility outcomes include the number of eligible patients identified, CDS messages sent, providers or pharmacists receiving messages, patients with SGLT2i mentioned or prescribed, patients with follow-up kidney function data, and patients undergoing the second adaptive randomization step."
+    },
+    "conditionsModule": {
+      "conditions": [
+        "Type 2 Diabetes Mellitus",
+        "Acute Kidney Injury",
+        "Chronic Kidney Diseases"
+      ],
+      "keywords": [
+        "SGLT2 inhibitor",
+        "Acute kidney injury",
+        "Type 2 diabetes"
+      ]
+    },
+    "designModule": {
+      "studyType": "INTERVENTIONAL",
+      "phases": [
+        "NA"
+      ],
+      "designInfo": {
+        "allocation": "RANDOMIZED",
+        "interventionModel": "PARALLEL",
+        "interventionModelDescription": "This is a pilot adaptive cluster randomized clinical trial. Participating M Health Fairview primary care clinics will be randomized 1:1 to receive a clinical decision support intervention or continue usual care. The intervention consists of a clinical decision support(CDS) message sent to primary care providers or clinic pharmacists before scheduled encounters with eligible patients. Patients in the intervention arm who attend a qualifying encounter but have no evidence of SGLT2i consideration may undergo a second adaptive randomization to either no further CDS messages or additional CDS messages before a future qualifying encounter.",
+        "primaryPurpose": "HEALTH_SERVICES_RESEARCH",
+        "maskingInfo": {
+          "masking": "NONE"
+        }
+      },
+      "enrollmentInfo": {
+        "count": 250,
+        "type": "ESTIMATED"
+      }
+    },
+    "armsInterventionsModule": {
+      "armGroups": [
+        {
+          "label": "Clinical Decision Support",
+          "type": "EXPERIMENTAL",
+          "description": "Primary care clinics randomized to this arm will receive the clinical decision support intervention. For eligible patients, a message will be sent to the scheduled primary care provider or clinic pharmacist before a qualifying encounter. The message provides information to support consideration of SGLT2i prescribing in patients with type 2 diabetes and recent acute kidney injury. Prescribing decisions remain with the patient's usual clinical care team.",
+          "interventionNames": [
+            "Other: Clinical Decision Support Message"
+          ]
+        },
+        {
+          "label": "Usual Care",
+          "type": "NO_INTERVENTION",
+          "description": "Primary care clinics randomized to this arm will continue usual care. No study clinical decision support message will be sent. Patients may still receive SGLT2i prescriptions as part of routine clinical care at the discretion of their usual providers."
+        }
+      ],
+      "interventions": [
+        {
+          "type": "OTHER",
+          "name": "Clinical Decision Support Message",
+          "description": "The clinical decision support intervention is a message sent to primary care providers or clinic pharmacists before a scheduled encounter with an eligible patient. The message provides key information to support consideration of SGLT2i prescribing in patients with type 2 diabetes and recent acute kidney injury. The study team will not provide study medication, and prescribing decisions will remain with the usual clinical care team.",
+          "armGroupLabels": [
+            "Clinical Decision Support"
+          ],
+          "otherNames": [
+            "CDS Message"
+          ]
+        }
+      ]
+    },
+    "outcomesModule": {
+      "primaryOutcomes": [
+        {
+          "measure": "Feasibility of Identifying Eligible Patients",
+          "description": "Feasibility will be assessed by the number of patients meeting study inclusion and exclusion criteria who are identified as having a qualifying scheduled primary care or clinic pharmacist appointment in participating clinics.",
+          "timeFrame": "From study start through completion of eligible patient identification, up to 4 years"
+        },
+        {
+          "measure": "Feasibility of Clinical Decision Support Message Delivery",
+          "description": "Feasibility of CDS delivery will be assessed by the number of CDS messages sent for first qualifying appointments, the number of intervention messages sent for all qualifying appointments, and the number of unique providers or pharmacists receiving CDS messages.",
+          "timeFrame": "From study start through completion of the CDS intervention period, up to 4 years"
+        },
+        {
+          "measure": "SGLT2i Consideration After Clinical Decision Support",
+          "description": "SGLT2i consideration will be assessed by the number of patients with any mention of SGLT2i in encounter notes or related clinical documentation for the first qualifying primary care encounter.",
+          "timeFrame": "At the first qualifying primary care encounter"
+        },
+        {
+          "measure": "Follow-up Kidney Function Data Availability",
+          "description": "Feasibility of outcome data capture will be assessed by the number of patients with follow-up serum creatinine values available in the electronic health record for follow-up eGFR calculation after the intervention.",
+          "timeFrame": "Within 1 year after the qualifying encounter"
+        },
+        {
+          "measure": "SGLT2i Prescribing After Qualifying Encounter",
+          "description": "SGLT2i prescribing will be assessed by the number of patients with an SGLT2i prescribed within 4 weeks after the first qualifying primary care appointment and within 1 year after the AKI hospitalization discharge date.",
+          "timeFrame": "Within 4 weeks after the first qualifying primary care appointment and within 1 year after AKI hospitalization discharge"
+        },
+        {
+          "measure": "Feasibility of Adaptive Second Randomization",
+          "description": "Feasibility of the adaptive design will be assessed by the number of patients undergoing the second randomization step and the number of patients with an SGLT2i prescribed within 4 weeks after the second randomization.",
+          "timeFrame": "During the intervention period, up to 4 years"
+        }
+      ],
+      "secondaryOutcomes": [
+        {
+          "measure": "Forty Percent eGFR Reduction",
+          "description": "The number of patients with a 40% reduction in eGFR at the final available eGFR within 1 year of AKI onset will be assessed, including time to event from AKI onset.",
+          "timeFrame": "Within 1 year after AKI onset"
+        },
+        {
+          "measure": "Urine Albumin-to-Creatinine Ratio Follow-up and Relative Reduction",
+          "description": "The number of patients with follow-up urine albumin-to-creatinine ratio measured will be assessed. Among patients with a known pre-AKI value, relative reduction in urine albumin-to-creatinine ratio will be calculated using available electronic health record laboratory data.",
+          "timeFrame": "Within 1 year after study enrollment"
+        },
+        {
+          "measure": "Hospitalization",
+          "description": "Hospitalization will be assessed using electronic health record data as the number of patients with an event and time to event.",
+          "timeFrame": "Within 1 year after study enrollment"
+        },
+        {
+          "measure": "Recurrent Acute Kidney Injury",
+          "description": "Recurrent acute kidney injury will be assessed using electronic health record data as the number of patients with an event and time to event.",
+          "timeFrame": "Within 1 year after study enrollment"
+        },
+        {
+          "measure": "Mortality",
+          "description": "Mortality will be assessed using electronic health record data as the number of patients with an event and time to event.",
+          "timeFrame": "Within 1 year after study enrollment"
+        }
+      ]
+    },
+    "eligibilityModule": {
+      "eligibilityCriteria": "Inclusion Criteria for Providers and Pharmacists:\n\n* Assigned to work in a primary care specialty as a medical provider or assigned to work as a clinic pharmacist\n* Assigned to work in one of the participating study clinics\n\nInclusion Criteria for Patients:\n\n* Scheduled to be seen in a participating clinic with a physician or advanced practice provider in a primary care specialty or a clinic pharmacist\n* Medical history of acute kidney injury during a hospitalization with discharge within 1 year before the scheduled appointment\n* Medical history of type 2 diabetes mellitus (by billing code)\n* Age 30 to 75 years at the date of study enrollment\n* Available eGFR from labs more than 3 business days before the scheduled appointment and after AKI onset that is at least 30 mL/min/1.73 m\u00b2\n* Either a serum creatinine lab measured after discharge from the hospitalization including the AKI, or the last serum creatinine lab during the hospitalization with AKI is less than 0.3 mg/dL above the patient's baseline serum creatinine concentration\n\nExclusion Criteria for Providers and Pharmacists:\n\n* None\n\nExclusion Criteria for Patients:\n\n* Opted out of research use of AHC/M Health Fairview data shelter data\n* History of kidney transplantation as a recipient(by billing code)\n* Pregnancy documented in AHC/M Health Fairview data shelter data (by billing code)\n* SGLT2i allergy in the EHR allergy list\n* Medical history of diabetic ketoacidosis, dementia, hospice care, or oncology care (by billing code and/or encounter)\n* Medical history in the prior 1 year of indwelling Foley urinary catheter, cystitis, pyelonephritis, prostatitis, or urinary tract infection (by billing code)\n* Serum creatinine rise of at least 0.3 mg/dL between the two most recent serum creatinine measurements\n* Children\n* Prisoners",
+      "healthyVolunteers": false,
+      "sex": "ALL",
+      "minimumAge": "30 Years",
+      "maximumAge": "75 Years",
+      "stdAges": [
+        "ADULT",
+        "OLDER_ADULT"
+      ]
+    },
+    "contactsLocationsModule": {
+      "centralContacts": [
+        {
+          "name": "Daniel P. Murphy",
+          "role": "CONTACT",
+          "phone": "612-624-9444",
+          "email": "murph670@umn.edu"
+        }
+      ],
+      "overallOfficials": [
+        {
+          "name": "Daniel Murphy",
+          "affiliation": "University of Minnesota",
+          "role": "PRINCIPAL_INVESTIGATOR"
+        }
+      ],
+      "locations": [
+        {
+          "facility": "University of Minnesota",
+          "status": "RECRUITING",
+          "city": "Minneapolis",
+          "state": "Minnesota",
+          "zip": "55455",
+          "country": "United States",
+          "contacts": [
+            {
+              "name": "Daniel P Murphy",
+              "role": "CONTACT",
+              "phone": "612-624-9444",
+              "email": "murph670@umn.edu"
+            }
+          ],
+          "geoPoint": {
+            "lat": 44.97997,
+            "lon": -93.26384
+          }
+        }
+      ]
+    },
+    "ipdSharingStatementModule": {
+      "ipdSharing": "NO"
+    }
+  },
+  "derivedSection": {
+    "miscInfoModule": {
+      "versionHolder": "2026-11-10"
+    },
+    "conditionBrowseModule": {
+      "meshes": [
+        {
+          "id": "D003924",
+          "term": "Diabetes Mellitus, Type 2"
+        },
+        {
+          "id": "D058186",
+          "term": "Acute Kidney Injury"
+        },
+        {
+          "id": "D051436",
+          "term": "Renal Insufficiency, Chronic"
+        }
+      ],
+      "ancestors": [
+        {
+          "id": "D003920",
+          "term": "Diabetes Mellitus"
+        },
+        {
+          "id": "D044882",
+          "term": "Glucose Metabolism Disorders"
+        },
+        {
+          "id": "D008659",
+          "term": "Metabolic Diseases"
+        },
+        {
+          "id": "D009750",
+          "term": "Nutritional and Metabolic Diseases"
+        },
+        {
+          "id": "D004700",
+          "term": "Endocrine System Diseases"
+        },
+        {
+          "id": "D051437",
+          "term": "Renal Insufficiency"
+        },
+        {
+          "id": "D007674",
+          "term": "Kidney Diseases"
+        },
+        {
+          "id": "D014570",
+          "term": "Urologic Diseases"
+        },
+        {
+          "id": "D052776",
+          "term": "Female Urogenital Diseases"
+        },
+        {
+          "id": "D005261",
+          "term": "Female Urogenital Diseases and Pregnancy Complications"
+        },
+        {
+          "id": "D000091642",
+          "term": "Urogenital Diseases"
+        },
+        {
+          "id": "D052801",
+          "term": "Male Urogenital Diseases"
+        },
+        {
+          "id": "D002908",
+          "term": "Chronic Disease"
+        },
+        {
+          "id": "D020969",
+          "term": "Disease Attributes"
+        },
+        {
+          "id": "D010335",
+          "term": "Pathologic Processes"
+        },
+        {
+          "id": "D013568",
+          "term": "Pathological Conditions, Signs and Symptoms"
+        }
+      ]
+    }
+  },
+  "hasResults": false
+}

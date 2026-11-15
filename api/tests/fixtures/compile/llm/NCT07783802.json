@@ -1,0 +1,292 @@
+{
+  "criteria": [
+    {
+      "type": "inclusion",
+      "text": "hsCRP ≥2 mg/L and ≤15 mg/L at screening",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.hscrp",
+        "op": ">=",
+        "value": 2,
+        "unit": "mg/L"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "hsCRP ≥2 mg/L and ≤15 mg/L at screening",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.hscrp",
+        "op": "<=",
+        "value": 15,
+        "unit": "mg/L"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "At least one of the following chronic conditions:",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Acute cardiovascular event within 60 days prior to screening",
+      "category": "history",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Acute decompensated heart failure hospitalization within 60 days prior to screening",
+      "category": "history",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Planned coronary revascularization (percutaneous coronary intervention or coronary artery bypass grafting) or major surgery at the time of randomization",
+      "category": "procedure",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "New York Heart Association Class III or IV heart failure",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Uncontrolled hypertension at screening (systolic blood pressure (BP) ≥160 mmHg or diastolic BP ≥100 mmHg)",
+      "category": "lab",
+      "predicate": {
+        "field": "vitals.sbp",
+        "op": ">=",
+        "value": 160,
+        "unit": "mmHg"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Uncontrolled hypertension at screening (systolic blood pressure (BP) ≥160 mmHg or diastolic BP ≥100 mmHg)",
+      "category": "lab",
+      "predicate": {
+        "field": "vitals.dbp",
+        "op": ">=",
+        "value": 100,
+        "unit": "mmHg"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Type 1 diabetes",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "type 1 diabetes"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Type 2 diabetes with Hemoglobin A1c ≥9.0% (86 mmol/mol) at screening",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.hba1c",
+        "op": ">=",
+        "value": 9.0,
+        "unit": "%"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Nephrotic syndrome",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "nephrotic syndrome"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "estimated glomerular filtration rate (eGFR) <15 mL/min/1.73 m²",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.egfr",
+        "op": "<",
+        "value": 15,
+        "unit": "mL/min/1.73m2"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "history of kidney transplant",
+      "category": "procedure",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "kidney transplant"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Dialysis or acute kidney injury within 60 days prior to screening",
+      "category": "history",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Congenital/hereditary kidney disease",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "in",
+        "value": [
+          "congenital kidney disease",
+          "hereditary kidney disease"
+        ]
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "polycystic kidney disease",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "polycystic kidney disease"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "lupus nephritis",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "lupus nephritis"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "antineutrophil cytoplasmic antibody-associated vasculitis",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "anca-associated vasculitis"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Active tuberculosis",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "active tuberculosis"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "untreated latent tuberculosis",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "known hepatitis B or hepatitis C infection",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "in",
+        "value": [
+          "hepatitis b",
+          "hepatitis c"
+        ]
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Serious, opportunistic, chronic, or recurrent infection requiring treatment within 12 weeks prior to screening",
+      "category": "history",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Significant active autoimmune disease",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Suspected or confirmed immunocompromised state (e.g., HIV infection)",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "History of peptic ulcer disease or gastrointestinal ulceration within 12 months prior to screening",
+      "category": "history",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "History of symptomatic diverticular disease (diverticulitis)",
+      "category": "history",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "diverticulitis"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "gastrointestinal perforation",
+      "category": "history",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "gastrointestinal perforation"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "major gastrointestinal surgery",
+      "category": "procedure",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Mechanical heart valve prosthesis requiring chronic vitamin K antagonist anticoagulation",
+      "category": "procedure",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Use of colchicine within 14 days prior to screening or anticipated need during the study",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Use of immunosuppressive or immunomodulatory agents, including other biologic anti-IL-6 therapies, within specified windows prior to screening",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Use of systemic corticosteroids within 14 days prior to screening",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Chronic use of nonsteroidal anti-inflammatory drugs (NSAIDs)",
+      "category": "medication",
+      "predicate": {
+        "field": "meds",
+        "op": "has",
+        "value": "nsaid"
+      }
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "criteria": [
+    {
+      "type": "inclusion",
+      "text": "Diagnosed with type 2 diabetes (T2D)",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "type 2 diabetes"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "HbA1c less than or equal to (≤) 10 % (≤ 86 millimoles per mole [mmol/mol])",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.hba1c",
+        "op": "<=",
+        "value": 10,
+        "unit": "%"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "Kidney impairment defined either by:",
+      "category": "lab",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "Treatment with maximum labelled or tolerated dose of a renin-angiotensin-aldosterone system (RAAS) blocking agent including an angiotensin-converting enzyme inhibitor or an angiotensin II receptor blocker (ARB), unless such treatment is contraindicated or not tolerated.",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "Treatment dose must be stable for at least 4 weeks prior to the date of the laboratory assessments used for determination of inclusion criterion and kept stable until screening.",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Congenital or hereditary kidney diseases including polycystic kidney disease",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "in",
+        "value": [
+          "congenital kidney disease",
+          "hereditary kidney disease",
+          "polycystic kidney disease"
+        ]
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "autoimmune kidney diseases including glomerulonephritis",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "in",
+        "value": [
+          "autoimmune kidney disease",
+          "glomerulonephritis"
+        ]
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "congenital urinary tract malformations",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "congenital urinary tract malformation"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Use of any glucagon-like peptide-1 receptor agonist (GLP1 RA) within 30 days prior to screening.",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Myocardial infarction, stroke, hospitalisation for unstable angina pectoris or transient ischaemic attack within 60 days prior to the day of screening.",
+      "category": "history",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Current (or within 90 days) chronic or intermittent haemodialysis or peritoneal dialysis.",
+      "category": "procedure",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Uncontrolled and potentially unstable diabetic retinopathy or maculopathy.",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Combination use of an angiotensin-converting enzyme inhibitor and an angiotensin-II receptor blocker (ARB).",
+      "category": "medication",
+      "predicate": null
+    }
+  ]
+}

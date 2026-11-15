@@ -1,0 +1,586 @@
+{
+  "protocolSection": {
+    "identificationModule": {
+      "nctId": "NCT07900438",
+      "orgStudyIdInfo": {
+        "id": "NN9535-8615"
+      },
+      "secondaryIdInfos": [
+        {
+          "id": "UT111-1328-4876",
+          "type": "OTHER",
+          "domain": "World Health Organization (WHO)"
+        }
+      ],
+      "organization": {
+        "fullName": "Novo Nordisk A/S",
+        "class": "INDUSTRY"
+      },
+      "briefTitle": "A Research Study Looking at Kidney and Heart Health in Adults With Type 2 Diabetes and Chronic Kidney Disease Treated With Semaglutide in China",
+      "officialTitle": "A Study of Kidney and Cardiovascular Endpoints in Adults With Type 2 Diabetes and Chronic Kidney Disease Treated With Semaglutide in China"
+    },
+    "statusModule": {
+      "statusVerifiedDate": "2026-10",
+      "overallStatus": "RECRUITING",
+      "expandedAccessInfo": {
+        "hasExpandedAccess": false
+      },
+      "startDateStruct": {
+        "date": "2026-10-12",
+        "type": "ACTUAL"
+      },
+      "primaryCompletionDateStruct": {
+        "date": "2029-12-20",
+        "type": "ESTIMATED"
+      },
+      "completionDateStruct": {
+        "date": "2030-01-24",
+        "type": "ESTIMATED"
+      },
+      "studyFirstSubmitDate": "2026-10-21",
+      "studyFirstSubmitQcDate": "2026-10-21",
+      "studyFirstPostDateStruct": {
+        "date": "2026-10-28",
+        "type": "ACTUAL"
+      },
+      "lastUpdateSubmitDate": "2026-10-21",
+      "lastUpdatePostDateStruct": {
+        "date": "2026-10-28",
+        "type": "ACTUAL"
+      }
+    },
+    "sponsorCollaboratorsModule": {
+      "responsibleParty": {
+        "type": "SPONSOR"
+      },
+      "leadSponsor": {
+        "name": "Novo Nordisk A/S",
+        "class": "INDUSTRY"
+      }
+    },
+    "oversightModule": {
+      "oversightHasDmc": false,
+      "isFdaRegulatedDrug": false,
+      "isFdaRegulatedDevice": false
+    },
+    "descriptionModule": {
+      "briefSummary": "The purpose of this clinical study is to find out what happens to kidney and heart health during treatment with a medicine called semaglutide, which is given as an injection under the skin. The clinical study will also look at whether this medicine is safe for adults who have type 2 diabetes (T2D) and chronic kidney disease (CKD). This study will last for about 60 to 172 weeks."
+    },
+    "conditionsModule": {
+      "conditions": [
+        "Cardiovascular Risk",
+        "Chronic Kidney Disease"
+      ]
+    },
+    "designModule": {
+      "studyType": "INTERVENTIONAL",
+      "phases": [
+        "PHASE4"
+      ],
+      "designInfo": {
+        "allocation": "NA",
+        "interventionModel": "SINGLE_GROUP",
+        "primaryPurpose": "TREATMENT",
+        "maskingInfo": {
+          "masking": "NONE"
+        }
+      },
+      "enrollmentInfo": {
+        "count": 300,
+        "type": "ESTIMATED"
+      }
+    },
+    "armsInterventionsModule": {
+      "armGroups": [
+        {
+          "label": "Semaglutide",
+          "type": "EXPERIMENTAL",
+          "description": "Participants will receive subcutaneous injection of semaglutide once weekly.",
+          "interventionNames": [
+            "Drug: Semaglutide"
+          ]
+        }
+      ],
+      "interventions": [
+        {
+          "type": "DRUG",
+          "name": "Semaglutide",
+          "description": "Semaglutide is administered subcutaneously once weekly.",
+          "armGroupLabels": [
+            "Semaglutide"
+          ]
+        }
+      ]
+    },
+    "outcomesModule": {
+      "primaryOutcomes": [
+        {
+          "measure": "Time to first occurrence of a composite endpoint consisting of: Onset of persistent reduction of \u2265 50% in eGFR compared with baseline, Onset of persistent eGFR < 15 mL/min/1.73 m^2, Initiation of chronic kidney replacement therapy, Kidney death, CV death",
+          "description": "Measured in month(s)",
+          "timeFrame": "From Baseline (Week 0) up to Week 169"
+        }
+      ],
+      "secondaryOutcomes": [
+        {
+          "measure": "Change in estimated glomerular filtration rate (eGFR) (creatinine CKDEPI, 2009)",
+          "description": "Measured in milliliters per minute per 1.73 square meters (mL/min/1.73 m\\^2)",
+          "timeFrame": "From Baseline (Week 0) up to Week 169"
+        },
+        {
+          "measure": "Change in eGFR (creatinine CKDEPI, 2012)",
+          "description": "Measured in mL/min/1.73 m\\^2",
+          "timeFrame": "From Baseline (Week 0) up to Week 169"
+        },
+        {
+          "measure": "Change in eGFR (cystatin C-creatinine CKD-EPI, 2021)",
+          "description": "Measured in mL/min/1.73 m\\^2",
+          "timeFrame": "From Baseline (Week 0) up to Week 169"
+        },
+        {
+          "measure": "Relative change in Urine Albumin-to-Creatinine Ratio (UACR)",
+          "description": "Measured in Percentage (%)",
+          "timeFrame": "From Baseline (Week 0) up to Week 169"
+        },
+        {
+          "measure": "Time to all-cause death",
+          "description": "Measured in month(s)",
+          "timeFrame": "From Baseline (Week 0) up to Week 169"
+        },
+        {
+          "measure": "Time to first occurrence of composite MACE endpoint consisting of Non-fatal myocardial infarction, Non-fatal stroke & CV death",
+          "description": "Measured in month(s)",
+          "timeFrame": "From Baseline (Week 0) up to Week 169"
+        },
+        {
+          "measure": "Change in glycated haemoglobin (HbA1c)",
+          "description": "Measured in percentage point",
+          "timeFrame": "From Baseline (Week 0) up to Week 169"
+        },
+        {
+          "measure": "Number of serious adverse events",
+          "description": "Measured as events",
+          "timeFrame": "From Baseline (Week 0) up to Week 169"
+        },
+        {
+          "measure": "Number of severe hypoglycaemic episodes",
+          "description": "Measured as events",
+          "timeFrame": "From Baseline (Week 0) up to Week 169"
+        }
+      ]
+    },
+    "eligibilityModule": {
+      "eligibilityCriteria": "Inclusion Criteria:\n\n1. Age 18 years or above at the time of signing the informed consent\n2. Diagnosed with type 2 diabetes (T2D)\n3. HbA1c less than or equal to (\u2264) 10 % (\u2264 86 millimoles per mole \\[mmol/mol\\])\n4. Kidney impairment defined either by:\n\n   * serum creatinine-based eGFR greater than or equal to (\u2265) 50 and less than or equal to (\u2264) 75 mL/min/1.73 m\\^2 (CKD-EPI, 2009) and UACR greater than (\\>) 300 and less than (\\<) 5000 milligrams per gram (mg/g) or\n   * serum creatinine-based eGFR \u2265 25 and \\< 50 mL/min/1.73 m\\^2 (CKD-EPI, 2009) and UACR \\> 100 and \\< 5000 mg/g\n5. Treatment with maximum labelled or tolerated dose of a renin-angiotensin-aldosterone system (RAAS) blocking agent including an angiotensin-converting enzyme inhibitor or an angiotensin II receptor blocker (ARB), unless such treatment is contraindicated or not tolerated. Treatment dose must be stable for at least 4 weeks prior to the date of the laboratory assessments used for determination of inclusion criterion and kept stable until screening.\n\nLaboratory results for inclusion can be based on:\n\n* measurements no more than 90 days old at screening, documented in medical records or\n* central laboratory measurement obtained at the screening visit If using UACR and eGFR values from medical records for inclusion, these values must be entered in the electronic case report form.\n\nThe number of participants with inclusion eGFR \u2265 60 mL/min/1.73 m\\^2 will be capped at 20% of enrolled participants.\n\nExclusion Criteria:\n\n1. Congenital or hereditary kidney diseases including polycystic kidney disease, autoimmune kidney diseases including glomerulonephritis or congenital urinary tract malformations.\n2. Use of any glucagon-like peptide-1 receptor agonist (GLP1 RA) within 30 days prior to screening. This also includes dual agonists containing a GLP1 RA component.\n3. Myocardial infarction, stroke, hospitalisation for unstable angina pectoris or transient ischaemic attack within 60 days prior to the day of screening.\n4. Current (or within 90 days) chronic or intermittent haemodialysis or peritoneal dialysis.\n5. Uncontrolled and potentially unstable diabetic retinopathy or maculopathy. Verified by a fundus examination and optical coherence tomography performed within the past 90 days prior to screening or in the period between screening and enrolment. Pharmacological pupil dilation is a requirement unless using a digital fundus photography camera specified for nondilated examination.\n6. Combination use of an angiotensin-converting enzyme inhibitor and an angiotensin-II receptor blocker (ARB).",
+      "healthyVolunteers": false,
+      "sex": "ALL",
+      "minimumAge": "18 Years",
+      "stdAges": [
+        "ADULT",
+        "OLDER_ADULT"
+      ]
+    },
+    "contactsLocationsModule": {
+      "centralContacts": [
+        {
+          "name": "Novo Nordisk",
+          "role": "CONTACT",
+          "phone": "(+1) 866-867-7178",
+          "email": "clinicaltrials@novonordisk.com"
+        }
+      ],
+      "overallOfficials": [
+        {
+          "name": "Clinical Transparency (dept. 2834)",
+          "affiliation": "Novo Nordisk A/S",
+          "role": "STUDY_DIRECTOR"
+        }
+      ],
+      "locations": [
+        {
+          "facility": "Fu Yang People's Hospital-Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Fuyang",
+          "state": "Anhui",
+          "zip": "236000",
+          "country": "China",
+          "geoPoint": {
+            "lat": 32.9,
+            "lon": 115.81667
+          }
+        },
+        {
+          "facility": "Beijing Anzhen Hospital, Capital Medical University-Nephrology",
+          "status": "RECRUITING",
+          "city": "Beijing",
+          "state": "Beijing Municipality",
+          "zip": "100029",
+          "country": "China",
+          "geoPoint": {
+            "lat": 39.9075,
+            "lon": 116.39723
+          }
+        },
+        {
+          "facility": "Peking University First Hospital-Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Beijing",
+          "state": "Beijing Municipality",
+          "zip": "100034",
+          "country": "China",
+          "geoPoint": {
+            "lat": 39.9075,
+            "lon": 116.39723
+          }
+        },
+        {
+          "facility": "Beijing Friendship Hospital, Capital Medical University-Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Beijing",
+          "state": "Beijing Municipality",
+          "zip": "100050",
+          "country": "China",
+          "geoPoint": {
+            "lat": 39.9075,
+            "lon": 116.39723
+          }
+        },
+        {
+          "facility": "The Second Hospital & Clinical Medical School, Lanzhou University-Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Lanzhou",
+          "state": "Gansu",
+          "zip": "730030",
+          "country": "China",
+          "geoPoint": {
+            "lat": 36.05701,
+            "lon": 103.83987
+          }
+        },
+        {
+          "facility": "Huizhou Central People's Hospital-Endocrinology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Huizhou",
+          "state": "Guangdong",
+          "zip": "516001",
+          "country": "China",
+          "geoPoint": {
+            "lat": 23.11147,
+            "lon": 114.41523
+          }
+        },
+        {
+          "facility": "The Second Affiliated Hospital of Shantou University Medical College-Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Shantou",
+          "state": "Guangdong",
+          "zip": "515065",
+          "country": "China",
+          "geoPoint": {
+            "lat": 23.35489,
+            "lon": 116.67876
+          }
+        },
+        {
+          "facility": "The Second Hospital of Hebei Medical University-Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Shijiazhuang",
+          "state": "Hebei",
+          "zip": "050005",
+          "country": "China",
+          "geoPoint": {
+            "lat": 38.04139,
+            "lon": 114.47861
+          }
+        },
+        {
+          "facility": "The People's Hospital of Anyang City/ TGE Center Hospital of Anyang City-Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Anyang",
+          "state": "Henan",
+          "zip": "455099",
+          "country": "China",
+          "geoPoint": {
+            "lat": 36.096,
+            "lon": 114.38278
+          }
+        },
+        {
+          "facility": "Yichang Central People's Hospital-Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Yichang",
+          "state": "Hubei",
+          "zip": "4443003",
+          "country": "China",
+          "geoPoint": {
+            "lat": 30.71444,
+            "lon": 111.28472
+          }
+        },
+        {
+          "facility": "The First Affiliated Hospital of Baotou Medical College-Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Baotou",
+          "state": "Inner Mongolia",
+          "zip": "014017",
+          "country": "China",
+          "geoPoint": {
+            "lat": 40.6516,
+            "lon": 109.84389
+          }
+        },
+        {
+          "facility": "Changzhou No.2 People's Hospital-Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Changzhou",
+          "state": "Jiangsu",
+          "zip": "213003",
+          "country": "China",
+          "geoPoint": {
+            "lat": 31.77359,
+            "lon": 119.95401
+          }
+        },
+        {
+          "facility": "The Second Affiliated Hospital of Nanjing Medical University-Endocrinology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Nanjing",
+          "state": "Jiangsu",
+          "zip": "210011",
+          "country": "China",
+          "geoPoint": {
+            "lat": 32.06167,
+            "lon": 118.77778
+          }
+        },
+        {
+          "facility": "The Affiliated Hospital of Jiangsu University-Endocrinology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Zhenjiang",
+          "state": "Jiangsu",
+          "zip": "212001",
+          "country": "China",
+          "geoPoint": {
+            "lat": 32.21086,
+            "lon": 119.45508
+          }
+        },
+        {
+          "facility": "Pingxiang People's Hospital-Endocrinology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Pingxiang",
+          "state": "Jiangxi",
+          "zip": "337055",
+          "country": "China",
+          "geoPoint": {
+            "lat": 27.61672,
+            "lon": 113.85353
+          }
+        },
+        {
+          "facility": "The Second Norman Bethune Hospital of Jilin University-Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Changchun",
+          "state": "Jilin",
+          "zip": "130033",
+          "country": "China",
+          "geoPoint": {
+            "lat": 43.88,
+            "lon": 125.32278
+          }
+        },
+        {
+          "facility": "Siping City Central People's Hospital-Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Siping",
+          "state": "Jilin",
+          "zip": "136000",
+          "country": "China",
+          "geoPoint": {
+            "lat": 43.16143,
+            "lon": 124.37785
+          }
+        },
+        {
+          "facility": "Central Hospital of Dalian University of Technology (Dalian Municipal Central Hospital) -Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Dalian",
+          "state": "Liaoning",
+          "zip": "116033",
+          "country": "China",
+          "geoPoint": {
+            "lat": 38.91222,
+            "lon": 121.60222
+          }
+        },
+        {
+          "facility": "Panjin Liaoyou Gemflower Hospital-Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Panjin",
+          "state": "Liaoning",
+          "zip": "124120",
+          "country": "China",
+          "geoPoint": {
+            "lat": 41.121,
+            "lon": 122.0739
+          }
+        },
+        {
+          "facility": "Qinghai Provincial People's Hospital-Endocrinology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Xining",
+          "state": "Qinghai",
+          "zip": "810007",
+          "country": "China",
+          "geoPoint": {
+            "lat": 36.62554,
+            "lon": 101.75739
+          }
+        },
+        {
+          "facility": "Jinan Central Hospital-General Medicine",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Jinan",
+          "state": "Shandong",
+          "zip": "250013",
+          "country": "China",
+          "geoPoint": {
+            "lat": 36.66833,
+            "lon": 116.99722
+          }
+        },
+        {
+          "facility": "Shanghai General Hospital-Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Shanghai",
+          "state": "Shanghai Municipality",
+          "zip": "200080",
+          "country": "China",
+          "geoPoint": {
+            "lat": 31.22222,
+            "lon": 121.45806
+          }
+        },
+        {
+          "facility": "Sichuan Academy of Medical Science & Sichuan Provincial People's Hospital; Affiliated Hospital of UESTC-Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Chengdu",
+          "state": "Sichuan",
+          "zip": "610071",
+          "country": "China",
+          "geoPoint": {
+            "lat": 30.66667,
+            "lon": 104.06667
+          }
+        },
+        {
+          "facility": "The Second People's Hospital of Yibin-Department of Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Yibin",
+          "state": "Sichuan",
+          "zip": "644099",
+          "country": "China",
+          "geoPoint": {
+            "lat": 28.7593,
+            "lon": 104.63994
+          }
+        },
+        {
+          "facility": "Taizhou Hospital of Zhejiang Province-Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Linhai",
+          "state": "Zhejiang",
+          "zip": "317013",
+          "country": "China",
+          "geoPoint": {
+            "lat": 28.85535,
+            "lon": 121.1447
+          }
+        },
+        {
+          "facility": "Ningbo No. 2 Hospital-Nephrology",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Ningbo",
+          "state": "Zhejiang",
+          "zip": "315099",
+          "country": "China",
+          "geoPoint": {
+            "lat": 29.87819,
+            "lon": 121.54945
+          }
+        }
+      ]
+    },
+    "ipdSharingStatementModule": {
+      "ipdSharing": "YES",
+      "description": "According to the Novo Nordisk disclosure commitment on novonordisktrials.com",
+      "url": "https://novonordisk-trials.com"
+    }
+  },
+  "derivedSection": {
+    "miscInfoModule": {
+      "versionHolder": "2026-11-10"
+    },
+    "conditionBrowseModule": {
+      "meshes": [
+        {
+          "id": "D051436",
+          "term": "Renal Insufficiency, Chronic"
+        }
+      ],
+      "ancestors": [
+        {
+          "id": "D051437",
+          "term": "Renal Insufficiency"
+        },
+        {
+          "id": "D007674",
+          "term": "Kidney Diseases"
+        },
+        {
+          "id": "D014570",
+          "term": "Urologic Diseases"
+        },
+        {
+          "id": "D052776",
+          "term": "Female Urogenital Diseases"
+        },
+        {
+          "id": "D005261",
+          "term": "Female Urogenital Diseases and Pregnancy Complications"
+        },
+        {
+          "id": "D000091642",
+          "term": "Urogenital Diseases"
+        },
+        {
+          "id": "D052801",
+          "term": "Male Urogenital Diseases"
+        },
+        {
+          "id": "D002908",
+          "term": "Chronic Disease"
+        },
+        {
+          "id": "D020969",
+          "term": "Disease Attributes"
+        },
+        {
+          "id": "D010335",
+          "term": "Pathologic Processes"
+        },
+        {
+          "id": "D013568",
+          "term": "Pathological Conditions, Signs and Symptoms"
+        }
+      ]
+    },
+    "interventionBrowseModule": {
+      "meshes": [
+        {
+          "id": "C000591245",
+          "term": "semaglutide"
+        }
+      ]
+    }
+  },
+  "hasResults": false
+}

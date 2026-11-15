@@ -1,0 +1,152 @@
+{
+  "criteria": [
+    {
+      "type": "inclusion",
+      "text": "T2DM",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "type 2 diabetes"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "CKD (eGFR ≥ 25-60 mL/min/1.73 m² OR UACR ≥ 30 mg/g) - on screening labs",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "High Cardiovascular (CV) Risk: Defined as a history of prior myocardial infarction (MI), stroke, or peripheral artery disease (PAD), or the presence of cardiovascular risk factors",
+      "category": "history",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "Open to start new medications",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Type 1 diabetes",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "type 1 diabetes"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "HbA1c ≥10% within past 12 months",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.hba1c",
+        "op": ">=",
+        "value": 10,
+        "unit": "%"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Serum potassium ≥ 5.2 mmol/L on screening labs",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.potassium",
+        "op": ">=",
+        "value": 5.2,
+        "unit": "mmol/L"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Baseline Blood Pressure (BP) < 100/60 mmHg at screening",
+      "category": "lab",
+      "predicate": {
+        "field": "vitals.sbp",
+        "op": "<",
+        "value": 100,
+        "unit": "mmHg"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Baseline Blood Pressure (BP) < 100/60 mmHg at screening",
+      "category": "lab",
+      "predicate": {
+        "field": "vitals.dbp",
+        "op": "<",
+        "value": 60,
+        "unit": "mmHg"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Treated with new or intensified immunosuppression therapy for new (or relapse/flare of pre-existing) kidney disease within the last 60 days",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Kidney Transplant",
+      "category": "procedure",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "kidney transplant"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "In the opinion of the investigator, currently treated with maximum tolerated dose of ≥3 medication classes:: RASi, SGLT2i, nsMRA or GLP1RA",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Currently prescribed all 4 medication classes : RASi, SGLT2i, nsMRA or GLP1RA",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Intolerance or allergy to any of RASi, SGLT2i, nsMRA or GLP1RA",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Known Heart Failure with Reduced Ejection Fraction (HFrEF)",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "heart failure with reduced ejection fraction"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Current pregnancy",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "pregnant",
+        "op": "==",
+        "value": "true"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "lactation",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "women of childbearing potential, unless using highly effective contraception",
+      "category": "other",
+      "predicate": null
+    }
+  ]
+}

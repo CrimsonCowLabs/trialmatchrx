@@ -1,4 +1,4 @@
-.PHONY: install dev api web check check-api check-web types seed eval
+.PHONY: install dev api web check check-api check-web types seed eval compile-fixtures
 
 API_PORT ?= 8000
 WEB_PORT ?= 3000
@@ -40,3 +40,8 @@ seed:
 
 eval:
 	@echo "make eval: no-op until M4 (run_eval.py)"  # HACK(demo): stub
+
+# Compile the 10 fixture trials and print the compile rate. Real Sonnet needs ANTHROPIC_API_KEY;
+# `make compile-fixtures ARGS=--fixtures` replays the saved (hand-authored) LLM outputs instead.
+compile-fixtures:
+	cd api && uv run python -m scripts.compile_fixtures $(ARGS)

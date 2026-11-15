@@ -1,0 +1,445 @@
+{
+  "protocolSection": {
+    "identificationModule": {
+      "nctId": "NCT06281899",
+      "orgStudyIdInfo": {
+        "id": "01/2022"
+      },
+      "organization": {
+        "fullName": "Anemia Working Group Romania",
+        "class": "OTHER"
+      },
+      "briefTitle": "Effect of Low Protein Diet on Top of Dapagliflozin on Chronic Kidney Disease in Patients With Type 2 Diabetes Mellitus",
+      "officialTitle": "Effect of the Low PROtein Diet on Top of DAPAgliflozin and RAASi on the Progression of Chronic Kidney Disease in Patients With Type 2 Diabetes Mellitus",
+      "acronym": "PRODAPA-CKD"
+    },
+    "statusModule": {
+      "statusVerifiedDate": "2026-10",
+      "overallStatus": "RECRUITING",
+      "expandedAccessInfo": {
+        "hasExpandedAccess": false
+      },
+      "startDateStruct": {
+        "date": "2022-01-01",
+        "type": "ACTUAL"
+      },
+      "primaryCompletionDateStruct": {
+        "date": "2027-12-31",
+        "type": "ESTIMATED"
+      },
+      "completionDateStruct": {
+        "date": "2027-12-31",
+        "type": "ESTIMATED"
+      },
+      "studyFirstSubmitDate": "2024-02-11",
+      "studyFirstSubmitQcDate": "2024-02-20",
+      "studyFirstPostDateStruct": {
+        "date": "2024-02-28",
+        "type": "ACTUAL"
+      },
+      "lastUpdateSubmitDate": "2026-10-27",
+      "lastUpdatePostDateStruct": {
+        "date": "2026-10-28",
+        "type": "ACTUAL"
+      }
+    },
+    "sponsorCollaboratorsModule": {
+      "responsibleParty": {
+        "type": "SPONSOR"
+      },
+      "leadSponsor": {
+        "name": "Anemia Working Group Romania",
+        "class": "OTHER"
+      },
+      "collaborators": [
+        {
+          "name": "Sf Ioan Emergency Clinical Hospital, Nephrology and Dialysis Department, Bucharest, Romania",
+          "class": "UNKNOWN"
+        },
+        {
+          "name": "Dr Carol Davila Teaching Hospital of Nephrology, Nephrology Department, Bucharest, Romania",
+          "class": "UNKNOWN"
+        },
+        {
+          "name": "Carol Davila University of Medicine and Pharmacy",
+          "class": "OTHER"
+        }
+      ]
+    },
+    "oversightModule": {
+      "oversightHasDmc": false,
+      "isFdaRegulatedDrug": false,
+      "isFdaRegulatedDevice": false,
+      "isUsExport": false
+    },
+    "descriptionModule": {
+      "briefSummary": "This is a prospective multicenter randomized controlled trial with a total duration of 36 months aiming to evaluate the effectiveness and the safety of low protein diet on top of sodium-glucose cotransporter 2 inhibitors (SGLT2i) and renin-angiotensin-aldosterone inhibitors (RAASi) in reducing the progression of chronic kidney disease in patients with type 2 Diabetes Mellitus",
+      "detailedDescription": "The KDIGO Diabetes in CKD Guideline (2020) recommends the use of SGLT2i (level 1A) and suggests (level 2C) the prescription of plant protein-based low-protein diet in patients with chronic kidney disease (CKD) and diabetes mellitus (DM). Both interventions have shown synergistic nephroprotective effects, slowing the progression of chronic kidney disease by reducing glomerular hyperfiltration and proteinuria, thus resulting the hypothesis that by combining these two interventions it could be possible to achieve a superior control over the progression of diabetic kidney disease.\n\nThe nutritional intervention will consist in a mild protein restriction (0.6 g/kg dry ideal body weight) and a total recommended energy intake of 30-35 kcal/kg of ideal dry body weight per day in all patients. The protein intake will be checked through the food diary and calculated based on urea from 24 hours urine collection.\n\nThe efficacy and safety parameters will be evaluated during follow-up visits at month 1,2,3,6,12 and 18."
+    },
+    "conditionsModule": {
+      "conditions": [
+        "Chronic Kidney Diseases",
+        "Type 2 Diabetes Mellitus"
+      ],
+      "keywords": [
+        "chronic kidney disease",
+        "low protein diet",
+        "nutrition therapy"
+      ]
+    },
+    "designModule": {
+      "studyType": "INTERVENTIONAL",
+      "phases": [
+        "PHASE4"
+      ],
+      "designInfo": {
+        "allocation": "RANDOMIZED",
+        "interventionModel": "PARALLEL",
+        "primaryPurpose": "TREATMENT",
+        "maskingInfo": {
+          "masking": "NONE"
+        }
+      },
+      "enrollmentInfo": {
+        "count": 200,
+        "type": "ESTIMATED"
+      }
+    },
+    "armsInterventionsModule": {
+      "armGroups": [
+        {
+          "label": "Intervention",
+          "type": "EXPERIMENTAL",
+          "description": "Patients will receive a plant-based low protein diet (0.6 g proteins/kg ideal body weight per day) associated with Dapagliflozin 10 mg per day",
+          "interventionNames": [
+            "Drug: Dapagliflozin 10 mg Tab",
+            "Behavioral: Low protein diet"
+          ]
+        },
+        {
+          "label": "Control",
+          "type": "ACTIVE_COMPARATOR",
+          "description": "Patients will receive Dapagliflozin 10 mg per day",
+          "interventionNames": [
+            "Drug: Dapagliflozin 10 mg Tab"
+          ]
+        }
+      ],
+      "interventions": [
+        {
+          "type": "DRUG",
+          "name": "Dapagliflozin 10 mg Tab",
+          "description": "Dapagliflozin 10 mg once daily",
+          "armGroupLabels": [
+            "Control",
+            "Intervention"
+          ]
+        },
+        {
+          "type": "BEHAVIORAL",
+          "name": "Low protein diet",
+          "description": "Plant based low protein diet (0.6 g/kg IBW)",
+          "armGroupLabels": [
+            "Intervention"
+          ]
+        }
+      ]
+    },
+    "outcomesModule": {
+      "primaryOutcomes": [
+        {
+          "measure": "Time to the First Occurrence of Any of the Components of the Composite: \u226530% Sustained Decline in eGFR or Reaching ESRD or CV Death or Renal Death",
+          "description": "End Stage Renal Disease (ESRD) is defined as:\n\n* Sustained eGFR \\<15 mL/min/1.73m2 or,\n* Chronic dialysis treatment or,\n* Receiving a kidney transplant",
+          "timeFrame": "12 months after randomization"
+        }
+      ],
+      "secondaryOutcomes": [
+        {
+          "measure": "Rate of decline in the estimated Glomerular Filtration Rate",
+          "description": "Difference between eGFR at any timepoint and the initial eGFR",
+          "timeFrame": "month 3, 9 and12 after randomization"
+        },
+        {
+          "measure": "Variation of albuminuria",
+          "description": "Difference between albuminuria at at any timepoint and the initial albuminuria (expressed as albumin to creatinine ratio)",
+          "timeFrame": "month 3, 9 and12 after randomization"
+        },
+        {
+          "measure": "Variation of HbA1C",
+          "description": "Difference between HbA1C at at any timepoint and the initial HbA1C",
+          "timeFrame": "month 3, 9 and12 after randomization"
+        },
+        {
+          "measure": "Variation of serum cholesterol levels",
+          "description": "Difference between serum cholesterol at at any timepoint and the initial serum cholesterol",
+          "timeFrame": "month 3, 9 and12 after randomization"
+        },
+        {
+          "measure": "Variation of serum bicarbonate levels",
+          "description": "Difference between serum bicarbonate at at any timepoint and the initial serum bicarbonate",
+          "timeFrame": "month 3, 9 and12 after randomization"
+        },
+        {
+          "measure": "Variation of serum potassium levels",
+          "description": "Difference between serum potassium at at any timepoint and the initial serum potassium",
+          "timeFrame": "month 3, 9 and12 after randomization"
+        },
+        {
+          "measure": "Variation of serum sodium levels",
+          "description": "Difference between serum sodium at at any timepoint and the initial serum sodium",
+          "timeFrame": "month 3, 9 and12 after randomization"
+        },
+        {
+          "measure": "Variation of hemoglobin levels",
+          "description": "Difference between hemoglobin at at any timepoint and the initial serum hemoglobin",
+          "timeFrame": "month 3, 9 and12 after randomization"
+        },
+        {
+          "measure": "Variation of hematocrit levels",
+          "description": "Difference between hematocrit at at any timepoint and the initial hematocrit",
+          "timeFrame": "month 3, 9 and12 after randomization"
+        },
+        {
+          "measure": "All cause hospitalizations",
+          "description": "Percentage of patients who experienced hospitalizations of all cause",
+          "timeFrame": "12 months after randomization"
+        },
+        {
+          "measure": "Variation in body weight",
+          "description": "Difference between body weight at at any timepoint and the body weight",
+          "timeFrame": "month 3, 9 and12 after randomization"
+        },
+        {
+          "measure": "Variation in BMI",
+          "description": "Difference between BMI at at any timepoint and the initial BMI",
+          "timeFrame": "month 3, 9 and12 after randomization"
+        },
+        {
+          "measure": "Variation in handgrip strength",
+          "description": "Difference between handgrip strength at at any timepoint and the initial handgrip strength",
+          "timeFrame": "month 3, 9 and12 after randomization"
+        },
+        {
+          "measure": "Variation in serum albumin levels",
+          "description": "Difference between serum albumin at at any timepoint and the initial serum albumin",
+          "timeFrame": "month 3, 9 and12 after randomization"
+        },
+        {
+          "measure": "Variation in CRP levels",
+          "description": "Difference between CRP at at any timepoint and the initial CRP",
+          "timeFrame": "month 3, 9 and12 after randomization"
+        },
+        {
+          "measure": "Changes in the quality of life",
+          "description": "Evaluated by SF-36 questionaire",
+          "timeFrame": "month 3, 9 and12 after randomization"
+        }
+      ],
+      "otherOutcomes": [
+        {
+          "measure": "Compliance to the protein intake",
+          "description": "Achieved protein intake will be estimated based on urinary urea excretion, using Mitch-Maroni's formula",
+          "timeFrame": "month 1, 3, 9 and12 after randomization"
+        },
+        {
+          "measure": "Compliance to the energy intake",
+          "description": "Achieved energy intake will be estimated using the 3-day food diary to calculate the daily energy intake",
+          "timeFrame": "month 1, 3, 9 and12 after randomization"
+        },
+        {
+          "measure": "Compliance to carbohydrate intake",
+          "description": "Achieved energy intake will be estimated by the 3-day food diary to calculate thecarbohydrates intake",
+          "timeFrame": "month 1, 3, 9 and12 after randomization"
+        }
+      ]
+    },
+    "eligibilityModule": {
+      "eligibilityCriteria": "Inclusion Criteria:\n\n* age\\>18 years old\n* confirmed chronic kidney disease (with eGFR between 60 and 20 ml/min/1.73 m2 and/or proteinuria \\>500 mg/g urinary creatinine) and confirmed type 2 Diabetes Mellitus\n* stable kidney function for at least 12 weeks before enrollment (defined as decrease in eGFR \\< 5 ml/min/1.73 m2/year according to KDIGO 2012 guideline)\n* treatment with ACE/ARBs and/or MRAs for at least 3 months\n* no previous treatment with SGLT2i\n* good nutritional status\n* declared and anticipated good compliance with the prescribed diet\n* signed informed consent\n\nExclusion Criteria:\n\n* eGFR \\< 25 ml/min/1.73 m2\n* poorly controlled arterial blood pressure (mean BP\u2265145/85 mm Hg)\n* class IV NYHA heart failure, recent MACE (less than 6 months)\n* relevant comorbid conditions (active infections (HBV, HCV, HIV), active neoplasia, digestive diseases with malabsorption, active autoimmune diseases/ immunosuppressive therapy)\n* ADPKD\n* kidney transplantation with functional graft\n* malnutrition: BMI\\<18 kg/me, eight loss \\>10% during the last 6 months, serum albumin \\<3 g/dL\n* feeding inability (anorexia, nausea)",
+      "healthyVolunteers": false,
+      "sex": "ALL",
+      "minimumAge": "18 Years",
+      "stdAges": [
+        "ADULT",
+        "OLDER_ADULT"
+      ]
+    },
+    "contactsLocationsModule": {
+      "centralContacts": [
+        {
+          "name": "Liliana Garneata, Professor",
+          "role": "CONTACT",
+          "phone": "+40722619358",
+          "email": "lilianagarna@yahoo.com"
+        },
+        {
+          "name": "Elena Cuiban, PhD student",
+          "role": "CONTACT",
+          "phone": "+40748975315",
+          "email": "elena.cuiban@drd.umfcd.ro"
+        }
+      ],
+      "overallOfficials": [
+        {
+          "name": "Liliana Garneata, Professor",
+          "affiliation": "Carol Davila University of Medicine and Pharmacy Bucharest, Romania",
+          "role": "PRINCIPAL_INVESTIGATOR"
+        }
+      ],
+      "locations": [
+        {
+          "facility": "Carol Davila University of Medicine and Pharmacy Bucharest",
+          "status": "RECRUITING",
+          "city": "Bucharest",
+          "country": "Romania",
+          "contacts": [
+            {
+              "name": "Liliana Garneata, Assoc Prof",
+              "role": "CONTACT",
+              "phone": "+40722619358",
+              "email": "lilianagarna@yahoo.com"
+            },
+            {
+              "name": "Elena Cuiban, MD",
+              "role": "CONTACT",
+              "phone": "+40748975315",
+              "email": "elenacuiban@yahoo.com"
+            }
+          ],
+          "geoPoint": {
+            "lat": 44.43225,
+            "lon": 26.10626
+          }
+        }
+      ]
+    },
+    "ipdSharingStatementModule": {
+      "ipdSharing": "NO"
+    }
+  },
+  "derivedSection": {
+    "miscInfoModule": {
+      "versionHolder": "2026-11-10"
+    },
+    "conditionBrowseModule": {
+      "meshes": [
+        {
+          "id": "D051436",
+          "term": "Renal Insufficiency, Chronic"
+        },
+        {
+          "id": "D003924",
+          "term": "Diabetes Mellitus, Type 2"
+        }
+      ],
+      "ancestors": [
+        {
+          "id": "D051437",
+          "term": "Renal Insufficiency"
+        },
+        {
+          "id": "D007674",
+          "term": "Kidney Diseases"
+        },
+        {
+          "id": "D014570",
+          "term": "Urologic Diseases"
+        },
+        {
+          "id": "D052776",
+          "term": "Female Urogenital Diseases"
+        },
+        {
+          "id": "D005261",
+          "term": "Female Urogenital Diseases and Pregnancy Complications"
+        },
+        {
+          "id": "D000091642",
+          "term": "Urogenital Diseases"
+        },
+        {
+          "id": "D052801",
+          "term": "Male Urogenital Diseases"
+        },
+        {
+          "id": "D002908",
+          "term": "Chronic Disease"
+        },
+        {
+          "id": "D020969",
+          "term": "Disease Attributes"
+        },
+        {
+          "id": "D010335",
+          "term": "Pathologic Processes"
+        },
+        {
+          "id": "D013568",
+          "term": "Pathological Conditions, Signs and Symptoms"
+        },
+        {
+          "id": "D003920",
+          "term": "Diabetes Mellitus"
+        },
+        {
+          "id": "D044882",
+          "term": "Glucose Metabolism Disorders"
+        },
+        {
+          "id": "D008659",
+          "term": "Metabolic Diseases"
+        },
+        {
+          "id": "D009750",
+          "term": "Nutritional and Metabolic Diseases"
+        },
+        {
+          "id": "D004700",
+          "term": "Endocrine System Diseases"
+        }
+      ]
+    },
+    "interventionBrowseModule": {
+      "meshes": [
+        {
+          "id": "C529054",
+          "term": "dapagliflozin"
+        },
+        {
+          "id": "D018753",
+          "term": "Diet, Protein-Restricted"
+        }
+      ],
+      "ancestors": [
+        {
+          "id": "D004035",
+          "term": "Diet Therapy"
+        },
+        {
+          "id": "D044623",
+          "term": "Nutrition Therapy"
+        },
+        {
+          "id": "D013812",
+          "term": "Therapeutics"
+        },
+        {
+          "id": "D004032",
+          "term": "Diet"
+        },
+        {
+          "id": "D009747",
+          "term": "Nutritional Physiological Phenomena"
+        },
+        {
+          "id": "D000066888",
+          "term": "Diet, Food, and Nutrition"
+        },
+        {
+          "id": "D010829",
+          "term": "Physiological Phenomena"
+        }
+      ]
+    }
+  },
+  "hasResults": false
+}

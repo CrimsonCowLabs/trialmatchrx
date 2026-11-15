@@ -1,0 +1,620 @@
+{
+  "protocolSection": {
+    "identificationModule": {
+      "nctId": "NCT07434791",
+      "orgStudyIdInfo": {
+        "id": "CTO Project ID 5552"
+      },
+      "organization": {
+        "fullName": "Sunnybrook Health Sciences Centre",
+        "class": "OTHER"
+      },
+      "briefTitle": "Goal-Directed Therapy to Reduce Kidney and Cardiovascular Risk in Diabetic Kidney Disease (GOLD-STANDARD)",
+      "officialTitle": "GOaL Directed-STrategic Approach With New Disease-modifying theraApies to Reduce Kidney and Cardiovascular Risk in Patients With Diabetic Kidney Disease",
+      "acronym": "GOLD-STANDARD"
+    },
+    "statusModule": {
+      "statusVerifiedDate": "2026-08",
+      "overallStatus": "RECRUITING",
+      "expandedAccessInfo": {
+        "hasExpandedAccess": false
+      },
+      "startDateStruct": {
+        "date": "2026-08-26",
+        "type": "ESTIMATED"
+      },
+      "primaryCompletionDateStruct": {
+        "date": "2028-09",
+        "type": "ESTIMATED"
+      },
+      "completionDateStruct": {
+        "date": "2029-09",
+        "type": "ESTIMATED"
+      },
+      "studyFirstSubmitDate": "2025-11-18",
+      "studyFirstSubmitQcDate": "2026-02-19",
+      "studyFirstPostDateStruct": {
+        "date": "2026-02-27",
+        "type": "ACTUAL"
+      },
+      "lastUpdateSubmitDate": "2026-09-01",
+      "lastUpdatePostDateStruct": {
+        "date": "2026-09-04",
+        "type": "ACTUAL"
+      }
+    },
+    "sponsorCollaboratorsModule": {
+      "responsibleParty": {
+        "type": "SPONSOR"
+      },
+      "leadSponsor": {
+        "name": "Sunnybrook Health Sciences Centre",
+        "class": "OTHER"
+      },
+      "collaborators": [
+        {
+          "name": "The Kidney Foundation of Canada",
+          "class": "OTHER"
+        },
+        {
+          "name": "Novo Nordisk A/S",
+          "class": "INDUSTRY"
+        }
+      ]
+    },
+    "oversightModule": {
+      "oversightHasDmc": false,
+      "isFdaRegulatedDrug": false,
+      "isFdaRegulatedDevice": false
+    },
+    "descriptionModule": {
+      "briefSummary": "GOLD-STANDARD is a pragmatic, open-label pilot randomized controlled trial evaluating the feasibility, safety, and implementation of an early goal-directed Cardio-Kidney-Metabolic (CKM) care strategy compared with usual care in adults with type 2 diabetes and diabetic kidney disease who are at increased cardiovascular risk. Participants will be followed for 12 months to assess treatment uptake, adherence, retention, and safety outcomes, and to inform the design of a future definitive trial.",
+      "detailedDescription": "The GOLD-STANDARD study will evaluate the feasibility of an early, goal-directed Cardio-Kidney-Metabolic (CKM) care strategy that integrates kidney, cardiovascular, and metabolic risk management within routine nephrology practice. Using a pragmatic randomized design, the study will assess whether a structured approach to CKM care can be implemented safely and effectively within Ontario's healthcare system.\n\nThe primary objective of this pilot study is to evaluate feasibility, including recruitment, retention, treatment implementation, and adherence. Safety and treatment uptake measures will also be assessed over 12 months of follow-up. Findings from this study will inform the design and conduct of a future large-scale trial evaluating the impact of early CKM care on clinical kidney and cardiovascular outcomes."
+    },
+    "conditionsModule": {
+      "conditions": [
+        "Diabetic Kidney Disease (DKD)",
+        "Type 2 Diabetes Mellitus (T2DM)",
+        "Chronic Kidney Disease"
+      ],
+      "keywords": [
+        "diabetes",
+        "diabetic kidney disease",
+        "cardiovascular risk",
+        "Cardio-Kidney-Metabolic (CKM) care",
+        "CKM Care",
+        "Guideline-Directed Medical Therapy"
+      ]
+    },
+    "designModule": {
+      "studyType": "INTERVENTIONAL",
+      "phases": [
+        "NA"
+      ],
+      "designInfo": {
+        "allocation": "RANDOMIZED",
+        "interventionModel": "PARALLEL",
+        "interventionModelDescription": "Participants will be randomized 1:1 to early goal-directed CKM care or usual care. The study is designed to evaluate the feasibility and safety of implementing a structured CKM care strategy within routine nephrology practice.",
+        "primaryPurpose": "HEALTH_SERVICES_RESEARCH",
+        "maskingInfo": {
+          "masking": "SINGLE",
+          "maskingDescription": "This is an open-label study in which participants and treating clinicians are aware of treatment assignment. Outcome assessments will be performed by an independent adjudicator who is blinded to treatment allocation.",
+          "whoMasked": [
+            "OUTCOMES_ASSESSOR"
+          ]
+        }
+      },
+      "enrollmentInfo": {
+        "count": 100,
+        "type": "ESTIMATED"
+      }
+    },
+    "armsInterventionsModule": {
+      "armGroups": [
+        {
+          "label": "Early Goal-Directed Cardio-Kidney-Metabolic (CKM) Care",
+          "type": "EXPERIMENTAL",
+          "description": "Participants receive a nephrologist-led, goal-directed Cardio-Kidney-Metabolic (CKM) care strategy that includes risk assessment, shared decision-making, guideline-directed therapies, and ongoing safety monitoring.",
+          "interventionNames": [
+            "Other: Early goal-directed Cardio-Kidney-Metabolic (CKM) care"
+          ]
+        },
+        {
+          "label": "Usual Care",
+          "type": "ACTIVE_COMPARATOR",
+          "description": "Participants receive standard nephrology care according to routine clinical practice and the judgment of the treating clinician.",
+          "interventionNames": [
+            "Other: Standard care (Comparison arm)"
+          ]
+        }
+      ],
+      "interventions": [
+        {
+          "type": "OTHER",
+          "name": "Early goal-directed Cardio-Kidney-Metabolic (CKM) care",
+          "description": "Participants will be referred to a nephrologist and receive a structured Cardio-Kidney-Metabolic (CKM) care strategy that includes iterative assessment of kidney and cardiovascular risk, early shared decision-making regarding guideline-directed medical therapies (RASi, SGLT2i, nsMRA, and GLP-1 RA), and close monitoring of treatment implementation, tolerability, and adverse effects throughout the study follow-up period.",
+          "armGroupLabels": [
+            "Early Goal-Directed Cardio-Kidney-Metabolic (CKM) Care"
+          ]
+        },
+        {
+          "type": "OTHER",
+          "name": "Standard care (Comparison arm)",
+          "description": "Participants will receive standard nephrology care according to routine clinical practice. Medication initiation and adjustment will be based on clinician judgment and relevant clinical parameters, with treatments introduced incrementally as part of usual care.",
+          "armGroupLabels": [
+            "Usual Care"
+          ]
+        }
+      ]
+    },
+    "outcomesModule": {
+      "primaryOutcomes": [
+        {
+          "measure": "Feasibility of the pivotal Randomized Controlled Trial (RCT)",
+          "description": "Percentage of consenting participants who are eligible and randomized. Feasibility is defined as \u226540% of consented and screened participants meeting criteria and being randomized.",
+          "timeFrame": "From consent through completion of screening procedures to randomization (maximum 60 days)."
+        },
+        {
+          "measure": "Prescription and Adherence to Guideline-Directed Medical Therapy (GDMT)",
+          "description": "Determined based on the percentage of people prescribed and adherent to GDMT at 12 months when assessed on an ordinal scale from 1 to 4 medications.",
+          "timeFrame": "12 months after randomization (\u00b145-day window)."
+        }
+      ],
+      "secondaryOutcomes": [
+        {
+          "measure": "Declined/ Unable to Receive Treatment - RASi",
+          "description": "Percentage of participants in the intervention group who were recommended a RASi prescription and did not receive treatment for any reason. Participants meeting any of the following criteria are counted toward this single percentage:\n\n* Declined due to patient preference\n* Unable to obtain due to access barriers\n* Not initiated or titrated to avoid anticipated side effects\n\nUnit of Measure: Percent (%)",
+          "timeFrame": "Baseline to 12 months post-randomization (\u00b145-day visit window)."
+        },
+        {
+          "measure": "Declined or Unable to Receive Treatment- SGLT2i",
+          "description": "Percentage of participants in the intervention group who were recommended a SGLT2i prescription and did not receive treatment for any reason. Participants meeting any of the following criteria are counted toward this single percentage:\n\n* Declined due to patient preference\n* Unable to obtain due to access barriers\n* Not initiated or titrated to avoid anticipated side effects\n\nUnit of Measure: Percent (%)",
+          "timeFrame": "Baseline to 12 months post-randomization (\u00b145-day visit window)."
+        },
+        {
+          "measure": "Declined or Unable to Receive Treatment - nsMRA",
+          "description": "Percentage of participants in the intervention group who were recommended an nsMRA prescription and did not receive treatment for any reason. Participants meeting any of the following criteria are counted toward this single percentage:\n\n* Declined due to patient preference\n* Unable to obtain due to access barriers\n* Not initiated or titrated to avoid anticipated side effects Unit of Measure: Percent (%)",
+          "timeFrame": "Baseline to 12 months post-randomization (\u00b145-day visit window)."
+        },
+        {
+          "measure": "Declined or Unable to Receive Treatment - GLP1RA",
+          "description": "Percentage of participants in the intervention group who were recommended an GLP1RA prescription and did not receive treatment for any reason. Participants meeting any of the following criteria are counted toward this single percentage:\n\n* Declined due to patient preference\n* Unable to obtain due to access barriers\n* Not initiated or titrated to avoid anticipated side effects Unit of Measure: Percent (%)",
+          "timeFrame": "Baseline to 12 months post-randomization (\u00b145-day visit window)."
+        },
+        {
+          "measure": "Loss to follow-up",
+          "description": "Percentage of participants who are lost to follow-up from baseline through 12 months post-randomization. The target for loss to follow-up is \\<10% over the duration of the study.\n\nUnit of Measure: Percent (%)",
+          "timeFrame": "Baseline to 12 months post-randomization (\u00b145-day visit window)."
+        },
+        {
+          "measure": "BMI",
+          "description": "Change in body mass index (BMI) from baseline to 12 months. Calculated as 12-month value minus baseline value. Unit of Measure: kg/m\u00b2",
+          "timeFrame": "Baseline and 12 months post-randomization (\u00b145-day visit window)"
+        },
+        {
+          "measure": "Waist circumference",
+          "description": "Change in waist circumference from baseline to 12 months. Calculated as 12-month value minus baseline value. Unit of Measure: cm",
+          "timeFrame": "Baseline and 12 months post-randomization (\u00b145-day visit window)"
+        },
+        {
+          "measure": "Hip circumference",
+          "description": "Change in hip circumference from baseline to 12 months. Calculated as 12-month value minus baseline value. Unit of Measure: cm",
+          "timeFrame": "Baseline and 12 months post-randomization (\u00b145-day visit window)"
+        },
+        {
+          "measure": "Waist-to-hip ratio",
+          "description": "Change in waist-to-hip ratio from baseline to 12 months. Calculated as 12-month value minus baseline value. Unit of Measure: Ratio (unitless)",
+          "timeFrame": "Baseline and 12 months post-randomization (\u00b145-day visit window)"
+        },
+        {
+          "measure": "Blood pressure",
+          "description": "Change in systolic and diastolic blood pressure from baseline to 12 months. Calculated as 12-month value minus baseline value. Unit of Measure: mmHg",
+          "timeFrame": "Baseline and 12 months post-randomization (\u00b145-day visit window)"
+        },
+        {
+          "measure": "Change in Urine Albumin-to-Creatinine Ratio (UACR)",
+          "description": "Change in UACR from baseline to 12 months. Change will be calculated as 12-month value minus baseline value. Unit of Measure: mg/g",
+          "timeFrame": "Baseline and 12 months post-randomization (\u00b145-day visit window)"
+        },
+        {
+          "measure": "Change in Estimated Glomerular Filtration Rate (eGFR)",
+          "description": "Change in eGFR from baseline to 12 months. Change will be calculated as the 12-month value minus the baseline value.",
+          "timeFrame": "12 months post-randomization (visit window \u00b145 days)."
+        },
+        {
+          "measure": "All-cause mortality",
+          "description": "Death from any cause occurring from baseline to 12 months post-randomization. Unit of Measure: Number of participants",
+          "timeFrame": "Baseline to 12 months post-randomization (\u00b145-day visit window)"
+        },
+        {
+          "measure": "Hospitalization for myocardial infarction",
+          "description": "Any hospitalization for myocardial infarction occurring from baseline to 12 months post-randomization. Both incident and recurrent events will be captured. Unit of Measure: Number of participants",
+          "timeFrame": "Baseline to 12 months post-randomization (\u00b145-day visit window)"
+        },
+        {
+          "measure": "Hospitalization for stroke",
+          "description": "Any hospitalization for stroke occurring from baseline to 12 months post-randomization. Both incident and recurrent events will be captured.\n\nUnit of Measure: Number of participants",
+          "timeFrame": "Baseline to 12 months post-randomization (\u00b145-day visit window)"
+        },
+        {
+          "measure": "Hospitalization for heart failure",
+          "description": "Any hospitalization for heart failure occurring from baseline to 12 months post-randomization. Both incident and recurrent events will be captured.\n\nUnit of Measure: Number of participants",
+          "timeFrame": "Baseline to 12 months post-randomization (\u00b145-day visit window)"
+        },
+        {
+          "measure": "All-cause hospitalization",
+          "description": "Any hospitalization for any cause occurring from randomization to 12 months post-randomization. Ascertainment via Connecting Ontario administrative health data.\n\nUnit of Measure: Number of participants",
+          "timeFrame": "From randomization through 12 months post-randomization (visit windows \u00b145 days)"
+        },
+        {
+          "measure": "Hospitalization for diabetic ketoacidosis (DKA)",
+          "description": "Any hospitalization for DKA occurring from randomization to 12 months post-randomization. Ascertainment via Connecting Ontario administrative health data.\n\nUnit of Measure: Number of participants",
+          "timeFrame": "From randomization through 12 months post-randomization (visit windows \u00b145 days)"
+        },
+        {
+          "measure": "Hyperkalemia requiring medication discontinuation or dose reduction",
+          "description": "Occurrence of hyperkalemia leading to discontinuation or dose reduction of study medications (RASi, SGLT2i, nsMRA, GLP1RA) from randomization to 12 months post-randomization. Ascertainment via review of clinic notes and medication records.\n\nUnit of Measure: Number of participants",
+          "timeFrame": "From randomization through 12 months post-randomization (visit windows \u00b145 days)"
+        },
+        {
+          "measure": "eGFR dip requiring medication discontinuation or dose reduction",
+          "description": "Occurrence of an eGFR decline requiring discontinuation or dose reduction of study medications from randomization to 12 months post-randomization. Ascertainment via review of clinic notes and medication records.\n\nUnit of Measure: Number of participants",
+          "timeFrame": "From randomization through 12 months post-randomization (visit windows \u00b145 days)"
+        },
+        {
+          "measure": "Symptomatic hypotension requiring medication discontinuation or dose reduction",
+          "description": "Occurrence of symptomatic hypotension (SBP \\<90 mmHg) leading to discontinuation or dose reduction of study medications from randomization to 12 months post-randomization. Ascertainment via review of clinic notes and medication records.\n\nUnit of Measure: Number of participants",
+          "timeFrame": "From randomization through 12 months post-randomization (visit windows \u00b145 days)"
+        },
+        {
+          "measure": "All-cause medication discontinuation",
+          "description": "Discontinuation of any study medication for any reason from randomization to 12 months post-randomization. Ascertainment via review of clinic notes and medication records.\n\nUnit of Measure: Number of participants",
+          "timeFrame": "From randomization through 12 months post-randomization (visit windows \u00b145 days)"
+        },
+        {
+          "measure": "Medication Prescription",
+          "description": "a) % of participants prescribed maximum indicated dose of RASi",
+          "timeFrame": "Baseline to 12 months post-randomization (\u00b145-day visit window)."
+        },
+        {
+          "measure": "Medication Prescription",
+          "description": "b) % of participants prescribed maximum indicated dose of SGLT2i",
+          "timeFrame": "Baseline to 12 months post-randomization (\u00b145-day visit window)."
+        },
+        {
+          "measure": "Medication Prescription",
+          "description": "c) % of participants prescribed maximum indicated dose of nsMRA",
+          "timeFrame": "Baseline to 12 months post-randomization (\u00b145-day visit window)."
+        },
+        {
+          "measure": "Medication Prescription",
+          "description": "d) % of participants prescribed maximum indicated dose of GLP1RA (oral)",
+          "timeFrame": "Baseline to 12 months post-randomization (\u00b145-day visit window)."
+        },
+        {
+          "measure": "Medication Prescription",
+          "description": "e) % of participants prescribed maximum indicated dose of GLP1RA (subcutaneous)",
+          "timeFrame": "Baseline to 12 months post-randomization (\u00b145-day visit window)."
+        }
+      ]
+    },
+    "eligibilityModule": {
+      "eligibilityCriteria": "Inclusion Criteria\n\n1. Age \u2265 18 years\n2. T2DM\n3. CKD (eGFR \u2265 25-60 mL/min/1.73 m\u00b2 OR UACR \u2265 30 mg/g) - on screening labs\n4. High Cardiovascular (CV) Risk: Defined as a history of prior myocardial infarction (MI), stroke, or peripheral artery disease (PAD), or the presence of cardiovascular risk factors, (specifically age 40 years or older and at least one of the following: cholesterol above target (LDL\u22651.8 mmol/L OR on cholesterol lowering medication - within past 24 months), hypertension (\u2265130/80 mmHg or on BPLMs), or atrial fibrillation.)\n5. Open to start new medications\n\nExclusion Criteria:\n\n1. Type 1 diabetes\n2. HbA1c \u226510% within past 12 months\n3. Serum potassium \u2265 5.2 mmol/L on screening labs\n4. Baseline Blood Pressure (BP) \\< 100/60 mmHg at screening\n5. Treated with new or intensified immunosuppression therapy for new (or relapse/flare of pre-existing) kidney disease within the last 60 days\n6. Kidney Transplant\n7. In the opinion of the investigator, currently treated with maximum tolerated dose of \u22653 medication classes:: RASi, SGLT2i, nsMRA or GLP1RA\n8. Currently prescribed all 4 medication classes : RASi, SGLT2i, nsMRA or GLP1RA\n9. Intolerance or allergy to any of RASi, SGLT2i, nsMRA or GLP1RA\n10. Known Heart Failure with Reduced Ejection Fraction (HFrEF)\n11. Current pregnancy, lactation or women of childbearing potential, unless using highly effective contraception",
+      "healthyVolunteers": false,
+      "sex": "ALL",
+      "minimumAge": "18 Years",
+      "stdAges": [
+        "ADULT",
+        "OLDER_ADULT"
+      ]
+    },
+    "contactsLocationsModule": {
+      "centralContacts": [
+        {
+          "name": "Ayodele Odutayo, Doctor",
+          "role": "CONTACT",
+          "phone": "416-480-6100",
+          "email": "ayodele.odutayo@sunnybrook.ca"
+        },
+        {
+          "name": "GOLD STANDARD Coordinating Centre",
+          "role": "CONTACT",
+          "phone": "416-480-6100",
+          "email": "GOLD-STANDARD@sunnybrook.ca"
+        }
+      ],
+      "locations": [
+        {
+          "facility": "Sunnybrook Health Sciences Centre",
+          "status": "RECRUITING",
+          "city": "Toronto",
+          "state": "Ontario",
+          "country": "Canada",
+          "geoPoint": {
+            "lat": 43.65333,
+            "lon": -79.38389
+          }
+        }
+      ]
+    },
+    "referencesModule": {
+      "references": [
+        {
+          "pmid": "39142721",
+          "type": "BACKGROUND",
+          "citation": "Shin JI, Xu Y, Chang AR, Carrero JJ, Flaherty CM, Mukhopadhyay A, Inker LA, Blecker SB, Horwitz LI, Grams ME. Prescription Patterns for Sodium-Glucose Cotransporter 2 Inhibitors in U.S. Health Systems. J Am Coll Cardiol. 2024 Aug 20;84(8):683-693. doi: 10.1016/j.jacc.2024.05.057."
+        },
+        {
+          "pmid": "32116454",
+          "type": "BACKGROUND",
+          "citation": "Mata-Cases M, Franch-Nadal J, Gratacos M, Mauricio D. Therapeutic Inertia: Still a Long Way to Go That Cannot Be Postponed. Diabetes Spectr. 2020 Feb;33(1):50-57. doi: 10.2337/ds19-0018."
+        },
+        {
+          "pmid": "36356631",
+          "type": "BACKGROUND",
+          "citation": "Mebazaa A, Davison B, Chioncel O, Cohen-Solal A, Diaz R, Filippatos G, Metra M, Ponikowski P, Sliwa K, Voors AA, Edwards C, Novosadova M, Takagi K, Damasceno A, Saidu H, Gayat E, Pang PS, Celutkiene J, Cotter G. Safety, tolerability and efficacy of up-titration of guideline-directed medical therapies for acute heart failure (STRONG-HF): a multinational, open-label, randomised, trial. Lancet. 2022 Dec 3;400(10367):1938-1952. doi: 10.1016/S0140-6736(22)02076-1. Epub 2022 Nov 7."
+        },
+        {
+          "pmid": "22945832",
+          "type": "BACKGROUND",
+          "citation": "Savovic J, Jones HE, Altman DG, Harris RJ, Juni P, Pildal J, Als-Nielsen B, Balk EM, Gluud C, Gluud LL, Ioannidis JP, Schulz KF, Beynon R, Welton NJ, Wood L, Moher D, Deeks JJ, Sterne JA. Influence of reported study design characteristics on intervention effect estimates from randomized, controlled trials. Ann Intern Med. 2012 Sep 18;157(6):429-38. doi: 10.7326/0003-4819-157-6-201209180-00537."
+        },
+        {
+          "pmid": "7580713",
+          "type": "BACKGROUND",
+          "citation": "Campbell MJ, Julious SA, Altman DG. Estimating sample sizes for binary, ordered categorical, and continuous outcomes in two group comparisons. BMJ. 1995 Oct 28;311(7013):1145-8. doi: 10.1136/bmj.311.7013.1145."
+        },
+        {
+          "pmid": "37939689",
+          "type": "BACKGROUND",
+          "citation": "Ong SW, Kitchlu A, Cherney DZI, Leung K, Chan CTM. Virtual Pharmacy: An Integrated Collaborative Redesign Targeting Medication-Related Problems in Patients with Chronic Kidney Disease. Am J Nephrol. 2024;55(2):206-213. doi: 10.1159/000535094. Epub 2023 Nov 8."
+        },
+        {
+          "pmid": "33873265",
+          "type": "BACKGROUND",
+          "citation": "Lee JF, Berzan E, Sridhar VS, Odutayo A, Cherney DZI. Cardiorenal Protection in Diabetic Kidney Disease. Endocrinol Metab (Seoul). 2021 Apr;36(2):256-269. doi: 10.3803/EnM.2021.987. Epub 2021 Apr 19."
+        },
+        {
+          "pmid": "32926067",
+          "type": "BACKGROUND",
+          "citation": "Sridhar VS, Dubrofsky L, Boulet J, Cherney DZ. Making a case for the combined use of SGLT2 inhibitors and GLP1 receptor agonists for cardiorenal protection. J Bras Nefrol. 2020 Oct-Dec;42(4):467-477. doi: 10.1590/2175-8239-JBN-2020-0100."
+        },
+        {
+          "pmid": "37517546",
+          "type": "BACKGROUND",
+          "citation": "Albakr RB, Sridhar VS, Cherney DZI. Novel Therapies in Diabetic Kidney Disease and Risk of Hyperkalemia: A Review of the Evidence From Clinical Trials. Am J Kidney Dis. 2023 Dec;82(6):737-742. doi: 10.1053/j.ajkd.2023.04.015. Epub 2023 Jul 29."
+        },
+        {
+          "pmid": "37429523",
+          "type": "BACKGROUND",
+          "citation": "Yau K, Odutayo A, Dash S, Cherney DZI. Biology and Clinical Use of Glucagon-Like Peptide-1 Receptor Agonists in Vascular Protection. Can J Cardiol. 2023 Dec;39(12):1816-1838. doi: 10.1016/j.cjca.2023.07.007. Epub 2023 Jul 8."
+        },
+        {
+          "pmid": "35812300",
+          "type": "BACKGROUND",
+          "citation": "Yau K, Dharia A, Alrowiyti I, Cherney DZI. Prescribing SGLT2 Inhibitors in Patients With CKD: Expanding Indications and Practical Considerations. Kidney Int Rep. 2022 May 5;7(7):1463-1476. doi: 10.1016/j.ekir.2022.04.094. eCollection 2022 Jul."
+        },
+        {
+          "pmid": "35700142",
+          "type": "BACKGROUND",
+          "citation": "Green JB, Mottl AK, Bakris G, Heerspink HJL, Mann JFE, McGill JB, Nangaku M, Rossing P, Scott C, Gay A, Agarwal R. Design of the COmbinatioN effect of FInerenone anD EmpaglifloziN in participants with chronic kidney disease and type 2 diabetes using a UACR Endpoint study (CONFIDENCE). Nephrol Dial Transplant. 2023 Mar 31;38(4):894-903. doi: 10.1093/ndt/gfac198."
+        },
+        {
+          "pmid": "38569821",
+          "type": "BACKGROUND",
+          "citation": "Brahmbhatt DH, Ross HJ, O'Sullivan M, Artanian V, Mueller B, Runeckles K, Steve Fan CP, Rac VE, Seto E; Medly Titrate Study Team. The Effect of Using a Remote Patient Management Platform in Optimizing Guideline-Directed Medical Therapy in Heart Failure Patients: A Randomized Controlled Trial. JACC Heart Fail. 2024 Apr;12(4):678-690. doi: 10.1016/j.jchf.2024.02.008."
+        },
+        {
+          "pmid": "33264825",
+          "type": "BACKGROUND",
+          "citation": "Bakris GL, Agarwal R, Anker SD, Pitt B, Ruilope LM, Rossing P, Kolkhof P, Nowack C, Schloemer P, Joseph A, Filippatos G; FIDELIO-DKD Investigators. Effect of Finerenone on Chronic Kidney Disease Outcomes in Type 2 Diabetes. N Engl J Med. 2020 Dec 3;383(23):2219-2229. doi: 10.1056/NEJMoa2025845. Epub 2020 Oct 23."
+        },
+        {
+          "pmid": "30990260",
+          "type": "BACKGROUND",
+          "citation": "Perkovic V, Jardine MJ, Neal B, Bompoint S, Heerspink HJL, Charytan DM, Edwards R, Agarwal R, Bakris G, Bull S, Cannon CP, Capuano G, Chu PL, de Zeeuw D, Greene T, Levin A, Pollock C, Wheeler DC, Yavin Y, Zhang H, Zinman B, Meininger G, Brenner BM, Mahaffey KW; CREDENCE Trial Investigators. Canagliflozin and Renal Outcomes in Type 2 Diabetes and Nephropathy. N Engl J Med. 2019 Jun 13;380(24):2295-2306. doi: 10.1056/NEJMoa1811744. Epub 2019 Apr 14."
+        },
+        {
+          "pmid": "34964812",
+          "type": "BACKGROUND",
+          "citation": "American Diabetes Association. Introduction: Standards of Medical Care in Diabetes-2022. Diabetes Care. 2022 Jan 1;45(Suppl 1):S1-S2. doi: 10.2337/dc22-Sint. No abstract available."
+        },
+        {
+          "pmid": "36272764",
+          "type": "BACKGROUND",
+          "citation": "Kidney Disease: Improving Global Outcomes (KDIGO) Diabetes Work Group. KDIGO 2022 Clinical Practice Guideline for Diabetes Management in Chronic Kidney Disease. Kidney Int. 2022 Nov;102(5S):S1-S127. doi: 10.1016/j.kint.2022.06.008. No abstract available."
+        },
+        {
+          "pmid": "41160832",
+          "type": "BACKGROUND",
+          "citation": "Agarwal R, Rossing P, Mann JFE. Finerenone with Empagliflozin in Chronic Kidney Disease and Type 2 Diabetes. Reply. N Engl J Med. 2025 Oct 30;393(17):1755. doi: 10.1056/NEJMc2513088. No abstract available."
+        },
+        {
+          "pmid": "38991584",
+          "type": "BACKGROUND",
+          "citation": "Apperloo EM, Neuen BL, Fletcher RA, Jongs N, Anker SD, Bhatt DL, Butler J, Cherney DZI, Herrington WG, Inzucchi SE, Jardine MJ, Liu CC, Mahaffey KW, McGuire DK, McMurray JJV, Neal B, Packer M, Perkovic V, Sabatine MS, Solomon SD, Staplin N, Szarek M, Vaduganathan M, Wanner C, Wheeler DC, Wiviott SD, Zannad F, Heerspink HJL. Efficacy and safety of SGLT2 inhibitors with and without glucagon-like peptide 1 receptor agonists: a SMART-C collaborative meta-analysis of randomised controlled trials. Lancet Diabetes Endocrinol. 2024 Aug;12(8):545-557. doi: 10.1016/S2213-8587(24)00155-4. Epub 2024 Jul 8."
+        },
+        {
+          "pmid": "39210781",
+          "type": "BACKGROUND",
+          "citation": "Neuen BL, Fletcher RA, Heath L, Perkovic A, Vaduganathan M, Badve SV, Tuttle KR, Pratley R, Gerstein HC, Perkovic V, Heerspink HJL. Cardiovascular, Kidney, and Safety Outcomes With GLP-1 Receptor Agonists Alone and in Combination With SGLT2 Inhibitors in Type 2 Diabetes: A Systematic Review and Meta-Analysis. Circulation. 2024 Nov 26;150(22):1781-1790. doi: 10.1161/CIRCULATIONAHA.124.071689. Epub 2024 Aug 30."
+        },
+        {
+          "pmid": "23362314",
+          "type": "BACKGROUND",
+          "citation": "Afkarian M, Sachs MC, Kestenbaum B, Hirsch IB, Tuttle KR, Himmelfarb J, de Boer IH. Kidney disease and increased mortality risk in type 2 diabetes. J Am Soc Nephrol. 2013 Feb;24(2):302-8. doi: 10.1681/ASN.2012070718. Epub 2013 Jan 29."
+        },
+        {
+          "pmid": "10972685",
+          "type": "BACKGROUND",
+          "citation": "Lemley KV, Abdullah I, Myers BD, Meyer TW, Blouch K, Smith WE, Bennett PH, Nelson RG. Evolution of incipient nephropathy in type 2 diabetes mellitus. Kidney Int. 2000 Sep;58(3):1228-37. doi: 10.1046/j.1523-1755.2000.00223.x."
+        },
+        {
+          "pmid": "7648820",
+          "type": "BACKGROUND",
+          "citation": "Mathiesen ER, Ronn B, Storm B, Foght H, Deckert T. The natural course of microalbuminuria in insulin-dependent diabetes: a 10-year prospective study. Diabet Med. 1995 Jun;12(6):482-7. doi: 10.1111/j.1464-5491.1995.tb00528.x."
+        },
+        {
+          "pmid": "34426012",
+          "type": "BACKGROUND",
+          "citation": "Chu L, Fuller M, Jervis K, Ciaccia A, Abitbol A. Prevalence of Chronic Kidney Disease in Type 2 Diabetes: The Canadian REgistry of Chronic Kidney Disease in Diabetes Outcomes (CREDO) Study. Clin Ther. 2021 Sep;43(9):1558-1573. doi: 10.1016/j.clinthera.2021.07.015. Epub 2021 Aug 21."
+        },
+        {
+          "pmid": "42560777",
+          "type": "DERIVED",
+          "citation": "Odutayo A, Bhatia S, Blake P, Heale E, Scarth F, Simpson C, Muggah E, McKenna B, Chan CTM. Cardiovascular-Kidney-Metabolic Conditions and Population Health: The Need for an Integrated Care Strategy. Clin J Am Soc Nephrol. 2026 Aug 6. doi: 10.2215/CJN.0000001143. Online ahead of print."
+        }
+      ]
+    },
+    "ipdSharingStatementModule": {
+      "ipdSharing": "YES",
+      "description": "Yes - after publication of planned analyses by study leadership, de-identified individual participant data may be made available to qualified researchers upon reasonable request, subject to review and approval by the study investigators and any applicable data-sharing agreements."
+    }
+  },
+  "derivedSection": {
+    "miscInfoModule": {
+      "versionHolder": "2026-11-10"
+    },
+    "conditionBrowseModule": {
+      "meshes": [
+        {
+          "id": "D003928",
+          "term": "Diabetic Nephropathies"
+        },
+        {
+          "id": "D003924",
+          "term": "Diabetes Mellitus, Type 2"
+        },
+        {
+          "id": "D051436",
+          "term": "Renal Insufficiency, Chronic"
+        },
+        {
+          "id": "D003920",
+          "term": "Diabetes Mellitus"
+        }
+      ],
+      "ancestors": [
+        {
+          "id": "D007674",
+          "term": "Kidney Diseases"
+        },
+        {
+          "id": "D014570",
+          "term": "Urologic Diseases"
+        },
+        {
+          "id": "D052776",
+          "term": "Female Urogenital Diseases"
+        },
+        {
+          "id": "D005261",
+          "term": "Female Urogenital Diseases and Pregnancy Complications"
+        },
+        {
+          "id": "D000091642",
+          "term": "Urogenital Diseases"
+        },
+        {
+          "id": "D052801",
+          "term": "Male Urogenital Diseases"
+        },
+        {
+          "id": "D048909",
+          "term": "Diabetes Complications"
+        },
+        {
+          "id": "D004700",
+          "term": "Endocrine System Diseases"
+        },
+        {
+          "id": "D044882",
+          "term": "Glucose Metabolism Disorders"
+        },
+        {
+          "id": "D008659",
+          "term": "Metabolic Diseases"
+        },
+        {
+          "id": "D009750",
+          "term": "Nutritional and Metabolic Diseases"
+        },
+        {
+          "id": "D051437",
+          "term": "Renal Insufficiency"
+        },
+        {
+          "id": "D002908",
+          "term": "Chronic Disease"
+        },
+        {
+          "id": "D020969",
+          "term": "Disease Attributes"
+        },
+        {
+          "id": "D010335",
+          "term": "Pathologic Processes"
+        },
+        {
+          "id": "D013568",
+          "term": "Pathological Conditions, Signs and Symptoms"
+        }
+      ]
+    },
+    "interventionBrowseModule": {
+      "meshes": [
+        {
+          "id": "D052283",
+          "term": "Creatine Kinase, MM Form"
+        },
+        {
+          "id": "D059039",
+          "term": "Standard of Care"
+        }
+      ],
+      "ancestors": [
+        {
+          "id": "D003402",
+          "term": "Creatine Kinase"
+        },
+        {
+          "id": "D017852",
+          "term": "Phosphotransferases (Nitrogenous Group Acceptor)"
+        },
+        {
+          "id": "D010770",
+          "term": "Phosphotransferases"
+        },
+        {
+          "id": "D014166",
+          "term": "Transferases"
+        },
+        {
+          "id": "D004798",
+          "term": "Enzymes"
+        },
+        {
+          "id": "D045762",
+          "term": "Enzymes and Coenzymes"
+        },
+        {
+          "id": "D019984",
+          "term": "Quality Indicators, Health Care"
+        },
+        {
+          "id": "D011787",
+          "term": "Quality of Health Care"
+        },
+        {
+          "id": "D006298",
+          "term": "Health Services Administration"
+        },
+        {
+          "id": "D017530",
+          "term": "Health Care Quality, Access, and Evaluation"
+        }
+      ]
+    }
+  },
+  "hasResults": false
+}

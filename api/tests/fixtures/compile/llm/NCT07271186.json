@@ -1,0 +1,117 @@
+{
+  "criteria": [
+    {
+      "type": "inclusion",
+      "text": "Medical history of type 2 diabetes",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "type 2 diabetes"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "receiving medical therapy or lifestyle interventions for glucose management",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "Hemoglobin A1C (HbA1c) of 6.5 to 10% at screening",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.hba1c",
+        "op": ">=",
+        "value": 6.5,
+        "unit": "%"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "Hemoglobin A1C (HbA1c) of 6.5 to 10% at screening",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.hba1c",
+        "op": "<=",
+        "value": 10,
+        "unit": "%"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "eGFR 30 to 90 mL/min/1.73 m^2 using 2021 Chronic Kidney Disease-Epidemiology Collaboration-Estimated Glomerular Filtration Rate using Creatinine and Cystatin C (CKD-EPI eGFRcr-cys) equation at screening",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.egfr",
+        "op": ">=",
+        "value": 30,
+        "unit": "mL/min/1.73m2"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "eGFR 30 to 90 mL/min/1.73 m^2 using 2021 Chronic Kidney Disease-Epidemiology Collaboration-Estimated Glomerular Filtration Rate using Creatinine and Cystatin C (CKD-EPI eGFRcr-cys) equation at screening",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.egfr",
+        "op": "<=",
+        "value": 90,
+        "unit": "mL/min/1.73m2"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "Albuminuria: Urine Albumin to Creatinine Ratio (UACR) of 500 to 5000 mg/g at screening",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.uacr",
+        "op": ">=",
+        "value": 500,
+        "unit": "mg/g"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "Albuminuria: Urine Albumin to Creatinine Ratio (UACR) of 500 to 5000 mg/g at screening",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.uacr",
+        "op": "<=",
+        "value": 5000,
+        "unit": "mg/g"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Known medical history or clinical evidence indicative of non-diabetic renal disease",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Renal disease that required treatment with systemic immunosuppressive therapy (prior or current)",
+      "category": "history",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "a history of end-stage kidney disease requiring treatment with chronic dialysis or kidney transplantation",
+      "category": "history",
+      "predicate": {
+        "field": "conditions",
+        "op": "in",
+        "value": [
+          "end-stage kidney disease",
+          "kidney transplant"
+        ]
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Medically unstable as assessed by the investigator or hospitalization (ie, >24 hours) within 30 days of the screening visit",
+      "category": "other",
+      "predicate": null
+    }
+  ]
+}

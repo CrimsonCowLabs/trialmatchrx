@@ -1,0 +1,140 @@
+{
+  "criteria": [
+    {
+      "type": "inclusion",
+      "text": "Diagnosed with Type 2 Diabetes Mellitus for at least 90 days prior to screening",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "On SGTL2i or SGLT2i-naïve and other glucose lowering medication(s)",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "On stable dose of SGLT2i ≥ 7.0 % to ≤ 10.5% (53 to 91.3 mmol/mol)",
+      "category": "lab",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "SGLT2i-naive ≥ 7.5% to ≤ 10.5% (58 to 91.3 mmol/mol)",
+      "category": "lab",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "Impaired renal function",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "Body mass index (BMI) of ≥ 23 kg/m2 at screening",
+      "category": "lab",
+      "predicate": {
+        "field": "vitals.bmi",
+        "op": ">=",
+        "value": 23,
+        "unit": "kg/m2"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "Stable body weight (self-reported or documented) for 90 days prior to screening",
+      "category": "history",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Type 1 Diabetes",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "type 1 diabetes"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "secondary forms of diabetes (including congenital forms)",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "secondary diabetes"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "history of ketoacidosis or hyperosmolar coma",
+      "category": "history",
+      "predicate": {
+        "field": "conditions",
+        "op": "in",
+        "value": [
+          "diabetic ketoacidosis",
+          "hyperosmolar hyperglycemic state"
+        ]
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Currently receiving or anticipated to receive, therapeutic intervention for diabetic retinopathy and/or macular edema",
+      "category": "procedure",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Have had more than one episode of severe hypoglycemia within 180 days prior to screening",
+      "category": "history",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "a history of hypoglycemia unawareness or poor recognition of hypoglycemic symptoms",
+      "category": "history",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "hypoglycemia unawareness"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Clinically significant condition affecting the upper GI tract",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "chronic use of any medication that affects gastric motility or gastric emptying",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "History of acute or chronic pancreatitis",
+      "category": "history",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "pancreatitis"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Severe congestive heart failure (New York Heart Association IV)",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "History/family history of medullary thyroid cancer or multiple endocrine neoplasia type 2",
+      "category": "history",
+      "predicate": null
+    }
+  ]
+}

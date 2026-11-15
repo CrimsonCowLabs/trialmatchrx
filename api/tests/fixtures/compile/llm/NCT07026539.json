@@ -1,0 +1,244 @@
+{
+  "criteria": [
+    {
+      "type": "inclusion",
+      "text": "Diagnosis of type 2 diabetes according to the World Health Organization definition.",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "type 2 diabetes"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "Current treatment with a SGLT2-I1 at maximally tolerated dose.",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "Current treatment with an ACE inhibitor or an ARB1 at maximally tolerated dose.",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "inclusion",
+      "text": "Plasma potassium level of 4.8 mmol/L or less at the time of screening.",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.potassium",
+        "op": "<=",
+        "value": 4.8,
+        "unit": "mmol/L"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "eGFR ≥25 ml/min/1.73 m2",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.egfr",
+        "op": ">=",
+        "value": 25,
+        "unit": "mL/min/1.73m2"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "UACR between 30-5000 mg/g",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.uacr",
+        "op": ">=",
+        "value": 30,
+        "unit": "mg/g"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "UACR between 30-5000 mg/g",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.uacr",
+        "op": "<=",
+        "value": 5000,
+        "unit": "mg/g"
+      }
+    },
+    {
+      "type": "inclusion",
+      "text": "Speak and understand Danish fluently.",
+      "category": "demographic",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Inability to give informed consent.",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Severe renal disease with eGFR <25 ml/min/1.73m2.",
+      "category": "lab",
+      "predicate": {
+        "field": "labs.egfr",
+        "op": "<",
+        "value": 25,
+        "unit": "mL/min/1.73m2"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Severe hepatic disease (plasma ALAT above 3 x upper limit of normal).",
+      "category": "lab",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Active cancer diagnosis other than basal cell carcinoma.",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Treatment with systemic steroids at time of randomization.",
+      "category": "medication",
+      "predicate": {
+        "field": "meds",
+        "op": "has",
+        "value": "systemic corticosteroid"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Bariatric surgery within 2 years or other gastrointestinal surgeries that induce chronic malabsorption.",
+      "category": "procedure",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Alcohol or drug abuse within 3 months of informed consent that would interfere with trial participation or any ongoing condition leading to decreased compliance with study procedures or study drug intake.",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Chronic or acute pancreatitis.",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "pancreatitis"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Pregnancy",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "pregnant",
+        "op": "==",
+        "value": "true"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "breastfeeding",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Poorly controlled medical condition, e.g. congestive heart failure (New York Heart Association III-IV or EF ≤ 40%), recent (within 3 months) stroke or acute myocardial infarction or any other condition that in the opinion of the investigator will put the trial participant at risk if participating in the trial.",
+      "category": "other",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Allergy to finerenone or any of the excipients contained in the drug.",
+      "category": "medication",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Current systemic treatment with strong inhibitors of CYP3A4 (e.g. itraconazol, ketoconazole, ritonavir, cobicistat, clarithromycin)",
+      "category": "medication",
+      "predicate": {
+        "field": "meds",
+        "op": "in",
+        "value": [
+          "itraconazole",
+          "ketoconazole",
+          "ritonavir",
+          "cobicistat",
+          "clarithromycin"
+        ]
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "strong inducers of CYP3A4 (e.g. rifampicin, carbamazepine, phenytoin, phenobarbital)",
+      "category": "medication",
+      "predicate": {
+        "field": "meds",
+        "op": "in",
+        "value": [
+          "rifampicin",
+          "carbamazepine",
+          "phenytoin",
+          "phenobarbital"
+        ]
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Current treatment with other MRAs (e.g. spironolactone, eplerenone etc.).",
+      "category": "medication",
+      "predicate": {
+        "field": "meds",
+        "op": "in",
+        "value": [
+          "spironolactone",
+          "eplerenone"
+        ]
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Patients with rare hereditary problems of galactose intolerance, total lactase deficiency or glucose- galactose malabsorption.",
+      "category": "diagnosis",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Addison's disease.",
+      "category": "diagnosis",
+      "predicate": {
+        "field": "conditions",
+        "op": "has",
+        "value": "addison's disease"
+      }
+    },
+    {
+      "type": "exclusion",
+      "text": "Contraindications to MRI.",
+      "category": "procedure",
+      "predicate": null
+    },
+    {
+      "type": "exclusion",
+      "text": "Previous renal or heart transplantation.",
+      "category": "procedure",
+      "predicate": {
+        "field": "conditions",
+        "op": "in",
+        "value": [
+          "kidney transplant",
+          "heart transplant"
+        ]
+      }
+    }
+  ]
+}
