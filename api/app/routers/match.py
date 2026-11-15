@@ -4,6 +4,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from app.config import get_settings
 from app.pipeline.closer_agent import (
     CloserModelUnavailable,
     CloserToolError,
@@ -17,12 +18,33 @@ from app.pipeline.judge import anthropic_judge_model
 from app.pipeline.match_run import run_match
 from app.pipeline.parse_patient import anthropic_parse_model
 from app.routers.trials import compile_model_factory
-from app.schemas import CloserRequest, MatchRequest, RunStarted
+from app.schemas import CloserRequest, MatchRequest, RunKind, RunStarted
 from app.sources import synthea
 from app.trace.recorder import TraceRecorder
+from app.trace.replay import NoRecordedRun, RunFixture, find_fixture, replay_run
 from app.trace.runner import start_traced_run
 
 router = APIRouter(prefix="/api", tags=["match"])
+
+
+def _recorded(kind: RunKind, nct_id: str | None = None) -> RunFixture:
+    """DEMO_MODE=replay: the fixture to replay, or 503 when none was recorded."""
+    try:
+        return find_fixture(get_settings().demo_fixtures_dir, kind, nct_id)
+    except NoRecordedRun as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+def _start_replay(
+    kind: RunKind, request: dict[str, Any], fixture: RunFixture, ids: dict[str, str]
+) -> RunStarted:
+    """A new run that re-emits `fixture` (persisted and streamed like a live run)."""
+
+    async def work(rec: TraceRecorder) -> dict[str, Any] | None:
+        gap = get_settings().demo_replay_max_gap_s
+        return await replay_run(rec, fixture, max_gap_s=gap, ids=ids)
+
+    return RunStarted(run_id=start_traced_run(kind, request, work))
 
 
 def parse_model_factory() -> ModelFactory:
@@ -53,6 +75,11 @@ async def start_match(
         except synthea.InvalidBundle as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    if get_settings().demo_mode == "replay":
+        fixture = _recorded("match")
+        # The recorded request, not this one: the run's request, parse and trace must agree.
+        return _start_replay("match", fixture.request, fixture, {})
+
     async def work(rec: TraceRecorder) -> dict[str, Any]:
         return await run_match(
             rec,
@@ -62,7 +89,6 @@ async def start_match(
             judge_model_factory=judge_model,
         )
 
-    # HACK(demo): DEMO_MODE=replay is not implemented yet (M7); always runs the pipeline.
     return RunStarted(run_id=start_traced_run("match", req.model_dump(mode="json"), work))
 
 
@@ -85,6 +111,11 @@ async def start_closer(
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except CloserToolError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    if get_settings().demo_mode == "replay":
+        fixture = _recorded("closer", req.nct_id)
+        # The recorded agent read the recorded match run; the replay points at this one.
+        ids = {str(fixture.request["run_id"]): req.run_id}
+        return _start_replay("closer", req.model_dump(mode="json"), fixture, ids)
     try:
         model = model_factory()
     except CloserModelUnavailable as exc:
@@ -93,5 +124,4 @@ async def start_closer(
     async def work(rec: TraceRecorder) -> dict[str, Any]:
         return await run_closer(rec, req, model=model)
 
-    # HACK(demo): DEMO_MODE=replay is not implemented yet (M7); always runs the agent.
     return RunStarted(run_id=start_traced_run("closer", req.model_dump(mode="json"), work))

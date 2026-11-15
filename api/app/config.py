@@ -24,6 +24,10 @@ class Settings(BaseSettings):
 
     # "off" runs the real pipeline; "replay" re-emits recorded runs from data/fixtures/runs.
     demo_mode: Literal["off", "replay"] = "off"
+    # Where `scripts/record_demo.py` writes the run fixtures replay mode reads (SPEC.md).
+    demo_fixtures_dir: Path = REPO_DIR / "data" / "fixtures" / "runs"
+    # Longest wait between two replayed emissions; recorded gaps above it are cut (SPEC.md).
+    demo_replay_max_gap_s: float = 0.2
 
     database_url: str = f"sqlite:///{API_DIR / 'app.db'}"
     # ClinicalTrials.gov search radius around Sacramento (SPEC.md: 50 mi).

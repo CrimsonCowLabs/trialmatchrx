@@ -1,4 +1,5 @@
-.PHONY: install dev api web check check-api check-web types seed cohort eval compile-fixtures
+.PHONY: install dev api web check check-api check-web types seed cohort eval compile-fixtures \
+	record-demo
 
 API_PORT ?= 8000
 WEB_PORT ?= 3000
@@ -71,3 +72,10 @@ eval:
 # `make compile-fixtures ARGS=--fixtures` replays the saved (hand-authored) LLM outputs instead.
 compile-fixtures:
 	cd api && uv run python -m scripts.compile_fixtures $(ARGS)
+
+# Record the demo patient's match run and the closer run on its top trial into
+# data/fixtures/runs/ for DEMO_MODE=replay. Needs ANTHROPIC_API_KEY and `make seed` first.
+# `ARGS="--nct NCT..."` picks the closer's trial; `ARGS="--from-runs MATCH_ID CLOSER_ID"` saves
+# two finished runs from app.db instead (offline, e.g. a rehearsal done in the UI).
+record-demo:
+	cd api && uv run python -m scripts.record_demo $(ARGS)
