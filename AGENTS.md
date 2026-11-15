@@ -18,11 +18,13 @@ Spec: SPEC.md is the source of truth. If something in it is wrong or missing, st
 - Synthetic data only. Never add real patient data.
 
 ## Commands
-- make dev      # api on :8045 (uvicorn --reload) + web on :3045
-- make check    # all linters + tests
-- make types    # regenerate TS types from OpenAPI
-- make seed     # fetch trials, load cohort
-- make eval     # run TREC eval, write eval_runs
+- make dev           # api on :8045 (uvicorn --reload) + web on :3045
+- make check         # all linters + tests
+- make types         # regenerate TS types from OpenAPI
+- make seed          # fetch trials, load cohort
+- make eval          # run TREC eval, write eval_runs; run it only when you want a recorded score
+- make eval-smoke    # 1 topic live, stops at the first failure, never recorded; run after a pipeline change
+- make eval-offline  # re-score from the caches for free (no LLM calls); records only a fully cached run
 
 ## Agent skills
 
