@@ -336,7 +336,7 @@ Spec: SPEC.md is the source of truth. If something in it is wrong or missing, st
 - Synthetic data only. Never add real patient data.
 
 ## Commands
-- make dev      # api on :8000 (uvicorn --reload) + web on :3000
+- make dev      # api on :8045 (uvicorn --reload) + web on :3045
 - make check    # all linters + tests
 - make types    # regenerate TS types from OpenAPI
 - make seed     # fetch trials, load cohort
