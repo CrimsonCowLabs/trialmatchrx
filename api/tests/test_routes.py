@@ -1,6 +1,7 @@
 """Every route in the SPEC API table answers with schema-valid data."""
 
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 
@@ -8,6 +9,7 @@ from app.config import get_settings
 from app.main import app
 from app.pipeline.fixture_model import FixtureChatModel, load_llm_fixture
 from app.pipeline.study_source import load_fixture_study
+from app.routers.match import parse_model_factory
 from app.routers.trials import compile_model_factory
 from app.schemas import (
     Criterion,
@@ -22,7 +24,9 @@ from app.sources import ctgov
 from tests.ctgov_fake import FakeCtgov
 from tests.sse import client, parse_sse
 
-MATCH_BODY = {"note": "61M, T2D, HbA1c 8.4%, eGFR 48, on metformin", "condition": "t2d"}
+PARSE_FIXTURES = Path(__file__).parent / "fixtures" / "parse_patient"
+DEMO_NOTE = (PARSE_FIXTURES / "demo_short.txt").read_text()
+MATCH_BODY = {"note": DEMO_NOTE, "condition": "t2d"}
 
 
 @pytest.fixture(autouse=True)
@@ -34,7 +38,20 @@ def no_stub_delay() -> Iterator[None]:
     settings.stub_event_delay_s = original
 
 
-async def test_stub_match_streams_five_trace_events_then_done() -> None:
+@pytest.fixture(autouse=True)
+def fixture_parse_model() -> Iterator[FixtureChatModel]:
+    """Match runs parse the note with the saved demo-patient output, not Haiku."""
+    model = FixtureChatModel(
+        output=load_llm_fixture("demo_short", root=PARSE_FIXTURES),
+        tool_name="DraftPatient",
+        model_name=get_settings().model_parse,
+    )
+    app.dependency_overrides[parse_model_factory] = lambda: lambda: model
+    yield model
+    app.dependency_overrides.pop(parse_model_factory)
+
+
+async def test_match_streams_trace_events_in_seq_order_then_done() -> None:
     async with client() as c:
         started = await c.post("/api/match", json=MATCH_BODY)
         assert started.status_code == 200
@@ -43,10 +60,29 @@ async def test_stub_match_streams_five_trace_events_then_done() -> None:
         messages = parse_sse((await c.get(f"/api/runs/{run_id}/events")).text)
 
     traces = [TraceEvent.model_validate(m.data) for m in messages if m.event == "trace"]
-    assert len(traces) == 5
-    assert [e.seq for e in traces] == [1, 2, 3, 4, 5]
+    assert [e.seq for e in traces] == list(range(1, len(traces) + 1))
     assert {e.run_id for e in traces} == {run_id}
     assert messages[-1].event == "done"
+
+
+async def test_match_parses_the_note_into_the_run_result_and_trace(
+    fixture_parse_model: FixtureChatModel,
+) -> None:
+    async with client() as c:
+        run_id = (await c.post("/api/match", json=MATCH_BODY)).json()["run_id"]
+        await c.get(f"/api/runs/{run_id}/events")
+        summary = RunSummary.model_validate((await c.get(f"/api/runs/{run_id}")).json())
+        trace = [
+            TraceEvent.model_validate(e) for e in (await c.get(f"/api/runs/{run_id}/trace")).json()
+        ]
+
+    assert fixture_parse_model.calls == 1
+    patient = summary.patient
+    assert patient is not None and patient.age == 61 and patient.sex == "male"
+    assert patient.labs["hba1c"].value == 8.4 and patient.labs["hba1c"].source_span in DEMO_NOTE
+    (step,) = [e for e in trace if e.name == "parse_patient"]
+    assert step.status == "ok" and step.kind == "step"
+    assert any(e.kind == "llm" and e.parent_id == step.id for e in trace)
 
 
 async def test_run_summary_and_trace_after_a_stub_match() -> None:
@@ -61,7 +97,8 @@ async def test_run_summary_and_trace_after_a_stub_match() -> None:
 
     assert summary.status == "done"
     assert summary.patient is not None and summary.patient.labs["egfr"].value == 48
-    assert summary.totals.llm_calls == 1 and summary.totals.cache_hits == 1
+    # one real (fixture) parse call + the stub compile event
+    assert summary.totals.llm_calls == 2 and summary.totals.cache_hits == 1
     trace_ids = {e.id for e in trace}
     assert all(v.trace_event_id in trace_ids for m in summary.matches for v in m.verdicts)
 
