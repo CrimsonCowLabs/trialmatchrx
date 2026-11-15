@@ -20,7 +20,7 @@ export type Tier = Schemas["TrialMatch"]["tier"];
 export type TierCounts = Schemas["TierCounts"];
 
 // Called directly (not through a Next rewrite) so the SSE stream is never buffered.
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8045";
 
 type JsonBody<P extends keyof paths, M extends "post"> = paths[P][M] extends {
   requestBody?: { content: { "application/json": infer B } };

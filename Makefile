@@ -1,14 +1,14 @@
 .PHONY: install dev api web check check-api check-web types seed cohort eval compile-fixtures \
 	record-demo
 
-API_PORT ?= 8000
-WEB_PORT ?= 3000
+API_PORT ?= 8045
+WEB_PORT ?= 3045
 
 install:
 	cd api && uv sync
 	cd web && pnpm install
 
-# api on :8000 (uvicorn --reload) + web on :3000; Ctrl-C stops both.
+# api on :8045 (uvicorn --reload) + web on :3045; Ctrl-C stops both.
 dev:
 	@trap 'kill 0' INT TERM EXIT; \
 	(cd api && uv run uvicorn app.main:app --reload --port $(API_PORT)) & \
