@@ -66,6 +66,9 @@ cohort:
 # ANTHROPIC_API_KEY (skipped without it) and replays cached LLM answers on a re-run;
 # `ARGS=--bm25-only` skips it. `ARGS="--topics N"` scores both on only the first N topics (a cheap
 # live check): reported as partial, never written to eval_runs, its answers still cached.
+# `ARGS=--offline` scores the matcher from the caches only (no API calls, no key; misses are
+# counted per step, and an incomplete run records nothing and exits 1). `ARGS=--fail-fast` stops
+# at the first model failure (or, with --offline, cache miss), records nothing and exits 1.
 eval:
 	cd api && uv run python -m scripts.run_eval $(ARGS)
 

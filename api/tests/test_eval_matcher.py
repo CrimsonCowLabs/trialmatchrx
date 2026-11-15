@@ -121,12 +121,13 @@ class Models:
             model_name="judge-model",
         )
 
-    def score(self, sample: TrecSample) -> Any:
+    def score(self, sample: TrecSample, **kwargs: Any) -> Any:
         return score_matcher(
             sample,
             compile_model_factory=lambda: self.compile,
             parse_model_factory=lambda: self.parse,
             judge_model_factory=lambda: self.judge,
+            **kwargs,
         )
 
     @property
