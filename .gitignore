@@ -24,3 +24,5 @@ web/next-env.d.ts
 data/*
 !data/fixtures/
 .DS_Store
+
+notes.md
