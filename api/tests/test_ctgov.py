@@ -136,3 +136,9 @@ async def test_live_search_returns_recruiting_studies_with_cache_keys() -> None:
     for study in studies:
         ctgov.study_key(study)  # every study carries nctId + lastUpdatePostDate
         assert study["protocolSection"]["statusModule"]["overallStatus"] == "RECRUITING"
+
+
+def test_fields_request_the_conditions_module() -> None:
+    # trial_search filters on conditions + keywords, so every fetch and seed must ask for them.
+    assert "ConditionsModule" in ctgov.FIELDS.split(",")
+    assert ctgov.search_params("pulmonary fibrosis")["fields"] == ctgov.FIELDS

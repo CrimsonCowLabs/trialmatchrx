@@ -23,8 +23,14 @@ from app.trace.recorder import TraceRecorder
 BASE_URL = "https://clinicaltrials.gov/api/v2"
 SACRAMENTO = (38.5816, -121.4944)
 # The four modules SPEC.md names, plus `Phase` (designModule.phases) because TrialDetail and
-# TrialMatch both carry `phase`. Everything else in designModule is left out.
-FIELDS = "IdentificationModule,StatusModule,EligibilityModule,ContactsLocationsModule,Phase"
+# TrialMatch both carry `phase`, and `ConditionsModule` (conditions + keywords) so a match can
+# keep only trials for the patient's condition (trial_search). Everything else in designModule
+# is left out. Rows cached before ConditionsModule was added have no conditions; trial_search
+# keeps them (ranked after condition matches) until a re-seed backfills them.
+FIELDS = (
+    "IdentificationModule,StatusModule,ConditionsModule,EligibilityModule,"
+    "ContactsLocationsModule,Phase"
+)
 NCT_ID = re.compile(r"NCT\d{8}")
 RETRIES = 5
 RETRY_BACKOFF_S = 2.0  # doubles per attempt unless the API sends Retry-After
