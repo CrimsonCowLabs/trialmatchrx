@@ -149,7 +149,8 @@ export function patientTitle(
   return [summary?.patient_label, summary?.condition].filter(Boolean).join(" · ") || null;
 }
 
-function factValue({ value, unit }: Fact): string {
+/** "8.4%", "48 mL/min/1.73m2": a fact's value with its unit. */
+export function factValue({ value, unit }: Pick<Fact, "value" | "unit">): string {
   if (!unit) return String(value);
   return unit === "%" ? `${value}%` : `${value} ${unit}`;
 }

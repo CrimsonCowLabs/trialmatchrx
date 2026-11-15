@@ -115,6 +115,14 @@ async def test_a_fact_whose_span_is_not_in_the_note_is_dropped_with_a_guardrail(
     guards = [e for e in events(rec) if e.kind == "guardrail"]
     assert sorted(e.name for e in guards) == ["span:age", "span:meds[1]"]
     assert all(e.status == "failed" for e in guards)
+    # The web Patient facts panel lists these as unverified: it reads the parse step's
+    # guardrail children and their `input.path` / `input.fact`.
+    step = next(e for e in events(rec) if e.name == "parse_patient")
+    meds = next(e for e in guards if e.name == "span:meds[1]")
+    assert meds.parent_id == step.id
+    assert meds.input is not None
+    assert meds.input["path"] == "meds[1]"
+    assert meds.input["fact"]["source_span"] == "on insulin glargine"
 
 
 @pytest.mark.parametrize("unit", ["mmol/mol", None])
