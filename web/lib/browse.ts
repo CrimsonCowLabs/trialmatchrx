@@ -38,7 +38,16 @@ export function runLinks(run: RunListItem): RunLinks {
   return { view: `/match/${id}`, replay: run.status === "done" ? `/runs/${id}` : null };
 }
 
-export type TrialFilter = "all" | "compiled" | "not_compiled";
+/** The link at the end of a /runs row: a done run's replay, or a failed run's trace (its match
+ *  view, where the error event is in the trace panel). A running run has none yet. */
+export function runAction(run: RunListItem): { label: string; href: string } | null {
+  const links = runLinks(run);
+  if (links.replay) return { label: "Replay", href: links.replay };
+  if (run.status === "failed") return { label: "Trace", href: links.view };
+  return null;
+}
+
+export type TrialFilter ="all" | "compiled" | "not_compiled";
 
 const TRIAL_FILTERS = {
   all: { label: "All", keep: () => true },

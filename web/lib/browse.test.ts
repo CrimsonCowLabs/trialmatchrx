@@ -3,7 +3,17 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import type { RunListItem, TrialListItem } from "./api.ts";
-import { runLinks, tierChips, tierSummary, filterTrials, matchingTrials, trialFilterChips, trialStatusTone, withCompiled } from "./browse.ts";
+import {
+  filterTrials,
+  matchingTrials,
+  runAction,
+  runLinks,
+  tierChips,
+  tierSummary,
+  trialFilterChips,
+  trialStatusTone,
+  withCompiled,
+} from "./browse.ts";
 
 function run(status: RunListItem["status"]): RunListItem {
   return {
@@ -42,6 +52,12 @@ test("a running match run opens its live view, with no replay yet", () => {
 
 test("a failed run opens its view but offers no replay", () => {
   assert.deepEqual(runLinks(run("failed")), { view: "/match/r-1", replay: null });
+});
+
+test("a run row's action: Replay when done, Trace when failed, none while running", () => {
+  assert.deepEqual(runAction(run("done")), { label: "Replay", href: "/runs/r-1" });
+  assert.deepEqual(runAction(run("failed")), { label: "Trace", href: "/match/r-1" });
+  assert.equal(runAction(run("running")), null);
 });
 
 test("run ids are URL-encoded", () => {
