@@ -1,7 +1,15 @@
-"""Score BM25 on the fixed TREC sample and write an `eval_runs` row.
+"""Score the matcher and BM25 on the fixed TREC sample and write an `eval_runs` row for each.
 
     make eval                                   # or: cd api && uv run python -m scripts.run_eval
     uv run python -m scripts.run_eval --rebuild # redraw + refetch the sample (network)
+    uv run python -m scripts.run_eval --bm25-only
+
+The matcher runs the full pipeline (parse -> compile -> evaluate -> judge -> verify -> rank) on
+each topic as a traced match run, so it needs ANTHROPIC_API_KEY. The first run is slow and
+costs tokens; criteria land in the compile cache and every parse / judge answer in `llm_cache`,
+so a re-run on the same sample replays them and scores the same. Without a key the matcher is
+skipped (BM25 still runs). A run where any trial fails to compile is printed but not recorded,
+so the history only holds scores over the whole sample.
 
 The first run builds the sample (network): downloads the TREC 2021 topics + qrels into
 data/trec/, draws 15 topics x 20 judged trials, fetches each trial from ClinicalTrials.gov and
@@ -11,12 +19,23 @@ network.
 
 import argparse
 import asyncio
+import sys
 from pathlib import Path
 
 import httpx
 
+from app.config import get_settings
 from app.db import init_db
-from app.eval.runs import BM25, current_git_sha, record_eval_run, score_bm25
+from app.eval.matcher import score_matcher
+from app.eval.runs import (
+    ACCURACY,
+    BM25,
+    COMPILE_RATE,
+    MATCHER,
+    current_git_sha,
+    record_eval_run,
+    score_bm25,
+)
 from app.sources import ctgov, trec
 
 
@@ -55,7 +74,15 @@ def _reasons(sample: trec.TrecSample) -> str:
     return ", ".join(f"{n} {reason}" for reason, n in sorted(counts.items())) or "none"
 
 
-def main(rebuild: bool) -> None:
+COLUMNS = (("ndcg@10", "nDCG@10"), ("p@10", "P@10"), (ACCURACY, "accuracy"))
+
+
+def _row(system: str, metrics: dict[str, float]) -> str:
+    cells = (f"{metrics[k]:>9.4f}" if k in metrics else f"{'-':>9}" for k, _ in COLUMNS)
+    return f"{system:<8} " + " ".join(cells)
+
+
+def main(rebuild: bool, bm25_only: bool) -> None:
     init_db()
     git_sha = current_git_sha()  # before a first run writes sample.json into the tree
     if rebuild or not trec.SAMPLE_PATH.exists():
@@ -66,15 +93,51 @@ def main(rebuild: bool) -> None:
         f"sample: {sample.sample_size} judged (topic, trial) pairs, {len(sample.trials)} trials, "
         f"{len(sample.topics)} topics; {len(sample.dropped)} trials dropped ({_reasons(sample)})"
     )
-    metrics = score_bm25(sample)
-    row = record_eval_run(BM25, metrics, sample=sample, git_sha=git_sha)
-    scores = "  ".join(f"{name} {value:.4f}" for name, value in metrics.items())
-    print(
-        f"bm25: {scores}  (eval_runs {row.id[:8]}, git {row.git_sha}, prompts {row.prompt_version})"
-    )
+    bm25 = score_bm25(sample)
+    bm25_row = record_eval_run(BM25, bm25, sample=sample, git_sha=git_sha)
+    print(f"bm25: eval_runs {bm25_row.id[:8]}, git {bm25_row.git_sha}")
+
+    matcher: dict[str, float] | None = None
+    uncompiled: list[str] = []
+    if bm25_only:
+        print("matcher: skipped (--bm25-only)")
+    elif not get_settings().anthropic_api_key:
+        print("matcher: skipped, ANTHROPIC_API_KEY is not set (it parses and judges with the LLM)")
+    else:
+        print(f"matcher: {len(sample.topics)} topics, one traced match run each ...")
+        score = asyncio.run(score_matcher(sample))
+        matcher, uncompiled = score.metrics, score.uncompiled
+        if uncompiled:
+            print(
+                f"matcher: {len(uncompiled)} trials could not be compiled "
+                f"({', '.join(uncompiled)}); its scores below are NOT recorded"
+            )
+        else:
+            row = record_eval_run(MATCHER, matcher, sample=sample, git_sha=git_sha)
+            print(f"matcher: eval_runs {row.id[:8]}, git {row.git_sha}")
+
+    print()
+    print(f"{'system':<8} " + " ".join(f"{label:>9}" for _, label in COLUMNS))
+    if matcher is not None:
+        print(_row(MATCHER, matcher))
+    print(_row(BM25, bm25))
+    if matcher is not None:
+        rate = matcher.get(COMPILE_RATE)
+        print(f"compile rate: {rate:.1%}" if rate is not None else "compile rate: -")
+        lift = "  ".join(
+            f"{label} {matcher[k] - bm25[k]:+.4f}"
+            for k, label in COLUMNS
+            if k in matcher and k in bm25
+        )
+        print(f"matcher vs BM25: {lift}")
+    print(f"prompts: {bm25_row.prompt_version}")
+    if uncompiled:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--rebuild", action="store_true", help="redraw and refetch the sample")
-    main(parser.parse_args().rebuild)
+    parser.add_argument("--bm25-only", action="store_true", help="skip the matcher (no LLM)")
+    args = parser.parse_args()
+    main(args.rebuild, args.bm25_only)

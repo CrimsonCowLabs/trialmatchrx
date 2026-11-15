@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.eval.metrics import ndcg_at_k, precision_at_k
+from app.eval.metrics import eligibility_accuracy, ndcg_at_k, precision_at_k
 
 LOG2_3 = 1.584962500721156  # log2(3); 1/LOG2_3 = 0.63093 is the discount at rank 2
 
@@ -36,3 +36,14 @@ def test_ndcg_perfect_and_worst_orderings() -> None:
 
 def test_ndcg_is_zero_when_nothing_is_relevant() -> None:
     assert ndcg_at_k([0, 1, 0], k=10) == 0.0
+
+
+def test_accuracy_scores_eligible_vs_excluded_and_ignores_not_relevant() -> None:
+    # (label, called eligible): the 2s are right when called eligible, the 1s when not.
+    # The label-0 pair is outside the eligible-vs-excluded question and doesn't count.
+    calls = [(2, True), (2, False), (1, False), (1, True), (1, False), (0, True)]
+    assert eligibility_accuracy(calls) == pytest.approx(3 / 5)
+
+
+def test_accuracy_with_no_eligible_or_excluded_pairs_is_none() -> None:
+    assert eligibility_accuracy([(0, True), (0, False)]) is None

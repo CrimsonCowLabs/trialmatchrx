@@ -65,7 +65,7 @@ def _trial_text(study: dict[str, Any]) -> str:
     return clean_eligibility_text(eligibility.get("eligibilityCriteria") or "")
 
 
-def _judges(
+def judges_for_run(
     rec: TraceRecorder, judge_model_factory: ModelFactory, note: str | None
 ) -> Callable[[CandidateTrial], Judge]:
     """How each trial gets its judge: one model and one semaphore for the whole run."""
@@ -143,7 +143,7 @@ async def run_match(
         condition=req.condition,
     )
 
-    judge_for = _judges(rec, judge_model_factory, req.note)
+    judge_for = judges_for_run(rec, judge_model_factory, req.note)
     slots = asyncio.Semaphore(TRIAL_CONCURRENCY)
 
     async def bounded(trial: CandidateTrial) -> TrialMatch | None:
