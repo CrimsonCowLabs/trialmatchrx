@@ -2,66 +2,137 @@
 
 // Replays a finished run from GET /api/runs/{run_id}/trace: every emission in seq order
 // (`replayEmissions`), with the original gaps capped at 0.2 s, through the same panel and
-// results as the live page.
+// results as the live page. The replay bar's state is `replayReducer` (lib/replay.ts).
 import { Pause, Play, RotateCcw, SkipForward } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, type Dispatch } from "react";
 
 import { RunWithTrace } from "@/components/RunWithTrace";
-import { Button } from "@/components/ui/button";
 import { api, type RunSummary, type TraceEvent } from "@/lib/api";
-import { replayDelays, replayEmissions, upsertEvent } from "@/lib/trace";
+import {
+  INITIAL_REPLAY,
+  REPLAY_SPEEDS,
+  replayPosition,
+  replayReducer,
+  type ReplayAction,
+  type ReplayState,
+} from "@/lib/replay";
+import { replayDelays, replayEmissions } from "@/lib/trace";
 import { useLoad } from "@/lib/use-load";
 
 const GAP_CAP_MS = 200;
-const SPEEDS = [1, 4, 16] as const;
 
 interface Loaded {
   trace: TraceEvent[];
   summary: RunSummary;
 }
 
+const OUTLINED =
+  "inline-flex h-9 items-center gap-1.5 rounded-lg border border-replay-line px-3.5 text-sm font-medium hover:bg-replay-sunken disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4";
+
+/** Design 07's dark replay bar: Pause / Play, Restart, Skip to end, a progress bar, the
+ *  1x / 4x / 16x speeds and "seq N / M". */
+function ReplayBar({
+  state,
+  emissions,
+  dispatch,
+}: {
+  state: ReplayState;
+  emissions: TraceEvent[];
+  dispatch: Dispatch<ReplayAction>;
+}) {
+  const finished = state.index >= emissions.length;
+  const running = state.playing && !finished;
+  const { seq, lastSeq, fraction } = replayPosition(emissions, state.index);
+  return (
+    <div
+      className="flex flex-wrap items-center gap-x-3.5 gap-y-3 rounded-card bg-replay px-4 py-3.5 text-white"
+      data-testid="replay-controls"
+    >
+      <button
+        type="button"
+        onClick={() => dispatch({ type: "toggle" })}
+        disabled={finished}
+        className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-white px-3.5 text-sm font-medium text-ink hover:bg-white/90 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4"
+      >
+        {running ? <Pause /> : <Play />} {running ? "Pause" : "Play"}
+      </button>
+      <button type="button" onClick={() => dispatch({ type: "restart" })} className={OUTLINED}>
+        <RotateCcw /> Restart
+      </button>
+      <button
+        type="button"
+        onClick={() => dispatch({ type: "skip", emissions })}
+        disabled={finished}
+        className={OUTLINED}
+      >
+        <SkipForward /> Skip to end
+      </button>
+      <div
+        role="progressbar"
+        aria-label="Replay position"
+        aria-valuemin={0}
+        aria-valuemax={lastSeq}
+        aria-valuenow={seq}
+        className="relative order-last h-1 w-full rounded-full bg-replay-line sm:order-none sm:mx-2 sm:w-auto sm:flex-1"
+      >
+        <div
+          className="absolute inset-y-0 left-0 rounded-full bg-replay-progress"
+          style={{ width: `${fraction * 100}%` }}
+        />
+      </div>
+      <div
+        role="group"
+        aria-label="Replay speed"
+        className="flex rounded-lg bg-replay-sunken p-0.5 font-mono text-[0.8125rem] font-medium"
+      >
+        {REPLAY_SPEEDS.map((s) => (
+          <button
+            key={s}
+            type="button"
+            aria-pressed={s === state.speed}
+            onClick={() => dispatch({ type: "speed", speed: s })}
+            className={`rounded-md px-2.5 py-1 ${s === state.speed ? "bg-replay-line" : "text-replay-muted hover:text-white"}`}
+          >
+            {s}x
+          </button>
+        ))}
+      </div>
+      <span
+        className="font-mono text-[0.8125rem] text-replay-muted tabular-nums"
+        data-testid="replay-position"
+      >
+        seq {seq} / {lastSeq}
+      </span>
+    </div>
+  );
+}
 
 function Replay({ runId, trace, summary }: { runId: string } & Loaded) {
   const emissions = useMemo(() => replayEmissions(trace), [trace]);
   const delays = useMemo(() => replayDelays(emissions, GAP_CAP_MS), [emissions]);
-  const [shown, setShown] = useState<{ index: number; events: TraceEvent[] }>({
-    index: 0,
-    events: [],
-  });
-  const [playing, setPlaying] = useState(true);
-  const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(1);
-  const finished = shown.index >= emissions.length;
-  const running = playing && !finished;
+  const [state, dispatch] = useReducer(replayReducer, INITIAL_REPLAY);
+  const finished = state.index >= emissions.length;
+  const running = state.playing && !finished;
 
   useEffect(() => {
     if (!running) return;
     const timer = setTimeout(
-      () =>
-        setShown(({ index, events }) => ({
-          index: index + 1,
-          events: upsertEvent(events, emissions[index]),
-        })),
-      delays[shown.index] / speed,
+      () => dispatch({ type: "tick", emissions }),
+      delays[state.index] / state.speed,
     );
     return () => clearTimeout(timer);
-  }, [running, shown.index, emissions, delays, speed]);
-
-  const restart = () => {
-    setShown({ index: 0, events: [] });
-    setPlaying(true);
-  };
-  const skipToEnd = () => setShown({ index: emissions.length, events: trace });
+  }, [running, state.index, state.speed, emissions, delays]);
 
   const stillRecording = summary.status === "running";
   const isCloser = summary.kind === "closer";
   return (
     <RunWithTrace
       runId={runId}
-      events={shown.events}
+      events={state.events}
       live={false}
       status={{
-        label: finished ? "replayed" : `replay ${shown.index}/${emissions.length}`,
+        label: finished ? "replayed" : `replay ${state.index}/${emissions.length}`,
         variant: finished ? "secondary" : "outline",
       }}
       summary={summary}
@@ -81,36 +152,7 @@ function Replay({ runId, trace, summary }: { runId: string } & Loaded) {
           This run is still running; the replay stops at what has been recorded so far.
         </p>
       )}
-      <div className="flex flex-wrap items-center gap-2" data-testid="replay-controls">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPlaying((p) => !p)}
-          disabled={finished}
-        >
-          {running ? <Pause /> : <Play />} {running ? "Pause" : "Play"}
-        </Button>
-        <Button variant="outline" size="sm" onClick={restart}>
-          <RotateCcw /> Restart
-        </Button>
-        <Button variant="outline" size="sm" onClick={skipToEnd} disabled={finished}>
-          <SkipForward /> Skip to end
-        </Button>
-        <span className="ml-2 text-xs text-muted-foreground">Speed</span>
-        {SPEEDS.map((s) => (
-          <Button
-            key={s}
-            variant={s === speed ? "secondary" : "ghost"}
-            size="xs"
-            onClick={() => setSpeed(s)}
-          >
-            {s}x
-          </Button>
-        ))}
-        <span className="text-xs tabular-nums text-muted-foreground">
-          seq {emissions[shown.index - 1]?.seq ?? 0} / {emissions.length}
-        </span>
-      </div>
+      <ReplayBar state={state} emissions={emissions} dispatch={dispatch} />
     </RunWithTrace>
   );
 }

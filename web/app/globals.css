@@ -56,6 +56,11 @@
   --color-kind-guardrail-bg: var(--kind-guardrail-bg);
   --color-kind-error: var(--kind-error);
   --color-kind-error-bg: var(--kind-error-bg);
+  --color-replay: var(--replay);
+  --color-replay-line: var(--replay-line);
+  --color-replay-sunken: var(--replay-sunken);
+  --color-replay-muted: var(--replay-muted);
+  --color-replay-progress: var(--replay-progress);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -171,6 +176,13 @@
   --kind-guardrail-bg: var(--verdict-unknown-bg);
   --kind-error: var(--verdict-fail);
   --kind-error-bg: var(--verdict-fail-bg);
+
+  /* Replay bar (a dark strip on the replay page) */
+  --replay: var(--ink);
+  --replay-line: #3a4046;
+  --replay-sunken: #23272b;
+  --replay-muted: var(--trial-other);
+  --replay-progress: #5fc4cc;
 
   /* shadcn slots, mapped onto the palette */
   --background: var(--canvas);
