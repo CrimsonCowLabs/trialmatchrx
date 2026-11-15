@@ -168,6 +168,11 @@ async def test_malformed_response_is_retried_once() -> None:
     assert second_turns[:-1] == first_turns
     assert "could not be used" in second_turns[-1]["content"]
     assert "rationale" in second_turns[-1]["content"]  # the validation error names the field
+    # The trace panel shows the validation error the retry recovered from on the judge step.
+    step = next(e for e in events(rec) if e.name == f"judge:{NCT}:inc-1")
+    assert step.output is not None and step.output["attempts"] == 2
+    (problem,) = step.output["errors"]
+    assert "rationale" in problem
 
 
 async def test_malformed_twice_becomes_unknown_with_an_error_event() -> None:

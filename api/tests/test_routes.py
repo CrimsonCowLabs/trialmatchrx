@@ -71,6 +71,28 @@ async def test_match_parses_the_note_into_the_run_result_and_trace(
     assert any(e.kind == "llm" and e.parent_id == step.id for e in trace)
 
 
+async def test_trace_export_is_the_streamed_events_in_their_final_state() -> None:
+    """`GET /trace` (Export JSON / replay) holds exactly what the SSE stream showed: one entry
+    per event, in its final state, in order of first appearance."""
+    async with client() as c:
+        run_id = (await c.post("/api/match", json=MATCH_BODY)).json()["run_id"]
+        messages = parse_sse((await c.get(f"/api/runs/{run_id}/events")).text)
+        trace = [
+            TraceEvent.model_validate(e) for e in (await c.get(f"/api/runs/{run_id}/trace")).json()
+        ]
+
+    streamed: dict[str, TraceEvent] = {}
+    for m in messages:
+        if m.event == "trace":
+            event = TraceEvent.model_validate(m.data)
+            streamed[event.id] = event
+    assert trace == list(streamed.values())
+    assert len({e.id for e in trace}) == len(trace)
+    assert all(e.status != "started" and e.ended_at is not None for e in trace)
+    # every seq of the run is either some event's final emission or a step's `started` one
+    assert max(e.seq for e in trace) == sum(m.event == "trace" for m in messages)
+
+
 async def test_match_needs_a_note_or_bundle() -> None:
     async with client() as c:
         response = await c.post("/api/match", json={"condition": "t2d"})

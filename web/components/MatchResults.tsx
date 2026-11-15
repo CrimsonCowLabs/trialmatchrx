@@ -18,8 +18,22 @@ const TIERS: { tier: Tier; title: string; hint: string }[] = [
   { tier: "ineligible", title: "Ineligible", hint: "At least one criterion fails" },
 ];
 
-function TrialCard({ match }: { match: TrialMatch }) {
+interface Linking {
+  /** `trace_event_id` of the verdict to highlight (the selected trace event produced it). */
+  highlightedEventId?: string | null;
+  onWhy?: (traceEventId: string) => void;
+}
+
+function TrialCard({ match, highlightedEventId, onWhy }: { match: TrialMatch } & Linking) {
   const [open, setOpen] = useState(match.tier !== "ineligible");
+  // When this card starts holding the highlighted verdict, open it (once; the user can still
+  // collapse it). State adjusted during render, React's pattern for reacting to a prop change.
+  const holdsHighlight = match.verdicts.some((v) => v.trace_event_id === highlightedEventId);
+  const [heldHighlight, setHeldHighlight] = useState(false);
+  if (holdsHighlight !== heldHighlight) {
+    setHeldHighlight(holdsHighlight);
+    if (holdsHighlight) setOpen(true);
+  }
   const { pass = 0, fail = 0, unknown = 0 } = match.counts;
   return (
     <li data-testid="trial-match" data-nct={match.nct_id} className="rounded-md border">
@@ -44,7 +58,12 @@ function TrialCard({ match }: { match: TrialMatch }) {
       {open && (
         <ul className="border-t px-3">
           {match.verdicts.map((v) => (
-            <CriterionRow key={v.criterion_id} verdict={v} />
+            <CriterionRow
+              key={v.criterion_id}
+              verdict={v}
+              highlighted={!!highlightedEventId && v.trace_event_id === highlightedEventId}
+              onWhy={onWhy}
+            />
           ))}
         </ul>
       )}
@@ -52,7 +71,11 @@ function TrialCard({ match }: { match: TrialMatch }) {
   );
 }
 
-export function MatchResults({ matches }: { matches: TrialMatch[] }) {
+export function MatchResults({
+  matches,
+  highlightedEventId,
+  onWhy,
+}: { matches: TrialMatch[] } & Linking) {
   if (matches.length === 0) {
     return (
       <Card>
@@ -80,7 +103,12 @@ export function MatchResults({ matches }: { matches: TrialMatch[] }) {
               ) : (
                 <ul className="flex flex-col gap-2">
                   {inTier.map((m) => (
-                    <TrialCard key={m.nct_id} match={m} />
+                    <TrialCard
+                      key={m.nct_id}
+                      match={m}
+                      highlightedEventId={highlightedEventId}
+                      onWhy={onWhy}
+                    />
                   ))}
                 </ul>
               )}

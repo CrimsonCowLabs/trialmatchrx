@@ -5,7 +5,7 @@ import { RunView } from "./run-view";
 
 export default function MatchRunPage() {
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-4 p-8">
+    <main className="mx-auto flex w-full max-w-7xl flex-col gap-4 p-8">
       <div className="flex items-baseline justify-between">
         <h1 className="text-2xl font-semibold">Match run</h1>
         <Link href="/match" className="text-sm underline">

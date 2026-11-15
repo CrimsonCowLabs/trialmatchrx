@@ -26,7 +26,7 @@ check-api:
 	cd api && uv run ruff check . && uv run ruff format --check . && uv run mypy app/ && uv run pytest -q
 
 check-web:
-	cd web && pnpm typecheck && pnpm lint
+	cd web && pnpm typecheck && pnpm lint && pnpm test
 
 # Regenerate web/lib/api-types.ts from FastAPI's OpenAPI (no server needed).
 types:
