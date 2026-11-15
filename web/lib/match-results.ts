@@ -69,6 +69,76 @@ export function countLabel(counts: Record<string, number>): string {
   return `${pass} OK · ${fail} disqualifying · ${unknown} unknown`;
 }
 
+type Verdict = Schemas["Verdict"];
+
+const OUTCOME_PRIORITY: Record<Verdict["outcome"], number> = { fail: 0, unknown: 1, pass: 2 };
+
+/** The criteria an expanded trial card shows on mobile before "Show all N criteria": up to
+ *  `limit`, the highlighted verdict first, then failures, then unknowns (what decides the
+ *  tier), then passes; shown in the trial's own order. */
+export function shortCriteria(
+  verdicts: Verdict[],
+  highlightedEventId: string | null,
+  limit: number,
+): Verdict[] {
+  const rank = (v: Verdict) =>
+    v.trace_event_id === highlightedEventId ? -1 : OUTCOME_PRIORITY[v.outcome];
+  const keep = new Set(
+    verdicts
+      .map((v, i) => ({ v, i }))
+      .sort((a, b) => rank(a.v) - rank(b.v) || a.i - b.i)
+      .slice(0, limit)
+      .map(({ v }) => v),
+  );
+  return verdicts.filter((v) => keep.has(v));
+}
+
+export type RunTab = "results" | "trace";
+
+/** A request to bring a verdict into view on the Results tab; a new nonce re-asks for the
+ *  same verdict (View verdict twice on one event still reveals it). */
+export interface RevealRequest {
+  eventId: string;
+  nonce: number;
+}
+
+/** Which tab a run page shows below `lg` (side by side from `lg`, where the tab is moot). */
+export interface RunTabs {
+  tab: RunTab;
+  reveal: RevealRequest | null;
+}
+
+export type RunTabsAction =
+  | { type: "show"; tab: RunTab }
+  /** "Why?" on a verdict: its trace event is focused on the Trace tab. */
+  | { type: "why" }
+  /** "View verdict" in the trace sheet: back to Results, revealing the verdict `eventId`. */
+  | { type: "view-verdict"; eventId: string }
+  /** The revealed row has scrolled into view: drop the request, so a later remount of that
+   *  row (tier switch, card reopened) doesn't scroll again. */
+  | { type: "revealed" };
+
+export const INITIAL_RUN_TABS: RunTabs = { tab: "results", reveal: null };
+
+export function runTabsReducer(state: RunTabs, action: RunTabsAction): RunTabs {
+  switch (action.type) {
+    case "show":
+      return { ...state, tab: action.tab };
+    case "why":
+      return { ...state, tab: "trace" };
+    case "view-verdict":
+      return {
+        tab: "results",
+        reveal: { eventId: action.eventId, nonce: (state.reveal?.nonce ?? 0) + 1 },
+      };
+    case "revealed":
+      return state.reveal ? { ...state, reveal: null } : state;
+  }
+}
+
+/** The mobile Trace tab: "Trace · 41", the number of trace events the run has so far. */
+export const traceTabLabel = (eventCount: number) => `Trace · ${eventCount}`;
+
 export type FactChip = { label: string; value: string };
 
 /** "61 M · type 2 diabetes": the run's patient label, then its condition; whichever parts are

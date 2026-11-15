@@ -16,22 +16,30 @@ import {
   countLabel,
   initialView,
   locateVerdict,
+  shortCriteria,
   tierCounts,
   tierHint,
+  type RevealRequest,
 } from "@/lib/match-results";
+
+/** How many criteria an open card lists on a phone before "Show all" (as in the design). */
+const SHORT_CRITERIA_LIMIT = 3;
 
 type TrialMatch = Schemas["TrialMatch"];
 
-const TIER_TABS: { tier: Tier; label: string; count: string }[] = [
-  { tier: "likely", label: "Likely eligible", count: "text-tier-likely" },
-  { tier: "needs_info", label: "Needs info", count: "text-tier-needs-info" },
-  { tier: "ineligible", label: "Ineligible", count: "text-tier-ineligible" },
+const TIER_TABS: { tier: Tier; label: string; shortLabel: string; count: string }[] = [
+  { tier: "likely", label: "Likely eligible", shortLabel: "Likely", count: "text-tier-likely" },
+  { tier: "needs_info", label: "Needs info", shortLabel: "Needs info", count: "text-tier-needs-info" },
+  { tier: "ineligible", label: "Ineligible", shortLabel: "Ineligible", count: "text-tier-ineligible" },
 ];
 
 interface Linking {
   /** `trace_event_id` of the verdict to highlight (the selected trace event produced it). */
   highlightedEventId?: string | null;
   onWhy?: (traceEventId: string) => void;
+  /** "View verdict" from the mobile trace sheet: show this verdict's tier and card again and
+   *  scroll it into view, even if it was already highlighted. */
+  reveal?: RevealRequest | null;
   /** "Next steps": run the closer agent on a trial. No button when absent, or on an
    *  ineligible trial (a disqualifying criterion has no follow-up that helps). */
   onNextSteps?: (nctId: string) => void;
@@ -67,10 +75,16 @@ function TrialCard({
   open,
   onToggle,
   highlightedEventId,
+  reveal,
   onWhy,
   onNextSteps,
 }: { match: TrialMatch; open: boolean; onToggle: () => void } & Linking) {
   const nextSteps = match.tier !== "ineligible" ? onNextSteps : undefined;
+  // Below `lg` an open card lists a few criteria, then "Show all N criteria".
+  const [showAll, setShowAll] = useState(false);
+  const shortList = new Set(
+    shortCriteria(match.verdicts, highlightedEventId ?? null, SHORT_CRITERIA_LIMIT),
+  );
   return (
     <li data-testid="trial-match" data-nct={match.nct_id}>
       <Card className="gap-0 py-0">
@@ -108,13 +122,27 @@ function TrialCard({
                   key={v.criterion_id}
                   verdict={v}
                   highlighted={!!highlightedEventId && v.trace_event_id === highlightedEventId}
+                  revealNonce={reveal?.eventId === v.trace_event_id ? reveal.nonce : undefined}
                   onWhy={onWhy}
+                  collapsedOnMobile={!showAll && !shortList.has(v)}
                 />
               ))}
             </ul>
+            {shortList.size < match.verdicts.length && (
+              // -mt-px: sits on the last shown row's bottom border instead of doubling it.
+              <button
+                type="button"
+                onClick={() => setShowAll((s) => !s)}
+                aria-expanded={showAll}
+                data-testid="show-all-criteria"
+                className="-mt-px border-t border-line-soft px-4 py-3 text-left text-sm font-medium link lg:hidden"
+              >
+                {showAll ? "Show fewer criteria" : `Show all ${match.verdicts.length} criteria`}
+              </button>
+            )}
             <div
               data-testid="trial-next-steps"
-              className="flex flex-wrap items-center gap-3 border-t border-line-soft px-4 py-3.5 sm:px-5"
+              className="grid grid-cols-[repeat(auto-fit,minmax(0,1fr))] items-center gap-2 border-t border-line-soft px-4 py-3.5 sm:flex sm:flex-wrap sm:gap-3 sm:px-5"
             >
               {nextSteps && (
                 <Button
@@ -133,7 +161,7 @@ function TrialCard({
                 Cohort feasibility
               </Link>
               {nextSteps && (
-                <span className="text-[0.8125rem] text-ink-4 sm:ml-auto">
+                <span className="hidden text-[0.8125rem] text-ink-4 sm:ml-auto sm:inline">
                   Follow-ups, coordinator email, Spanish summary
                 </span>
               )}
@@ -149,6 +177,7 @@ export function MatchResults({
   matches,
   maxUnknownsForLikely,
   highlightedEventId,
+  reveal,
   onWhy,
   onNextSteps,
 }: {
@@ -161,10 +190,12 @@ export function MatchResults({
     return { tier, expanded: new Set(expanded ? [expanded] : []) };
   });
   // When a selected trace event points at a verdict, show its tier and open its card (once per
-  // selection; the user can still switch away or collapse). State adjusted during render,
-  // React's pattern for reacting to a prop change.
+  // selection, and again on each View verdict; the user can still switch away or collapse).
+  // State adjusted during render, React's pattern for reacting to a prop change.
   const located = locateVerdict(matches, highlightedEventId ?? null);
-  const locatedKey = located ? `${located.tier}/${located.nctId}/${highlightedEventId}` : null;
+  const locatedKey = located
+    ? `${located.tier}/${located.nctId}/${highlightedEventId}/${reveal?.nonce ?? 0}`
+    : null;
   const [shownKey, setShownKey] = useState<string | null>(null);
   if (locatedKey !== shownKey) {
     setShownKey(locatedKey);
@@ -200,7 +231,7 @@ export function MatchResults({
           aria-label="Match tier"
           className="flex flex-wrap gap-0.5 rounded-lg bg-surface-sunken p-0.5 text-sm font-medium"
         >
-          {TIER_TABS.map(({ tier, label, count }) => {
+          {TIER_TABS.map(({ tier, label, shortLabel, count }) => {
             const selected = tier === view.tier;
             return (
               <button
@@ -212,7 +243,9 @@ export function MatchResults({
                 onClick={() => setView((v) => ({ ...v, tier }))}
                 className={`rounded-md px-3.5 py-1.5 ${selected ? "bg-surface shadow-xs" : "text-ink-3 hover:text-foreground"}`}
               >
-                {label}{" "}
+                {/* The short label keeps all three tabs on one line at 390px. */}
+                <span className="sm:hidden">{shortLabel}</span>
+                <span className="hidden sm:inline">{label}</span>{" "}
                 <span className={`font-mono tabular-nums ${selected ? count : ""}`}>
                   {counts[tier]}
                 </span>
@@ -237,6 +270,7 @@ export function MatchResults({
               open={view.expanded.has(m.nct_id)}
               onToggle={() => toggle(m.nct_id)}
               highlightedEventId={highlightedEventId}
+              reveal={reveal}
               onWhy={onWhy}
               onNextSteps={onNextSteps}
             />

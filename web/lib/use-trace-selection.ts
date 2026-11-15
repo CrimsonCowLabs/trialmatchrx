@@ -21,6 +21,8 @@ export interface TraceSelection {
   /** Click on a trace row: select it and toggle its details. */
   select: (id: string) => void;
   toggleExpanded: (id: string) => void;
+  /** Close a row's details (the mobile detail sheet's close button). */
+  closeDetails: (id: string) => void;
   /** "Why?" on a verdict: select the event, open its ancestors and details, scroll to it. */
   focus: (id: string) => void;
 }
@@ -45,6 +47,17 @@ export function useTraceSelection(events: TraceEvent[]): TraceSelection {
 
   const toggleExpanded = useCallback((id: string) => setExpanded((x) => toggled(x, id)), []);
 
+  const closeDetails = useCallback(
+    (id: string) =>
+      setDetails((d) => {
+        if (!d.has(id)) return d;
+        const next = new Set(d);
+        next.delete(id);
+        return next;
+      }),
+    [],
+  );
+
   const focus = useCallback(
     (id: string) => {
       setSelectedId(id);
@@ -55,5 +68,14 @@ export function useTraceSelection(events: TraceEvent[]): TraceSelection {
     [events],
   );
 
-  return { selectedId, expanded, details, scrollRequest, select, toggleExpanded, focus };
+  return {
+    selectedId,
+    expanded,
+    details,
+    scrollRequest,
+    select,
+    toggleExpanded,
+    closeDetails,
+    focus,
+  };
 }
