@@ -88,3 +88,34 @@ async def test_tool_call_becomes_a_tool_event(rec: TraceRecorder) -> None:
     assert started.input is not None and started.input["nct"] == "NCT01"
     assert done.status == "ok"
     assert done.output == {"result": "contacts for NCT01"}
+
+
+class PricedFakeChatModel(GenericFakeChatModel):
+    model_name: str = "claude-sonnet-4-5"
+
+
+def _usage(tokens_in: int, tokens_out: int) -> AIMessage:
+    return AIMessage(
+        "ok",
+        usage_metadata={
+            "input_tokens": tokens_in,
+            "output_tokens": tokens_out,
+            "total_tokens": tokens_in + tokens_out,
+        },
+    )
+
+
+async def test_llm_event_cost_comes_from_the_price_table(rec: TraceRecorder) -> None:
+    model = PricedFakeChatModel(messages=iter([_usage(1000, 500)]))
+
+    await model.ainvoke("hi", config={"callbacks": [rec.langchain_handler()]})
+
+    done = store.latest_events(rec.run_id)[-1]
+    assert done.model == "claude-sonnet-4-5"
+    assert done.cost_usd == pytest.approx(0.003 + 0.0075)  # $3 / MTok in, $15 / MTok out
+
+
+async def test_unpriced_model_has_no_cost(rec: TraceRecorder) -> None:
+    await fake_model(_usage(10, 5)).ainvoke("hi", config={"callbacks": [rec.langchain_handler()]})
+
+    assert store.latest_events(rec.run_id)[-1].cost_usd is None
