@@ -9,6 +9,7 @@ Each topic reranks only its own judged trials (about 20); scores are the mean ov
 
 import subprocess
 import uuid
+from collections.abc import Callable
 from statistics import fmean
 
 from sqlmodel import col, select
@@ -16,7 +17,7 @@ from sqlmodel import col, select
 from app.config import REPO_DIR
 from app.db import EvalRunRow, session_scope
 from app.eval.bm25 import Bm25Index, trial_text
-from app.eval.metrics import ndcg_at_k, precision_at_k
+from app.eval.metrics import eligibility_accuracy, ndcg_at_k, precision_at_k
 from app.prompts import load_prompt
 from app.schemas import EvalLatest, EvalRunSummary, EvalSystem
 from app.sources.trec import TrecSample
@@ -24,21 +25,45 @@ from app.sources.trec import TrecSample
 BM25: EvalSystem = "bm25"
 MATCHER: EvalSystem = "matcher"
 K = 10
+ACCURACY = "accuracy"  # eligible vs excluded, labels 1 and 2 only
+COMPILE_RATE = "compile_rate"  # matcher rows only: share of criteria with a predicate
 # The prompts a matcher run depends on. Every row records them, BM25 included, so the history
 # lines up baseline and matcher rows by prompt version.
 EVAL_PROMPTS = ("parse_patient", "compile_criteria", "judge")
 
 
-def score_bm25(sample: TrecSample) -> dict[str, float]:
-    """Mean nDCG@10 and P@10 of BM25 over the sample's topics (label 2 = relevant)."""
-    index = Bm25Index({nct: trial_text(study) for nct, study in sample.trials.items()})
-    ndcgs, precisions = [], []
+def topic_labels(sample: TrecSample, topic_id: int) -> dict[str, int]:
+    """NCT ID -> qrels label for one topic's judged trials."""
+    return {j.nct_id: j.label for j in sample.judgments if j.topic_id == topic_id}
+
+
+def score_rankings(
+    sample: TrecSample,
+    rankings: dict[int, list[str]],
+    called_eligible: Callable[[int, str], bool],
+) -> dict[str, float]:
+    """Mean nDCG@10 and P@10 over topics (each topic's judged trials, best first), and
+    eligible-vs-excluded accuracy pooled over every label 1 / 2 pair."""
+    ndcgs, precisions, calls = [], [], []
     for topic in sample.topics:
-        labels = {j.nct_id: j.label for j in sample.judgments if j.topic_id == topic.id}
-        ranked = [labels[nct] for nct in index.rank(topic.text, list(labels))]
+        labels = topic_labels(sample, topic.id)
+        ranked = [labels[nct] for nct in rankings[topic.id]]
         ndcgs.append(ndcg_at_k(ranked, K))
         precisions.append(precision_at_k(ranked, K))
-    return {f"ndcg@{K}": fmean(ndcgs), f"p@{K}": fmean(precisions)}
+        calls += [(label, called_eligible(topic.id, nct)) for nct, label in labels.items()]
+    metrics = {f"ndcg@{K}": fmean(ndcgs), f"p@{K}": fmean(precisions)}
+    accuracy = eligibility_accuracy(calls)
+    if accuracy is not None:
+        metrics[ACCURACY] = accuracy
+    return metrics
+
+
+def score_bm25(sample: TrecSample) -> dict[str, float]:
+    """BM25's nDCG@10, P@10 and accuracy on the sample (label 2 = relevant). Keyword search has
+    no notion of exclusion, so it calls every judged trial it ranks eligible."""
+    index = Bm25Index({nct: trial_text(study) for nct, study in sample.trials.items()})
+    rankings = {t.id: index.rank(t.text, list(topic_labels(sample, t.id))) for t in sample.topics}
+    return score_rankings(sample, rankings, lambda topic_id, nct: True)
 
 
 def _git(*args: str) -> str:
@@ -98,7 +123,7 @@ def latest_eval() -> EvalLatest:
         return EvalLatest(
             metrics=matcher.metrics if matcher else {},
             baseline=baseline.metrics if baseline else {},
-            compile_rate=None,  # HACK(demo): the matcher eval (#11) reports the compile rate
+            compile_rate=matcher.metrics.get(COMPILE_RATE) if matcher else None,
             sample_size=newest.sample_size if newest else 0,
             topics=newest.topics if newest else 0,
             dropped=newest.dropped if newest else 0,

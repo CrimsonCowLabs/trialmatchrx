@@ -157,6 +157,18 @@ class EvalRunRow(SQLModel, table=True):
     metrics: dict[str, float] = Field(default_factory=dict, sa_column=Column(JSON))
 
 
+class LlmCacheRow(SQLModel, table=True):
+    """One cached LLM answer, keyed by a hash of the prompt and the model's settings
+    (`app/eval/llm_cache.py`). The eval reads it so a re-run on the same sample replays the same
+    answers instead of asking the model again."""
+
+    __tablename__ = "llm_cache"
+
+    key: str = Field(primary_key=True)  # sha256 of (prompt, llm_string)
+    created_at: dt.datetime = Field(default_factory=utcnow)
+    generations: list[str] = Field(default_factory=list, sa_column=Column(JSON))  # lc dumps
+
+
 class CohortPatientRow(SQLModel, table=True):
     """One synthetic patient of the feasibility cohort: `PatientFacts` JSON mapped from a
     Synthea FHIR bundle by `scripts/load_cohort.py`. Read into a DataFrame once per process."""
