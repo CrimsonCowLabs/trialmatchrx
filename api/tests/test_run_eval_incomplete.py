@@ -21,7 +21,7 @@ def test_a_run_with_a_failed_topic_is_reported_and_not_recorded(
 
     monkeypatch.setattr(run_eval, "score_matcher", score)
 
-    result = run_eval._score_matcher(_sample(), git_sha="abc")
+    result = run_eval._score_matcher(_sample(), git_sha="abc", partial=False)
 
     out = capsys.readouterr().out
     assert not result.complete
