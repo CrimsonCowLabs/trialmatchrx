@@ -1,0 +1,22 @@
+# Local only: a Caddy in front of the stack with the path split prod uses, so one URL
+# (http://localhost:8080) serves the UI and `/api/*` as on ccl-vps. Compose loads this file
+# on its own beside compose.yaml; the box runs `docker compose -f compose.yaml`, where its
+# own host-networked Caddy does the routing instead.
+
+services:
+  proxy:
+    # Pinned to the version on ccl-vps.
+    image: caddy:2.11.2
+    restart: unless-stopped
+    command: ["caddy", "run", "--config", "/etc/caddy/config/Caddyfile", "--adapter", "caddyfile"]
+    volumes:
+      - ./deploy/local-proxy:/etc/caddy/config:ro
+    ports:
+      - "127.0.0.1:${TRIALMATCH_PROXY_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    mem_limit: 128m
+    memswap_limit: 128m

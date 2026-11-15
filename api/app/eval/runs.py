@@ -14,7 +14,7 @@ from statistics import fmean
 
 from sqlmodel import col, select
 
-from app.config import REPO_DIR
+from app.config import REPO_DIR, get_settings
 from app.db import EvalRunRow, session_scope
 from app.eval.bm25 import Bm25Index, trial_text
 from app.eval.metrics import eligibility_accuracy, ndcg_at_k, precision_at_k
@@ -83,7 +83,7 @@ def current_git_sha() -> str | None:
 
 
 def current_prompt_version() -> str:
-    """e.g. `parse-patient-v1+compile-criteria-v1+judge-v1`."""
+    """e.g. `parse-patient-v3+compile-criteria-v2+judge-v2`."""
     return "+".join(load_prompt(name).version for name in EVAL_PROMPTS)
 
 
@@ -94,6 +94,12 @@ def record_eval_run(
     sample: TrecSample,
     git_sha: str | None,
 ) -> EvalRunRow:
+    """One `eval_runs` row. A partial sample (`first_topics`) is refused: its score covers only
+    some topics, so it would sit in the history as if comparable with a full one."""
+    if sample.partial:
+        raise ValueError(
+            f"not recording a partial sample ({len(sample.topics)} of {sample.n_topics} topics)"
+        )
     row = EvalRunRow(
         id=uuid.uuid4().hex,
         system=system,
@@ -114,7 +120,8 @@ def record_eval_run(
 
 def latest_eval() -> EvalLatest:
     """The newest matcher and BM25 scores, sample size from the newest run, every run newest
-    first. Empty (zeros, `{}`) before the first `make eval`."""
+    first, and the compile-rate target from settings. Empty (zeros, `{}`) before the first
+    `make eval`."""
     with session_scope() as s:
         rows = s.exec(select(EvalRunRow).order_by(col(EvalRunRow.created_at).desc())).all()
         newest = rows[0] if rows else None
@@ -124,6 +131,7 @@ def latest_eval() -> EvalLatest:
             metrics=matcher.metrics if matcher else {},
             baseline=baseline.metrics if baseline else {},
             compile_rate=matcher.metrics.get(COMPILE_RATE) if matcher else None,
+            compile_rate_target=get_settings().eval_compile_rate_target,
             sample_size=newest.sample_size if newest else 0,
             topics=newest.topics if newest else 0,
             dropped=newest.dropped if newest else 0,

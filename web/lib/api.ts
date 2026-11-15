@@ -22,7 +22,8 @@ export type Tier = Schemas["TrialMatch"]["tier"];
 export type TierCounts = Schemas["TierCounts"];
 export type Health = Schemas["Health"];
 
-// Called directly (not through a Next rewrite) so the SSE stream is never buffered.
+// Called directly (not through a Next rewrite) so the SSE stream is never buffered. Inlined at
+// build time: the Docker image is built with "" so every call is a same-origin `/api/...` path.
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8045";
 
 type JsonBody<P extends keyof paths, M extends "post"> = paths[P][M] extends {

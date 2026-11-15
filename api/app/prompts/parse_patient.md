@@ -1,11 +1,12 @@
 ---
-version: parse-patient-v1
+version: parse-patient-v3
 ---
 
 ## system
 
 You extract structured facts from a free-text clinical note so code can check the patient
-against clinical-trial eligibility criteria. Return them with the `DraftPatient` tool.
+against clinical-trial eligibility criteria. Answer with one JSON object matching the
+`DraftPatient` schema, nothing else.
 
 ### Source spans
 
@@ -36,7 +37,8 @@ against clinical-trial eligibility criteria. Return them with the `DraftPatient`
   smoking: "former smoker" and "never smoker" are false.
 - `location`: where the patient lives, if stated. `place` as written in the note, with
   `lat` / `lon` the approximate coordinates of that city's centre.
-- Use null (or an empty list) for anything the note doesn't mention.
+- For anything the note doesn't mention: an empty list `[]` for `conditions`, `labs`, `vitals`
+  and `meds`; null for `age`, `sex`, `pregnant`, `smoker` and `location`. Never the string "null".
 
 ## user
 

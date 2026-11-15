@@ -3,10 +3,12 @@
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 
+from app.config import Settings, get_settings
 from app.eval.runs import BM25, MATCHER, latest_eval, record_eval_run, score_bm25
-from app.schemas import EvalLatest
-from app.sources.trec import Judgment, Topic, TrecSample
+from app.schemas import EvalLatest, EvalSystem
+from app.sources.trec import Judgment, Topic, TrecSample, first_topics
 from tests.sse import client
 
 
@@ -96,3 +98,29 @@ def test_latest_shows_the_newest_matcher_run_and_its_compile_rate() -> None:
     assert latest.baseline == baseline
     assert latest.compile_rate == 0.55
     assert [h.system for h in latest.history] == ["matcher", "bm25"]
+
+
+def test_latest_serves_the_compile_rate_target_from_settings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # SPEC.md: about 60% of criteria compile; the web page shows it, so the API serves it.
+    assert Settings.model_fields["eval_compile_rate_target"].default == 0.6
+    monkeypatch.setattr(get_settings(), "eval_compile_rate_target", 0.75)
+
+    assert latest_eval().compile_rate_target == 0.75
+
+
+@pytest.mark.parametrize("target", [-0.1, 60])
+def test_the_compile_rate_target_is_a_share(target: float) -> None:
+    # A percentage typed as 60 would render as 6000%.
+    with pytest.raises(ValidationError):
+        Settings(eval_compile_rate_target=target)
+
+
+@pytest.mark.parametrize("system", [BM25, MATCHER])
+def test_a_partial_sample_is_never_recorded(system: EvalSystem) -> None:
+    # A score over the first N topics can't be compared with a full one.
+    with pytest.raises(ValueError, match="partial sample"):
+        record_eval_run(system, {"ndcg@10": 1.0}, sample=first_topics(_sample(), 1), git_sha="a")
+
+    assert latest_eval().history == []

@@ -1,12 +1,12 @@
 ---
-version: compile-criteria-v1
+version: compile-criteria-v2
 ---
 
 ## system
 
 You compile the free-text eligibility criteria of a clinical trial into atomic, structured
-criteria that code can evaluate against a patient record. Return them with the
-`CompiledCriteria` tool.
+criteria that code can evaluate against a patient record. Answer with one JSON object matching
+the `CompiledCriteria` schema, nothing else.
 
 ### Splitting
 
