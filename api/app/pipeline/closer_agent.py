@@ -35,7 +35,7 @@ from pydantic import SecretStr
 from app.config import get_settings
 from app.pipeline import criteria_cache
 from app.pipeline.judge import model_id
-from app.pipeline.trial_search import haversine_mi
+from app.pipeline.trial_search import sites_by_distance
 from app.prompts import Prompt, load_prompt
 from app.schemas import CloserOutput, CloserRequest
 from app.sources import ctgov
@@ -153,27 +153,22 @@ async def get_trial_contacts(nct: str) -> dict[str, Any]:
         raise CloserToolError(f"{nct} is not in the trial cache")
     proto = study["protocolSection"]
     module = proto.get("contactsLocationsModule", {})
-    sites = []
-    for loc in module.get("locations") or []:
-        geo = loc.get("geoPoint") or {}
-        if geo.get("lat") is None or geo.get("lon") is None:
-            continue
-        sites.append(
+    nearest = sites_by_distance(study, ctgov.SACRAMENTO)[:NEAREST_SITES]
+    return {
+        "nct_id": nct,
+        "title": proto.get("identificationModule", {}).get("briefTitle"),
+        "central_contacts": [_contact(c) for c in module.get("centralContacts") or []],
+        "nearest_sites": [
             {
                 "facility": loc.get("facility"),
                 "city": loc.get("city"),
                 "state": loc.get("state"),
                 "status": loc.get("status"),
-                "distance_mi": round(haversine_mi(ctgov.SACRAMENTO, (geo["lat"], geo["lon"])), 1),
+                "distance_mi": round(miles, 1),
                 "contacts": [_contact(c) for c in loc.get("contacts") or []],
             }
-        )
-    sites.sort(key=lambda s: s["distance_mi"])
-    return {
-        "nct_id": nct,
-        "title": proto.get("identificationModule", {}).get("briefTitle"),
-        "central_contacts": [_contact(c) for c in module.get("centralContacts") or []],
-        "nearest_sites": sites[:NEAREST_SITES],
+            for miles, loc in nearest
+        ],
     }
 
 
@@ -235,7 +230,7 @@ def _thought(rec: TraceRecorder, message: AIMessage) -> None:
     )
 
 
-def _out_of_steps(rec: TraceRecorder, step: Step, detail: str) -> CloserRecursionLimit:
+def _record_out_of_steps(rec: TraceRecorder, step: Step, detail: str) -> CloserRecursionLimit:
     rec.event(
         "closer_agent:recursion_limit",
         "error",
@@ -271,12 +266,12 @@ async def _drive(
                         for message in delta["messages"]:
                             if message.content == OUT_OF_STEPS:
                                 # Stop before the graph asks for an answer it can't have.
-                                raise _out_of_steps(rec, step, OUT_OF_STEPS)
+                                raise _record_out_of_steps(rec, step, OUT_OF_STEPS)
                             _thought(rec, message)
                     elif node == "generate_structured_response":
                         answer = delta["structured_response"]
     except GraphRecursionError as exc:
-        raise _out_of_steps(rec, step, str(exc)) from exc
+        raise _record_out_of_steps(rec, step, str(exc)) from exc
     if not isinstance(answer, CloserOutput):
         raise ValueError(f"the agent returned no CloserOutput (got {type(answer).__name__})")
     return answer
