@@ -69,6 +69,19 @@ export function countLabel(counts: Record<string, number>): string {
   return `${pass} OK · ${fail} disqualifying · ${unknown} unknown`;
 }
 
+/** SPEC.md's trial-search radius, kept as the meaning of "near": the search itself reaches
+ *  100 mi (the seeded radius), and a trial whose nearest site is farther than this is shown
+ *  with a warning rather than dropped. */
+export const NEAR_RADIUS_MI = 50;
+
+/** "Outside 50 mi" when the trial's nearest site is past NEAR_RADIUS_MI, else null (exactly
+ *  50.0 is inside; no site coordinates means no distance and no warning). */
+export function distanceWarning(distanceMi: number | null): string | null {
+  return distanceMi !== null && distanceMi > NEAR_RADIUS_MI
+    ? `Outside ${NEAR_RADIUS_MI} mi`
+    : null;
+}
+
 type Verdict = Schemas["Verdict"];
 
 const OUTCOME_PRIORITY: Record<Verdict["outcome"], number> = { fail: 0, unknown: 1, pass: 2 };

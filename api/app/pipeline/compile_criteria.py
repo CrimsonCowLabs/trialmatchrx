@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field, SecretStr, ValidationError
 
 from app.config import get_settings
 from app.pipeline import criteria_cache
+from app.pipeline.access_barriers import flag_access_barriers
 from app.pipeline.predicate_fields import InvalidPredicate, describe_vocabulary, validate_predicate
 from app.pipeline.verify import normalize
 from app.prompts import load_prompt
@@ -321,6 +322,9 @@ async def compile_study(
             )
             criteria = structured + llm_criteria
             criteria_cache.put(nct_id, key, prompt.version, model_id, criteria)
+
+        # Flagged on the way out, not cached: rows compiled before the flag existed get it too.
+        criteria = await flag_access_barriers(nct_id, criteria, rec)
 
         rate = compile_rate(criteria)
         top.output = {

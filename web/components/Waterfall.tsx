@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 
+import { AccessBarrierTag } from "@/components/AccessBarrierTag";
 import { formatCount } from "@/lib/format";
 import {
   barWidths,
@@ -66,6 +67,7 @@ function Row({
           <div className="text-sm font-medium sm:text-[0.9375rem]">
             <span className="mr-2 font-mono text-xs font-normal text-ink-5">{step.criterion_id}</span>
             {step.text}
+            <AccessBarrierTag barrier={step.access_barrier} />
           </div>
           <div className="mt-0.5 hidden flex-wrap items-center gap-2 text-[0.8125rem] text-ink-4 sm:flex">
             {step.type}
@@ -171,6 +173,7 @@ export function Waterfall({
                   <li key={r.criterion_id}>
                     <span className="mr-1.5 font-mono text-ink-5">{r.criterion_id}</span>
                     {r.text}
+                    <AccessBarrierTag barrier={r.access_barrier} />
                   </li>
                 ))}
               </ul>

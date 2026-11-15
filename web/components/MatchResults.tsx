@@ -4,17 +4,21 @@
 // a trial in the shown tier. Each trial is a card that expands to its criterion verdicts and a
 // "Next steps" block; the first likely trial starts expanded. The API returns matches in rank
 // order, so filtering by tier keeps that order.
-import { Sparkles } from "lucide-react";
+import { Accessibility, MapPin, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 import { CriterionRow } from "@/components/CriterionRow";
+import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { barrierCount, barrierCountLabel } from "@/lib/access-barriers";
 import type { Schemas, Tier } from "@/lib/api";
 import {
   countLabel,
+  distanceWarning,
   initialView,
+  NEAR_RADIUS_MI,
   locateVerdict,
   shortCriteria,
   tierCounts,
@@ -61,13 +65,44 @@ function CountBar({ counts }: { counts: Record<string, number> }) {
   );
 }
 
+/** "2 access barriers": the trial's criteria flagged as non-health barriers (issue #53). */
+function BarrierCount({ verdicts }: { verdicts: TrialMatch["verdicts"] }) {
+  const label = barrierCountLabel(barrierCount(verdicts));
+  if (!label) return null;
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-[0.8125rem] whitespace-nowrap text-ink-3"
+      title="Criteria that shut people out for reasons other than health: language, visit burden, technology or support"
+      data-testid="trial-access-barriers"
+    >
+      <Accessibility className="size-3.5" aria-hidden />
+      {label}
+    </span>
+  );
+}
+
 function TrialMeta({ match }: { match: TrialMatch }) {
   const parts = [
     match.nct_id,
     match.phase,
     match.distance_mi === null ? null : `${match.distance_mi} mi`,
   ].filter(Boolean);
-  return <span className="font-mono text-[0.8125rem] text-ink-4">{parts.join(" · ")}</span>;
+  const warning = distanceWarning(match.distance_mi);
+  return (
+    <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+      <span className="font-mono text-[0.8125rem] text-ink-4">{parts.join(" · ")}</span>
+      {warning && (
+        <Badge
+          variant="outline"
+          className="border-verdict-unknown/40 bg-verdict-unknown-bg text-verdict-unknown"
+          title={`The nearest site is ${match.distance_mi} mi from the patient, more than ${NEAR_RADIUS_MI} mi of travel.`}
+        >
+          <MapPin data-icon="inline-start" />
+          {warning}
+        </Badge>
+      )}
+    </span>
+  );
 }
 
 function TrialCard({
@@ -112,6 +147,7 @@ function TrialCard({
             <span className="text-[0.8125rem] font-medium whitespace-nowrap text-ink-2">
               {countLabel(match.counts)}
             </span>
+            <BarrierCount verdicts={match.verdicts} />
           </span>
         </button>
         {open && (

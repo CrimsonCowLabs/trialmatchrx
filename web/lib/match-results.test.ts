@@ -5,6 +5,7 @@ import { test } from "node:test";
 import type { Schemas } from "./api.ts";
 import {
   countLabel,
+  distanceWarning,
   formatRunDuration,
   INITIAL_RUN_TABS,
   initialView,
@@ -129,6 +130,17 @@ test("a selected trace event is located at the tier and trial of the verdict it 
 
 test("a trial's outcome counts read OK / disqualifying / unknown, zeros included", () => {
   assert.equal(countLabel({ pass: 7, unknown: 1 }), "7 OK · 0 disqualifying · 1 unknown");
+});
+
+test("a nearest site past 50 mi warns; 50.0 exactly is inside", () => {
+  assert.equal(distanceWarning(50.1), "Outside 50 mi");
+  assert.equal(distanceWarning(98.4), "Outside 50 mi");
+  assert.equal(distanceWarning(50), null);
+  assert.equal(distanceWarning(0.4), null);
+});
+
+test("a trial with no site coordinates gets no distance warning", () => {
+  assert.equal(distanceWarning(null), null);
 });
 
 function verdicts(...outcomes: Schemas["Verdict"]["outcome"][]): Schemas["Verdict"][] {

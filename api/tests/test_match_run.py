@@ -8,13 +8,14 @@ from typing import Any
 
 import pytest
 
+from app.config import Settings
 from app.main import app
 from app.pipeline import judge as judge_module
 from app.pipeline.compile_criteria import compile_study
 from app.pipeline.fixture_model import FixtureChatModel, load_llm_fixture
 from app.pipeline.study_source import load_fixture_study
 from app.routers.match import judge_model_factory
-from app.schemas import RunSummary, TraceEvent, Verdict
+from app.schemas import MatchRequest, RunSummary, TraceEvent, Verdict
 from app.sources import ctgov
 from app.trace import store
 from app.trace.bus import EventBus
@@ -119,6 +120,23 @@ async def test_radius_limits_the_trials(no_api_key: None) -> None:
     summary, _, _ = await run({**BODY, "radius_mi": 50})
     assert [m.nct_id for m in summary.matches] == ["NCT07662135"]
     assert summary.matches[0].distance_mi is not None and summary.matches[0].distance_mi < 1
+
+
+async def test_a_request_without_a_radius_searches_100_miles(no_api_key: None) -> None:
+    # The seeded reach (config.ctgov_seed_radius_mi), not SPEC.md's 50 mi: far trials show a
+    # distance warning in the UI instead of being dropped.
+    # The declared defaults, not get_settings(): an env override of the seed radius must not
+    # fail this test.
+    assert MatchRequest.model_fields["radius_mi"].default == 100
+    assert Settings.model_fields["ctgov_seed_radius_mi"].default == 100
+    await cache_and_compile(NEAR)
+    body = {k: v for k, v in BODY.items() if k != "radius_mi"}
+    _, trace, _ = await run(body)
+    search = next(e for e in trace if e.name == "search_trials")
+    assert search.input is not None and search.input["radius_mi"] == 100
+    # ~0 mi in, ~132 mi out.
+    assert search.output is not None and search.output["nct_ids"] == ["NCT07662135"]
+    assert search.note is not None and "within 100 mi" in search.note
 
 
 async def test_a_fhir_bundle_is_mapped_without_an_llm(

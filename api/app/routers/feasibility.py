@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.pipeline import criteria_cache
+from app.pipeline.access_barriers import with_access_barriers
 from app.pipeline.feasibility import Cohort, InvalidOverride, simulate
 from app.schemas import FeasibilityRequest, FeasibilityResult
 from app.sources.cohort import get_cohort
@@ -26,6 +27,9 @@ async def run_feasibility(
     criteria = criteria_cache.latest(nct)
     if not criteria:
         raise HTTPException(404, f"{nct} has no compiled criteria; compile it first")
+    # Untraced like the rest of this route (a slider drag is not a run). The same rules run as
+    # the traced `access_barriers` step of the trial run the feasibility page opens with.
+    criteria = with_access_barriers(criteria)
     try:
         return simulate(nct, criteria, cohort, req.overrides)
     except InvalidOverride as exc:

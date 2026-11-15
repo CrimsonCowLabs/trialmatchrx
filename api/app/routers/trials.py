@@ -6,6 +6,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Response
 
 from app.pipeline import criteria_cache
+from app.pipeline.access_barriers import flag_access_barriers
 from app.pipeline.compile_criteria import (
     CompileFailed,
     CompileModelUnavailable,
@@ -64,7 +65,10 @@ async def get_trial(nct: str, response: Response) -> TrialDetail:
         except httpx.HTTPError as exc:
             raise HTTPException(502, f"ClinicalTrials.gov: {exc}", headers) from exc
         trial = ctgov.summarize(study)
-        trial.criteria = criteria_cache.latest(trial.nct_id)
+        criteria = criteria_cache.latest(trial.nct_id)
+        if criteria:
+            criteria = await flag_access_barriers(trial.nct_id, criteria, run.recorder)
+        trial.criteria = criteria
         run.result = {"nct": nct}
     return trial
 

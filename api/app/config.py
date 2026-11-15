@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     ctgov_radius_mi: float = 50.0
     # `make seed` radius. HACK(demo): wider than the spec's 50 mi because only ~53 recruiting
     # T2D/CKD trials sit within 50 mi; 100 mi (adds the Bay Area) gives ~197. Set to 50 to revert.
+    # The match search default (schemas.MatchRequest.radius_mi, web DEFAULT_RADIUS_MI) is this
+    # same 100 mi; keep them in step.
     ctgov_seed_radius_mi: float = 100.0
 
     # Nearest cached trials a match run compiles and evaluates (SPEC.md: "about 20 trials").

@@ -1,6 +1,6 @@
 """Trial search for a match run: recruiting trials from the ctgov cache, nearest first.
 
-    trials = await search_cached_trials(rec, (lat, lon), radius_mi=50, limit=20)
+    trials = await search_cached_trials(rec, (lat, lon), radius_mi=100, limit=20)
 
 The match never calls ClinicalTrials.gov: `make seed` fills the cache beforehand (SPEC.md
 "seed_trials.py pre-fetches ... so the demo never depends on venue Wi-Fi").
