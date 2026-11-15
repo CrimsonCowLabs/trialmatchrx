@@ -4,6 +4,8 @@
     uv run python -m scripts.run_eval --rebuild # redraw + refetch the sample (network)
     uv run python -m scripts.run_eval --bm25-only
     uv run python -m scripts.run_eval --topics 2  # partial: first 2 topics only, not recorded
+    uv run python -m scripts.run_eval --offline   # from the caches only: no API calls, no key
+    uv run python -m scripts.run_eval --fail-fast # stop at the first model failure
 
 The matcher runs the full pipeline (parse -> compile -> evaluate -> judge -> verify -> rank) on
 each topic as a traced match run, so it needs ANTHROPIC_API_KEY. The first run is slow and
@@ -25,6 +27,25 @@ after a pipeline change. A partial score can't be compared with a full one, so i
 partial and never written to `eval_runs`, even when complete, and even when N is every topic.
 Its answers still land in the compile cache and `llm_cache`, so a later full run replays them.
 N must be between 1 and the sample's topic count.
+
+`--offline` scores the matcher from the caches only, so a change can be checked without spending
+tokens. Every parse, compile and judge answer must come from the compile cache or `llm_cache`;
+an uncached one fails at once with a "not cached" error and never reaches the API (the parse
+and judge models are built with a placeholder key, which isn't part of the cache key, so no
+ANTHROPIC_API_KEY is needed). The report prints, per step (parse / compile / judge), how many
+calls missed the cache and would have gone to the API. Compile misses are every judged trial
+not in the compile cache; a topic whose parse missed is not matched, so its judge calls (which
+depend on the parsed facts) are not counted. A fully cached offline run scores the
+same as a live re-run and is recorded the same way; an incomplete one prints the score over what
+replayed, records nothing (BM25 included) and exits 1.
+
+`--fail-fast` stops at the first model failure: a failed parse, a trial whose criteria can't be
+compiled, a judge call that errored or answered malformed twice, or (with `--offline`) a cache
+miss. Trials then run one at a time, so no later trial starts after the failure. It prints the
+step, topic, trial (if any) and error, records nothing (BM25 included) and exits 1. Answers the
+stopped topic already got stay cached unless its parse failed. Without it,
+failures are collected per topic as above. The flags combine: `--offline --fail-fast` stops at
+the first cache miss.
 """
 
 import argparse
@@ -113,11 +134,31 @@ def _partial_label(sample: trec.TrecSample) -> str:
     return f"partial run: {len(sample.topics)} of {sample.n_topics} topics"
 
 
-def _score_matcher(sample: trec.TrecSample, git_sha: str | None, *, partial: bool) -> MatcherScore:
+def _score_matcher(
+    sample: trec.TrecSample,
+    git_sha: str | None,
+    *,
+    partial: bool,
+    offline: bool = False,
+    fail_fast: bool = False,
+) -> MatcherScore:
     """Score the matcher; record it only when complete (a re-run would replay every answer)
-    and not a --topics run."""
-    print(f"matcher: {len(sample.topics)} topics, one traced match run each ...")
-    score = asyncio.run(score_matcher(sample))
+    and not a --topics run. `offline`: from the caches only (no API calls). `fail_fast`: stop
+    at the first model failure and record nothing."""
+    mode = ", offline (caches only, no API calls)" if offline else ""
+    print(f"matcher: {len(sample.topics)} topics, one traced match run each{mode} ...")
+    score = asyncio.run(score_matcher(sample, offline=offline, fail_fast=fail_fast))
+    if (stop := score.stopped) is not None:
+        trial = f", trial {stop.nct_id}" if stop.nct_id else ""
+        error = stop.error.splitlines()[0]
+        print(
+            f"matcher: stopped (--fail-fast) at {stop.step}, topic {stop.topic_id}{trial}: "
+            f"{error} (run {stop.run_id}); NOT recorded"
+        )
+        return score
+    if offline:
+        misses = ", ".join(f"{step} {n}" for step, n in score.cache_misses.items())
+        print(f"matcher: offline, cache misses (would call the API): {misses}")
     if score.complete and partial:
         print(f"matcher: {_partial_label(sample)}, NOT recorded")
     elif score.complete:
@@ -128,12 +169,22 @@ def _score_matcher(sample: trec.TrecSample, git_sha: str | None, *, partial: boo
             f"matcher: incomplete, NOT recorded: {len(score.failed)} topics failed, "
             f"{len(score.uncompiled)} trials could not be compiled "
             f"({', '.join(score.uncompiled) or 'none'}), {score.judge_errors} judge calls "
-            "failed. Re-run to retry them (everything else replays from the cache)."
+            "failed. "
+            + (
+                "Run without --offline to fill the cache."
+                if offline
+                else "Re-run to retry them (everything else replays from the cache)."
+            )
         )
         for f in score.failed:  # the first line of the error; the run's trace has the rest
             error = f.error.splitlines()[0]
             print(f"  topic {f.topic_id} failed at {f.step}: {error} (run {f.run_id})")
     return score
+
+
+def _record_bm25(bm25: dict[str, float], sample: trec.TrecSample, git_sha: str | None) -> None:
+    row = record_eval_run(BM25, bm25, sample=sample, git_sha=git_sha)
+    print(f"bm25: eval_runs {row.id[:8]}, git {row.git_sha}")
 
 
 def _topic_count(value: str) -> int:
@@ -158,13 +209,34 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         metavar="N",
         help="score only the first N topics (partial run, never recorded)",
     )
+    parser.add_argument(
+        "--offline",
+        action="store_true",
+        help="score the matcher from the caches only: no API calls, no API key needed",
+    )
+    parser.add_argument(
+        "--fail-fast",
+        action="store_true",
+        help="stop at the first model failure (or --offline cache miss); record nothing",
+    )
     return parser.parse_args(argv)
 
 
-def main(rebuild: bool, bm25_only: bool, topics: int | None = None) -> None:
+def main(
+    rebuild: bool,
+    bm25_only: bool,
+    topics: int | None = None,
+    *,
+    offline: bool = False,
+    fail_fast: bool = False,
+) -> None:
     """`topics`: score only the first N topics; such a run is partial and never recorded, even
-    when N is every topic of the sample (issue #61)."""
+    when N is every topic of the sample (issue #61). `offline`: the matcher answers from the
+    caches only; `fail_fast`: it stops at the first failure (issue #60). With either, BM25 is
+    recorded only alongside a recorded matcher run, so a failed check records nothing."""
     partial = topics is not None
+    runs_matcher = not bm25_only and (offline or bool(get_settings().anthropic_api_key))
+    defer_bm25 = runs_matcher and (offline or fail_fast)
     init_db()
     git_sha = current_git_sha()  # before a first run writes sample.json into the tree
     if rebuild or not trec.SAMPLE_PATH.exists():
@@ -183,24 +255,30 @@ def main(rebuild: bool, bm25_only: bool, topics: int | None = None) -> None:
     bm25 = score_bm25(sample)
     if partial:
         print(f"bm25: {_partial_label(sample)}, NOT recorded")
-    else:
-        bm25_row = record_eval_run(BM25, bm25, sample=sample, git_sha=git_sha)
-        print(f"bm25: eval_runs {bm25_row.id[:8]}, git {bm25_row.git_sha}")
+    elif not defer_bm25:
+        _record_bm25(bm25, sample, git_sha)
 
     score: MatcherScore | None = None
     if bm25_only:
         print("matcher: skipped (--bm25-only)")
-    elif not get_settings().anthropic_api_key:
+    elif not runs_matcher:
         print("matcher: skipped, ANTHROPIC_API_KEY is not set (it parses and judges with the LLM)")
     else:
-        score = _score_matcher(sample, git_sha, partial=partial)
+        score = _score_matcher(
+            sample, git_sha, partial=partial, offline=offline, fail_fast=fail_fast
+        )
+    if defer_bm25 and not partial:
+        if score is not None and score.complete:
+            _record_bm25(bm25, sample, git_sha)
+        else:
+            print("bm25: NOT recorded (the matcher run was not recorded)")
 
     if partial:
         print(
             f"\n{_partial_label(sample)}: metrics over those topics only, "
             "not comparable with a full run"
         )
-    _report(score.metrics if score else None, bm25)
+    _report(score.metrics if score and not score.stopped else None, bm25)  # no half score
     print(f"prompts: {current_prompt_version()}")
     if score is not None and not score.complete:
         sys.exit(1)
@@ -208,4 +286,4 @@ def main(rebuild: bool, bm25_only: bool, topics: int | None = None) -> None:
 
 if __name__ == "__main__":
     args = parse_args()
-    main(args.rebuild, args.bm25_only, args.topics)
+    main(args.rebuild, args.bm25_only, args.topics, offline=args.offline, fail_fast=args.fail_fast)

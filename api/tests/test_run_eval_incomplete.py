@@ -16,8 +16,8 @@ def test_a_run_with_a_failed_topic_is_reported_and_not_recorded(
     models = Models()
     models.parse = _parse_failing_on("70M")  # topic 2
 
-    def score(sample: TrecSample) -> Any:
-        return models.score(sample)
+    def score(sample: TrecSample, **kwargs: Any) -> Any:
+        return models.score(sample, **kwargs)
 
     monkeypatch.setattr(run_eval, "score_matcher", score)
 

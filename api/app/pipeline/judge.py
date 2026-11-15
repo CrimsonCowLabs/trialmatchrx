@@ -92,14 +92,16 @@ def new_judge_semaphore() -> asyncio.Semaphore:
     return asyncio.Semaphore(JUDGE_CONCURRENCY)
 
 
-def anthropic_judge_model() -> BaseChatModel:
-    """The real judge model (Sonnet, from settings)."""
+def anthropic_judge_model(api_key: str | None = None) -> BaseChatModel:
+    """The real judge model (Sonnet, from settings). `api_key` overrides the settings' key
+    (the eval's `--offline` passes a placeholder: the key is not part of the LLM cache key)."""
     settings = get_settings()
-    if not settings.anthropic_api_key:
+    api_key = api_key or settings.anthropic_api_key
+    if not api_key:
         raise JudgeModelUnavailable("ANTHROPIC_API_KEY is not set; criteria can't be judged")
     return ChatAnthropic(
         model=settings.model_judge,
-        api_key=SecretStr(settings.anthropic_api_key),
+        api_key=SecretStr(api_key),
         max_tokens=2000,
     )
 
