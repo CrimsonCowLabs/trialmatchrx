@@ -74,6 +74,10 @@ export interface TraceRow {
   event: TraceEvent;
   depth: number;
   hasChildren: boolean;
+  /** Tokens (in + out) and cost of the llm calls in this event's subtree, itself included
+   *  (the same events `computeTotals` counts), so a collapsed trial still shows its spend. */
+  tokens: number;
+  costUsd: number;
 }
 
 function parentOf(events: TraceEvent[]): Map<string, string | null> {
@@ -96,11 +100,29 @@ export function traceRows(events: TraceEvent[], expanded: ReadonlySet<string>): 
     if (siblings) siblings.push(e);
     else children.set(p, [e]);
   }
+  const spend = new Map<string, { tokens: number; costUsd: number }>();
+  const spendOf = (e: TraceEvent, seen: Set<string>): { tokens: number; costUsd: number } => {
+    const cached = spend.get(e.id);
+    if (cached) return cached;
+    seen.add(e.id);
+    const own =
+      e.kind === "llm"
+        ? { tokens: (e.tokens_in ?? 0) + (e.tokens_out ?? 0), costUsd: e.cost_usd ?? 0 }
+        : { tokens: 0, costUsd: 0 };
+    for (const c of children.get(e.id) ?? []) {
+      if (seen.has(c.id)) continue; // a parent_id cycle
+      const s = spendOf(c, seen);
+      own.tokens += s.tokens;
+      own.costUsd += s.costUsd;
+    }
+    spend.set(e.id, own);
+    return own;
+  };
   const out: TraceRow[] = [];
   const walk = (parent: string | null, depth: number) => {
     for (const event of children.get(parent) ?? []) {
       const hasChildren = children.has(event.id);
-      out.push({ event, depth, hasChildren });
+      out.push({ event, depth, hasChildren, ...spendOf(event, new Set()) });
       if (hasChildren && expanded.has(event.id)) walk(event.id, depth + 1);
     }
   };
@@ -166,6 +188,113 @@ export function computeTotals(events: TraceEvent[], now?: number): RunTotals {
     guardrail_trips: events.filter((e) => e.kind === "guardrail" && e.status === "failed").length,
     wall_time_s: events.length ? (Math.max(last, now ?? -Infinity) - first) / 1000 : null,
   };
+}
+
+type Kind = TraceEvent["kind"];
+
+// Literal class names so Tailwind sees them; colours are the trace-kind tokens in globals.css.
+const KIND_STYLE: Record<Kind, { label: string; className: string }> = {
+  run: { label: "run", className: "text-kind-run bg-kind-run-bg" },
+  step: { label: "step", className: "text-kind-step bg-kind-step-bg" },
+  llm: { label: "llm", className: "text-kind-llm bg-kind-llm-bg" },
+  tool: { label: "tool", className: "text-kind-tool bg-kind-tool-bg" },
+  rule: { label: "rule", className: "text-kind-rule bg-kind-rule-bg" },
+  guardrail: { label: "guard", className: "text-kind-guardrail bg-kind-guardrail-bg" },
+  error: { label: "error", className: "text-kind-error bg-kind-error-bg" },
+};
+
+/** The kind chip on a trace row: a short label and its trace-kind colour tokens. */
+export const kindStyle = (kind: Kind) => KIND_STYLE[kind];
+
+export interface PromptMessage {
+  role?: string;
+  content?: unknown;
+  tool_calls?: unknown;
+}
+
+/** What the trace panel shows for a selected event. */
+export interface EventDetail {
+  /** `model …`, `seq …`, tokens, cost, `cache hit`: whichever the event has. */
+  meta: string[];
+  /** The headline output: an llm call's parsed tool-call args (or its text), else the
+   *  event's output without its error keys. Null when there is none. */
+  primary: { title: string; value: unknown } | null;
+  /** LangChain chat input `{messages: [[{role, content}, ...]]}`, flattened; else null. */
+  messages: PromptMessage[] | null;
+  /** The input when it isn't prompt messages. */
+  input: Record<string, unknown> | null;
+  /** An llm call's raw model output (null for other kinds, shown as `primary` there). */
+  raw: Record<string, unknown> | null;
+  /** Whatever the output says went wrong: `error`, `errors`, or guardrail `failed`. */
+  errors: unknown[];
+}
+
+const ERROR_KEYS = ["error", "errors", "failed"];
+
+function promptMessages(input: TraceEvent["input"]): PromptMessage[] | null {
+  const batches = input?.messages;
+  if (!Array.isArray(batches)) return null;
+  return batches.flatMap((b) => (Array.isArray(b) ? b : [b])) as PromptMessage[];
+}
+
+/** `with_structured_output` answers with a tool call: the args of each one returned. */
+function toolCallArgs(output: TraceEvent["output"]): unknown[] {
+  const messages = output?.messages;
+  if (!Array.isArray(messages)) return [];
+  return (messages as PromptMessage[]).flatMap((m) =>
+    Array.isArray(m.tool_calls) ? m.tool_calls.map((c: { args?: unknown }) => c.args ?? c) : [],
+  );
+}
+
+const nonEmpty = (o: Record<string, unknown>) => (Object.keys(o).length ? o : null);
+
+export function eventDetail(event: TraceEvent): EventDetail {
+  const out = event.output ?? {};
+  const errors = ERROR_KEYS.map((k) => out[k]).filter(
+    (v) => v !== undefined && v !== null && !(Array.isArray(v) && v.length === 0),
+  );
+  const rest = nonEmpty(
+    Object.fromEntries(Object.entries(out).filter(([k]) => !ERROR_KEYS.includes(k))),
+  );
+  const messages = promptMessages(event.input);
+  const meta = [
+    event.model && `model ${event.model}`,
+    `seq ${event.seq}`,
+    event.tokens_in !== null &&
+      `${count(event.tokens_in)} in / ${count(event.tokens_out ?? 0)} out tokens`,
+    event.cost_usd !== null && formatUsd(event.cost_usd),
+    event.cache_hit && "cache hit",
+  ].filter((m): m is string => Boolean(m));
+
+  let primary: EventDetail["primary"] = null;
+  if (event.kind === "llm") {
+    const parsed = toolCallArgs(event.output);
+    const text = typeof out.text === "string" ? out.text : "";
+    if (parsed.length) {
+      primary = { title: "Parsed output", value: parsed.length === 1 ? parsed[0] : parsed };
+    } else if (text) primary = { title: "Model output", value: text };
+  } else if (rest) primary = { title: "Output", value: rest };
+
+  return {
+    meta,
+    primary,
+    messages,
+    input: messages ? null : (event.input ?? null),
+    raw: event.kind === "llm" ? rest : null,
+    errors,
+  };
+}
+
+/** A row's latency:`1 ms`, `2.2 s`, or `…` while the event is still running. */
+export function formatLatency(ms: number | null): string {
+  if (ms === null) return "…";
+  return ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`;
+}
+
+/** A row's tokens: `96`, `1.9k`; blank when there are none. */
+export function formatTokens(n: number): string {
+  if (n === 0) return "";
+  return n < 1000 ? String(n) : `${(n / 1000).toFixed(1)}k`;
 }
 
 /** `$0.0053` under a dollar (per-call costs are fractions of a cent), `$1.50` above. */

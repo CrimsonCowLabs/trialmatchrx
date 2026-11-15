@@ -7,6 +7,10 @@ import type { Schemas, TraceEvent } from "./api.ts";
 import {
   ancestorIds,
   computeTotals,
+  eventDetail,
+  formatLatency,
+  formatTokens,
+  kindStyle,
   replayDelays,
   replayEmissions,
   totalsStrip,
@@ -238,6 +242,122 @@ test("before RunTotals arrive, the strip counts the events so far and wall time 
     { label: "Cache hits", value: "0" },
     { label: "Guardrails", value: "0" },
   ]);
+});
+
+test("each event kind gets its own chip label and trace-kind colour tokens", () => {
+  assert.deepEqual(kindStyle("llm"), { label: "llm", className: "text-kind-llm bg-kind-llm-bg" });
+  assert.deepEqual(kindStyle("guardrail"), {
+    label: "guard",
+    className: "text-kind-guardrail bg-kind-guardrail-bg",
+  });
+  const kinds = ["run", "step", "llm", "tool", "rule", "guardrail", "error"] as const;
+  assert.equal(new Set(kinds.map((k) => kindStyle(k).className)).size, kinds.length);
+});
+
+test("row latency reads in ms under a second and in seconds above", () => {
+  assert.equal(formatLatency(null), "…");
+  assert.equal(formatLatency(1), "1 ms");
+  assert.equal(formatLatency(999), "999 ms");
+  assert.equal(formatLatency(2200), "2.2 s");
+  assert.equal(formatLatency(18_400), "18.4 s");
+});
+
+test("row tokens are compact above a thousand and blank at zero", () => {
+  assert.equal(formatTokens(0), "");
+  assert.equal(formatTokens(96), "96");
+  assert.equal(formatTokens(1900), "1.9k");
+  assert.equal(formatTokens(12_345), "12.3k");
+});
+
+test("a row's tokens and cost roll up the llm calls beneath it", () => {
+  const rows = traceRows(TRACE, new Set());
+  const trial = rows.find((r) => r.event.id === "trial");
+  assert.equal(trial?.tokens, 9); // the nested llm call's 9 tokens in, through the judge
+  const expanded = traceRows(
+    [...TRACE, ev({ id: "llm2", seq: 8, kind: "llm", parent_id: "judge", cost_usd: 0.25 })],
+    new Set(["trial", "judge"]),
+  );
+  const judge = expanded.find((r) => r.event.id === "judge");
+  assert.equal(judge?.tokens, 9);
+  assert.equal(judge?.costUsd, 0.25);
+  assert.equal(expanded.find((r) => r.event.id === "rule")?.tokens, 0);
+});
+
+const JUDGE_CALL = ev({
+  id: "j",
+  seq: 41,
+  kind: "llm",
+  model: "claude-sonnet-4-5",
+  tokens_in: 1284,
+  tokens_out: 96,
+  cost_usd: 0.0053,
+  input: {
+    messages: [
+      [
+        { role: "system", content: "You judge one criterion." },
+        { role: "human", content: "Criterion exc-2 ..." },
+      ],
+    ],
+  },
+  output: {
+    text: "",
+    messages: [
+      { role: "ai", content: "", tool_calls: [{ name: "Verdict", args: { outcome: "unknown" } }] },
+    ],
+  },
+});
+
+test("a selected llm call shows model, seq, tokens and cost, and its parsed tool-call args", () => {
+  const d = eventDetail(JUDGE_CALL);
+  assert.deepEqual(d.meta, [
+    "model claude-sonnet-4-5",
+    "seq 41",
+    "1,284 in / 96 out tokens",
+    "$0.0053",
+  ]);
+  assert.deepEqual(d.primary, { title: "Parsed output", value: { outcome: "unknown" } });
+  assert.deepEqual(
+    d.messages?.map((m) => m.role),
+    ["system", "human"],
+  );
+  assert.equal(d.input, null); // shown as prompt messages instead
+  assert.deepEqual(d.raw, JUDGE_CALL.output);
+  assert.deepEqual(d.errors, []);
+});
+
+test("an llm call that answered in text shows that text as its output", () => {
+  const output = { text: "Thinking…", messages: [] };
+  const d = eventDetail(ev({ id: "t", seq: 3, kind: "llm", output }));
+  assert.deepEqual(d.primary, { title: "Model output", value: "Thinking…" });
+  assert.deepEqual(d.meta, ["seq 3"]);
+});
+
+test("a rule or tool event shows its input and output; failures show as errors", () => {
+  const rule = eventDetail(
+    ev({
+      id: "r",
+      seq: 5,
+      kind: "rule",
+      input: { op: "lt" },
+      output: { result: "pass" },
+      cache_hit: true,
+    }),
+  );
+  assert.deepEqual(rule.primary, { title: "Output", value: { result: "pass" } });
+  assert.deepEqual(rule.input, { op: "lt" });
+  assert.equal(rule.raw, null);
+  assert.ok(rule.meta.includes("cache hit"));
+
+  const failedOutput = { failed: ["quote"], score: 71 };
+  const guard = eventDetail(
+    ev({ id: "g", seq: 6, kind: "guardrail", status: "failed", output: failedOutput }),
+  );
+  assert.deepEqual(guard.errors, [["quote"]]);
+  assert.deepEqual(guard.primary, { title: "Output", value: { score: 71 } });
+
+  const bare = eventDetail(ev({ id: "b", seq: 7, output: { errors: [] } }));
+  assert.equal(bare.primary, null);
+  assert.deepEqual(bare.errors, []);
 });
 
 test("a wall time no source provides is left out, not shown as a number", () => {
