@@ -25,6 +25,7 @@ function CloserRun({ runId, matchRunId }: { runId: string; matchRunId: string | 
       status={{ label: state, variant: STREAM_VARIANT[state] }}
       matches={null}
       closer={summary?.closer ?? null}
+      totals={summary?.totals}
       runStatus={runStatus ?? "running"}
       link={finished ? { href: `/runs/${encodeURIComponent(runId)}`, label: "Replay" } : undefined}
     >

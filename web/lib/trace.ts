@@ -1,16 +1,8 @@
 // Pure helpers over a run's trace events, shared by the live run page and the replay page.
 // No React here, so `lib/trace.test.ts` can run them under node:test.
-import type { TraceEvent } from "./api.ts";
+import type { Schemas, TraceEvent } from "./api.ts";
 
-export interface Totals {
-  llmCalls: number;
-  tokensIn: number;
-  tokensOut: number;
-  costUsd: number;
-  cacheHits: number;
-  guardrailTrips: number;
-  wallTimeS: number | null;
-}
+export type RunTotals = Schemas["RunTotals"];
 
 const ms = (iso: string) => new Date(iso).getTime();
 
@@ -152,9 +144,12 @@ export function replayDelays(emissions: TraceEvent[], capMs: number): number[] {
   );
 }
 
-/** Same rules as the API's `compute_totals`. Wall time runs from the first event's start to
- *  `now` (pass it while the run is live) or else to the last timestamp seen. */
-export function computeTotals(events: TraceEvent[], now?: number): Totals {
+/** The run's totals derived from the events seen so far, counted by the same rules as the
+ *  API's `compute_totals` (both are held to `api/tests/fixtures/trace/totals.json`). Only
+ *  wall time differs: the API measures the run row (null until it ends), this runs from the
+ *  first event's start to `now` (pass it while the run is live) or else to the last
+ *  timestamp seen. */
+export function computeTotals(events: TraceEvent[], now?: number): RunTotals {
   const llm = events.filter((e) => e.kind === "llm");
   let first = Infinity;
   let last = -Infinity;
@@ -163,12 +158,46 @@ export function computeTotals(events: TraceEvent[], now?: number): Totals {
     last = Math.max(last, ms(e.ended_at ?? e.started_at));
   }
   return {
-    llmCalls: llm.length,
-    tokensIn: llm.reduce((n, e) => n + (e.tokens_in ?? 0), 0),
-    tokensOut: llm.reduce((n, e) => n + (e.tokens_out ?? 0), 0),
-    costUsd: llm.reduce((n, e) => n + (e.cost_usd ?? 0), 0),
-    cacheHits: events.filter((e) => e.cache_hit).length,
-    guardrailTrips: events.filter((e) => e.kind === "guardrail" && e.status === "failed").length,
-    wallTimeS: events.length ? (Math.max(last, now ?? -Infinity) - first) / 1000 : null,
+    llm_calls: llm.length,
+    tokens_in: llm.reduce((n, e) => n + (e.tokens_in ?? 0), 0),
+    tokens_out: llm.reduce((n, e) => n + (e.tokens_out ?? 0), 0),
+    cost_usd: llm.reduce((n, e) => n + (e.cost_usd ?? 0), 0),
+    cache_hits: events.filter((e) => e.cache_hit).length,
+    guardrail_trips: events.filter((e) => e.kind === "guardrail" && e.status === "failed").length,
+    wall_time_s: events.length ? (Math.max(last, now ?? -Infinity) - first) / 1000 : null,
   };
+}
+
+/** `$0.0053` under a dollar (per-call costs are fractions of a cent), `$1.50` above. */
+export const formatUsd = (n: number) => `$${n.toFixed(n < 1 ? 4 : 2)}`;
+
+const count = (n: number) => n.toLocaleString("en-US");
+
+export interface TotalsCell {
+  label: string;
+  value: string;
+}
+
+/** The trace panel's totals strip. `runTotals` (from the run summary, once the run is done)
+ *  wins; before it arrives the figures are `computeTotals` over the events seen so far and
+ *  the clock reads "Elapsed" (first event to `now`), since the API has no wall time for an
+ *  unfinished run. A wall time neither source has is left out. */
+export function totalsStrip(
+  runTotals: RunTotals | null | undefined,
+  events: TraceEvent[],
+  now?: number,
+): { final: boolean; cells: TotalsCell[] } {
+  const final = Boolean(runTotals);
+  const t = runTotals ?? computeTotals(events, now);
+  const cells: (TotalsCell | null)[] = [
+    { label: "LLM calls", value: count(t.llm_calls) },
+    { label: "Tokens", value: count(t.tokens_in + t.tokens_out) },
+    { label: "Cost", value: formatUsd(t.cost_usd) },
+    t.wall_time_s === null
+      ? null
+      : { label: final ? "Wall time" : "Elapsed", value: `${t.wall_time_s.toFixed(1)} s` },
+    { label: "Cache hits", value: count(t.cache_hits) },
+    { label: "Guardrails", value: count(t.guardrail_trips) },
+  ];
+  return { final, cells: cells.filter((c) => c !== null) };
 }

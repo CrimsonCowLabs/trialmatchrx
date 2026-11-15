@@ -23,7 +23,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { api, errorMessage, type TraceEvent } from "@/lib/api";
 import type { StreamState } from "@/lib/sse";
-import { computeTotals, latencyMs, traceRows, type TraceRow } from "@/lib/trace";
+import {
+  formatUsd as usd,
+  latencyMs,
+  totalsStrip,
+  traceRows,
+  type RunTotals,
+  type TraceRow,
+} from "@/lib/trace";
 import type { TraceSelection } from "@/lib/use-trace-selection";
 
 const KIND_ICON: Record<TraceEvent["kind"], LucideIcon> = {
@@ -64,7 +71,6 @@ const STATUS_VARIANT: Record<TraceEvent["status"], BadgeVariant> = {
   skipped: "outline",
 };
 
-const usd = (n: number) => `$${n.toFixed(n < 1 ? 4 : 2)}`;
 
 /** Re-renders every `ms` while `active`, so the wall clock ticks between events. */
 function useNow(active: boolean, ms = 500): number | undefined {
@@ -86,20 +92,25 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function TotalsStrip({ events, live }: { events: TraceEvent[]; live: boolean }) {
-  const now = useNow(live);
-  const t = computeTotals(events, now);
+function TotalsStrip({
+  totals,
+  events,
+  live,
+}: {
+  totals: RunTotals | null | undefined;
+  events: TraceEvent[];
+  live: boolean;
+}) {
+  const now = useNow(live && !totals);
+  const { cells } = totalsStrip(totals, events, now);
   return (
     <div
       data-testid="trace-totals"
       className="grid grid-cols-3 gap-x-4 gap-y-2 border-b px-3 py-2 sm:grid-cols-6"
     >
-      <Stat label="LLM calls" value={t.llmCalls} />
-      <Stat label="tokens" value={(t.tokensIn + t.tokensOut).toLocaleString()} />
-      <Stat label="cost" value={usd(t.costUsd)} />
-      <Stat label="wall time" value={t.wallTimeS === null ? "–" : `${t.wallTimeS.toFixed(1)} s`} />
-      <Stat label="cache hits" value={t.cacheHits} />
-      <Stat label="guardrails" value={t.guardrailTrips} />
+      {cells.map((c) => (
+        <Stat key={c.label} label={c.label} value={c.value} />
+      ))}
     </div>
   );
 }
@@ -352,6 +363,9 @@ export interface TracePanelProps {
   /** True while events are still arriving: the wall clock ticks. */
   live: boolean;
   status: { label: string; variant: BadgeVariant };
+  /** The run's `RunTotals` once its summary is loaded; until then the strip counts the
+   *  events seen so far by the same rules (`totalsStrip`). */
+  totals?: RunTotals | null;
 }
 
 export function TracePanel({
@@ -361,6 +375,7 @@ export function TracePanel({
   verdictEventIds,
   live,
   status,
+  totals,
 }: TracePanelProps) {
   const rows = useMemo(() => traceRows(events, selection.expanded), [events, selection.expanded]);
   const listRef = useRef<HTMLOListElement>(null);
@@ -388,7 +403,7 @@ export function TracePanel({
           <ExportButton runId={runId} />
         </div>
       </header>
-      <TotalsStrip events={events} live={live} />
+      <TotalsStrip totals={totals} events={events} live={live} />
       {rows.length === 0 ? (
         <p className="px-3 py-6 text-center text-sm text-muted-foreground">Waiting for events…</p>
       ) : (

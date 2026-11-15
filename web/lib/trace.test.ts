@@ -1,19 +1,23 @@
 // Unit tests for the pure trace helpers. Run with `pnpm test` (node:test, no extra deps).
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import type { TraceEvent } from "./api.ts";
+import type { Schemas, TraceEvent } from "./api.ts";
 import {
   ancestorIds,
   computeTotals,
   replayDelays,
   replayEmissions,
+  totalsStrip,
   traceRows,
   upsertEvent,
   verdictEventFor,
 } from "./trace.ts";
 
-const T0 = Date.UTC(2026, 10, 12, 9, 0, 0);
+type RunTotals = Schemas["RunTotals"];
+
+const T0 =Date.UTC(2026, 10, 12, 9, 0, 0);
 const at = (ms: number) => new Date(T0 + ms).toISOString();
 
 function ev(over: Partial<TraceEvent> & Pick<TraceEvent, "id" | "seq">): TraceEvent {
@@ -48,19 +52,31 @@ test("totals count llm calls, tokens and cost from llm events only, like the API
     ev({ id: "e", seq: 9, kind: "error", status: "failed" }),
   ];
   const t = computeTotals(events);
-  assert.equal(t.llmCalls, 2);
-  assert.equal(t.tokensIn, 150);
-  assert.equal(t.tokensOut, 25);
-  assert.ok(Math.abs(t.costUsd - 0.012) < 1e-9);
-  assert.equal(t.cacheHits, 1);
-  assert.equal(t.guardrailTrips, 1);
-  assert.equal(t.wallTimeS, 3);
+  assert.equal(t.llm_calls, 2);
+  assert.equal(t.tokens_in, 150);
+  assert.equal(t.tokens_out, 25);
+  assert.ok(Math.abs(t.cost_usd - 0.012) < 1e-9);
+  assert.equal(t.cache_hits, 1);
+  assert.equal(t.guardrail_trips, 1);
+  assert.equal(t.wall_time_s, 3);
+});
+
+test("live totals count exactly what the API's compute_totals counts (shared fixture)", () => {
+  // api/tests/test_totals.py holds compute_totals to the same file.
+  const doc = JSON.parse(
+    readFileSync(new URL("../../api/tests/fixtures/trace/totals.json", import.meta.url), "utf8"),
+  ) as { events: TraceEvent[]; expected: Omit<RunTotals, "wall_time_s"> };
+  const { wall_time_s, cost_usd, ...counts } = computeTotals(doc.events);
+  const { cost_usd: expectedCost, ...expectedCounts } = doc.expected;
+  assert.deepEqual(counts, expectedCounts);
+  assert.ok(Math.abs(cost_usd - expectedCost) < 1e-9);
+  assert.equal(typeof wall_time_s, "number"); // live wall time: from the events' timestamps
 });
 
 test("while live, wall time runs from the first event to now", () => {
   const events = [ev({ id: "s", seq: 1, status: "started", started_at: at(1000), ended_at: null })];
-  assert.equal(computeTotals(events, T0 + 3500).wallTimeS, 2.5);
-  assert.equal(computeTotals([]).wallTimeS, null);
+  assert.equal(computeTotals(events, T0 + 3500).wall_time_s, 2.5);
+  assert.equal(computeTotals([]).wall_time_s, null);
 });
 
 // The run as the recorder emitted it: seq 1 trial started, 2 rule (one-shot), 3 judge started,
@@ -181,4 +197,51 @@ test("selecting an event finds the verdict it produced, walking up from nested c
   assert.equal(verdictEventFor(TRACE, "rule", verdictEvents), "rule");
   assert.equal(verdictEventFor(TRACE, "trial", verdictEvents), null);
   assert.equal(verdictEventFor(TRACE, null, verdictEvents), null);
+});
+
+const RUN_TOTALS: RunTotals = {
+  llm_calls: 14,
+  tokens_in: 36000,
+  tokens_out: 2412,
+  cost_usd: 0.1124,
+  cache_hits: 6,
+  guardrail_trips: 1,
+  wall_time_s: 18.4,
+};
+
+test("once the run summary is loaded, the strip shows its RunTotals, not the events", () => {
+  const events = [ev({ id: "a", seq: 1, kind: "llm", tokens_in: 5, tokens_out: 5 })];
+  const strip = totalsStrip(RUN_TOTALS, events);
+  assert.equal(strip.final, true);
+  assert.deepEqual(strip.cells, [
+    { label: "LLM calls", value: "14" },
+    { label: "Tokens", value: "38,412" },
+    { label: "Cost", value: "$0.1124" },
+    { label: "Wall time", value: "18.4 s" },
+    { label: "Cache hits", value: "6" },
+    { label: "Guardrails", value: "1" },
+  ]);
+});
+
+test("before RunTotals arrive, the strip counts the events so far and wall time is elapsed", () => {
+  const events = [
+    ev({ id: "r", seq: 1, kind: "run", status: "started", started_at: at(0), ended_at: null }),
+    ev({ id: "a", seq: 2, kind: "llm", tokens_in: 1200, tokens_out: 34, cost_usd: 1.5 }),
+  ];
+  const strip = totalsStrip(null, events, T0 + 2500);
+  assert.equal(strip.final, false);
+  assert.deepEqual(strip.cells, [
+    { label: "LLM calls", value: "1" },
+    { label: "Tokens", value: "1,234" },
+    { label: "Cost", value: "$1.50" },
+    { label: "Elapsed", value: "2.5 s" },
+    { label: "Cache hits", value: "0" },
+    { label: "Guardrails", value: "0" },
+  ]);
+});
+
+test("a wall time no source provides is left out, not shown as a number", () => {
+  const labels = (s: { cells: { label: string }[] }) => s.cells.map((c) => c.label);
+  assert.ok(!labels(totalsStrip({ ...RUN_TOTALS, wall_time_s: null }, [])).includes("Wall time"));
+  assert.ok(!labels(totalsStrip(undefined, [])).includes("Elapsed"));
 });
