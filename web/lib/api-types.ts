@@ -488,7 +488,7 @@ export interface components {
             condition: string;
             /**
              * Radius Mi
-             * @default 50
+             * @default 100
              */
             radius_mi: number;
         };
