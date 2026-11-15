@@ -219,6 +219,10 @@ class RunSummary(BaseModel):
     closer: CloserOutput | None = None  # a closer run's answer, once it is done
     patient_label: str | None = None  # "58 F", as on RunListItem; None until the patient is parsed
     condition: str | None = None  # the match request's condition; None for a closer run
+    # A closer run's match run and its trial's title (from that run's TrialMatch); None for a
+    # match run, or when the match run is gone. A closer run's patient_label is that run's too.
+    source_run_id: str | None = None
+    trial_title: str | None = None
     max_unknowns_for_likely: int  # the tier rule: "likely" = no fails, at most this many unknown
 
 

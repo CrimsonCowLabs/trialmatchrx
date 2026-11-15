@@ -189,6 +189,12 @@ async def test_the_agent_writes_next_steps_and_streams_every_step(
 
     assert summary.kind == "closer" and summary.status == "done"
     assert summary.closer == CloserOutput.model_validate(DEMO_OUTPUT)
+    # The page header: the source match run's patient and the trial's title, read back from it.
+    assert summary.source_run_id == run_id
+    assert summary.patient_label == "61 M"
+    assert summary.trial_title is not None
+    assert summary.trial_title.startswith("Study to Assess the Effects of ALN-ANG3")
+    assert summary.condition is None
     assert model.calls == 3  # tools turn, closing thought, structured answer
     assert streamed[-1].event == "done"
 
