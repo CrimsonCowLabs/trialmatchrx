@@ -14,6 +14,11 @@ export interface Totals {
 
 const ms = (iso: string) => new Date(iso).getTime();
 
+/** How long an event took, or null while it is still running. */
+export function latencyMs(e: TraceEvent): number | null {
+  return e.ended_at ? ms(e.ended_at) - ms(e.started_at) : null;
+}
+
 /** Apply one emission to the list. A step arrives twice (started, then final) under one id,
  *  so events are upserted by id, kept in order of first appearance, and an emission with a
  *  seq no newer than what we hold is ignored. */
@@ -47,7 +52,9 @@ function startedEmission(e: TraceEvent, seq: number): TraceEvent {
  *  Seqs are 1..N per run. Walking them in order, a seq that is some event's final seq is
  *  either that event closing (it already appeared) or a one-shot event appearing; any other
  *  seq is the `started` emission of the next event in first-appearance order. The started
- *  copy carries the final event's input and model but no output, tokens, cost or note. */
+ *  copy carries the final event's input and model but no output, tokens, cost or note.
+ *  Relies on the recorder emitting each event once (`event`) or twice (`started`, then
+ *  final); an intermediate emission would need `/trace` to export every emission instead. */
 export function replayEmissions(trace: TraceEvent[]): TraceEvent[] {
   const finalBySeq = new Map(trace.map((e) => [e.seq, e]));
   const lastSeq = trace.reduce((n, e) => Math.max(n, e.seq), 0);
@@ -56,18 +63,17 @@ export function replayEmissions(trace: TraceEvent[]): TraceEvent[] {
   let next = 0;
   for (let seq = 1; seq <= lastSeq; seq++) {
     const final = finalBySeq.get(seq);
-    if (final && appeared.has(final.id)) {
+    if (final) {
+      // a close, a one-shot, or (in a trace not in first-appearance order) an early event
+      appeared.add(final.id);
       out.push(final);
       continue;
     }
     while (next < trace.length && appeared.has(trace[next].id)) next++;
     const upcoming = trace[next];
-    if (!upcoming) {
-      if (final) out.push(final); // not in first-appearance order; keep it rather than drop it
-      continue;
-    }
+    if (!upcoming) continue; // a seq gap
     appeared.add(upcoming.id);
-    out.push(final?.id === upcoming.id ? final : startedEmission(upcoming, seq));
+    out.push(startedEmission(upcoming, seq));
   }
   return out;
 }
@@ -135,7 +141,8 @@ export function verdictEventFor(
   );
 }
 
-const emittedAt =(e: TraceEvent) => ms(e.status === "started" ? e.started_at : (e.ended_at ?? e.started_at));
+const emittedAt = (e: TraceEvent) =>
+  ms(e.status === "started" ? e.started_at : (e.ended_at ?? e.started_at));
 
 /** Wait before each emission (ms): the original gap to the previous one, capped at `capMs`
  *  (SPEC's replay caps gaps at 0.2 s). The first emission waits 0. */

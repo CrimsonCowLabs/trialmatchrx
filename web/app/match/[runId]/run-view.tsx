@@ -1,13 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useCallback } from "react";
 
 import { RunWithTrace } from "@/components/RunWithTrace";
-import { useRunSummary } from "@/lib/use-run-summary";
+import type { BadgeVariant } from "@/components/TracePanel";
+import { api } from "@/lib/api";
 import { useRunEvents, type StreamState } from "@/lib/sse";
+import { useLoad } from "@/lib/use-load";
 
-const STREAM_VARIANT: Record<StreamState, "outline" | "destructive" | "secondary"> = {
+const STREAM_VARIANT: Record<StreamState, BadgeVariant> = {
   connecting: "outline",
   open: "outline",
   done: "secondary",
@@ -16,7 +18,9 @@ const STREAM_VARIANT: Record<StreamState, "outline" | "destructive" | "secondary
 
 function MatchRun({ runId }: { runId: string }) {
   const { events, state, runStatus } = useRunEvents(runId);
-  const { summary, error } = useRunSummary(runId, runStatus !== null);
+  const finished = runStatus !== null;
+  const loadSummary = useCallback(() => api.getRun(runId), [runId]);
+  const { data: summary, error } = useLoad(finished ? loadSummary : null);
   return (
     <RunWithTrace
       runId={runId}
@@ -24,23 +28,11 @@ function MatchRun({ runId }: { runId: string }) {
       live={state !== "done" && state !== "error"}
       status={{ label: state, variant: STREAM_VARIANT[state] }}
       matches={summary?.status === "done" ? summary.matches : null}
+      runStatus={runStatus ?? "running"}
+      link={finished ? { href: `/runs/${encodeURIComponent(runId)}`, label: "Replay" } : undefined}
     >
-      <p className="text-sm text-muted-foreground">
-        Run <span className="font-mono">{runId}</span> · {runStatus ?? "running"}
-        {runStatus && (
-          <>
-            {" · "}
-            <Link href={`/runs/${encodeURIComponent(runId)}`} className="underline">
-              Replay
-            </Link>
-          </>
-        )}
-      </p>
       {error && <p className="text-sm text-destructive">{error}</p>}
-      {runStatus === "failed" && (
-        <p className="text-sm text-destructive">Run failed; the error event is in the trace.</p>
-      )}
-      {runStatus && !summary && !error && (
+      {finished && !summary && !error && (
         <p className="text-sm text-muted-foreground">Loading results…</p>
       )}
     </RunWithTrace>

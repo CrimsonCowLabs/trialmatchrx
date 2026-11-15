@@ -21,8 +21,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { api, type TraceEvent } from "@/lib/api";
-import { computeTotals, traceRows, type TraceRow } from "@/lib/trace";
+import { api, errorMessage, type TraceEvent } from "@/lib/api";
+import { computeTotals, latencyMs, traceRows, type TraceRow } from "@/lib/trace";
 import type { TraceSelection } from "@/lib/use-trace-selection";
 
 const KIND_ICON: Record<TraceEvent["kind"], LucideIcon> = {
@@ -35,7 +35,7 @@ const KIND_ICON: Record<TraceEvent["kind"], LucideIcon> = {
   error: TriangleAlert,
 };
 
-type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
+export type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
 
 const STATUS_VARIANT: Record<TraceEvent["status"], BadgeVariant> = {
   started: "outline",
@@ -43,11 +43,6 @@ const STATUS_VARIANT: Record<TraceEvent["status"], BadgeVariant> = {
   failed: "destructive",
   skipped: "outline",
 };
-
-function latencyMs(e: TraceEvent): number | null {
-  if (!e.ended_at) return null;
-  return new Date(e.ended_at).getTime() - new Date(e.started_at).getTime();
-}
 
 const usd = (n: number) => `$${n.toFixed(n < 1 ? 4 : 2)}`;
 
@@ -137,7 +132,17 @@ function Messages({ messages }: { messages: PromptMessage[] }) {
   );
 }
 
-const ERROR_KEYS = ["error", "errors", "failed"];
+/** Structured output of an `llm` event: the args of each tool call in its returned messages
+ *  (`with_structured_output` answers with a tool call). */
+function toolCallArgs(output: TraceEvent["output"]): unknown[] {
+  const messages = output?.messages;
+  if (!Array.isArray(messages)) return [];
+  return (messages as PromptMessage[]).flatMap((m) =>
+    Array.isArray(m.tool_calls) ? m.tool_calls.map((c: { args?: unknown }) => c.args ?? c) : [],
+  );
+}
+
+const ERROR_KEYS =["error", "errors", "failed"];
 
 /** Whatever an event's output says went wrong: `error`, `errors`, or guardrail `failed`. */
 function errorsOf(output: TraceEvent["output"]): unknown[] {
@@ -150,6 +155,7 @@ function errorsOf(output: TraceEvent["output"]): unknown[] {
 function Details({ event }: { event: TraceEvent }) {
   const messages = promptMessages(event.input);
   const errors = errorsOf(event.output);
+  const parsed = toolCallArgs(event.output);
   const output = Object.fromEntries(
     Object.entries(event.output ?? {}).filter(([k]) => !ERROR_KEYS.includes(k)),
   );
@@ -175,12 +181,19 @@ function Details({ event }: { event: TraceEvent }) {
         )
       )}
       {event.kind === "llm" && event.output ? (
-        <Section title="Raw model output">
-          <Json value={output} />
-        </Section>
+        <>
+          <Section title="Raw model output">
+            <Json value={output} />
+          </Section>
+          {parsed.length > 0 && (
+            <Section title="Parsed output">
+              <Json value={parsed.length === 1 ? parsed[0] : parsed} />
+            </Section>
+          )}
+        </>
       ) : (
         Object.keys(output).length > 0 && (
-          <Section title={event.model ? "Parsed output" : "Output"}>
+          <Section title="Output">
             <Json value={output} />
           </Section>
         )
@@ -222,23 +235,34 @@ function Row({
       className={`border-b last:border-b-0 ${selected ? "bg-sky-50 ring-1 ring-sky-400 ring-inset dark:bg-sky-950" : ""}`}
     >
       <div className="flex items-center" style={{ paddingLeft: indent }}>
-        <button
-          type="button"
-          onClick={() => selection.toggleExpanded(event.id)}
-          disabled={!hasChildren}
-          aria-label={expanded ? "Collapse" : "Expand"}
-          aria-expanded={hasChildren ? expanded : undefined}
-          className="flex size-5 shrink-0 items-center justify-center text-muted-foreground disabled:invisible"
-        >
-          {expanded ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
-        </button>
+        {hasChildren ? (
+          <button
+            type="button"
+            onClick={() => selection.toggleExpanded(event.id)}
+            aria-label={`${expanded ? "Collapse" : "Expand"} ${event.name}`}
+            aria-expanded={expanded}
+            className="flex size-5 shrink-0 items-center justify-center text-muted-foreground"
+          >
+            {expanded ? (
+              <ChevronDown className="size-3.5" />
+            ) : (
+              <ChevronRight className="size-3.5" />
+            )}
+          </button>
+        ) : (
+          <span className="size-5 shrink-0" />
+        )}
         <button
           type="button"
           onClick={() => selection.select(event.id)}
           aria-pressed={selected}
           className="flex min-w-0 flex-1 items-center gap-2 py-1.5 pr-3 text-left text-sm hover:bg-muted"
         >
-          <Icon className="size-4 shrink-0 text-muted-foreground" aria-label={event.kind} />
+          <Icon
+            className="size-4 shrink-0 text-muted-foreground"
+            aria-label={event.kind}
+            role="img"
+          />
           <span className="flex-1 truncate font-mono text-xs" title={event.name}>
             {event.name}
             {producesVerdict && <span className="ml-1 text-sky-600">· verdict</span>}
@@ -290,7 +314,7 @@ function ExportButton({ runId }: { runId: string }) {
       onClick={() =>
         downloadTrace(runId).then(
           () => setError(null),
-          (err: unknown) => setError(err instanceof Error ? err.message : String(err)),
+          (err: unknown) => setError(errorMessage(err)),
         )
       }
     >
@@ -304,7 +328,7 @@ export interface TracePanelProps {
   events: TraceEvent[];
   selection: TraceSelection;
   /** Event ids some verdict points at (`trace_event_id`), marked in the tree. */
-  verdictEventIds?: ReadonlySet<string>;
+  verdictEventIds: ReadonlySet<string>;
   /** True while events are still arriving: the wall clock ticks. */
   live: boolean;
   status: { label: string; variant: BadgeVariant };
@@ -324,10 +348,12 @@ export function TracePanel({
 
   useEffect(() => {
     if (!scrollRequest) return;
-    const el = listRef.current?.querySelector(
+    // Scroll the trace list only (not the window), so the verdict stays where the user clicked.
+    const list = listRef.current;
+    const el = list?.querySelector<HTMLElement>(
       `[data-event-id="${CSS.escape(scrollRequest.id)}"]`,
     );
-    el?.scrollIntoView({ block: "start", behavior: "smooth" });
+    if (list && el) list.scrollTo({ top: el.offsetTop, behavior: "smooth" });
   }, [scrollRequest]);
 
   return (
@@ -346,13 +372,13 @@ export function TracePanel({
       {rows.length === 0 ? (
         <p className="px-3 py-6 text-center text-sm text-muted-foreground">Waiting for events…</p>
       ) : (
-        <ol ref={listRef} className="min-h-0 flex-1 overflow-y-auto">
+        <ol ref={listRef} className="relative min-h-0 flex-1 overflow-y-auto">
           {rows.map((row) => (
             <Row
               key={row.event.id}
               row={row}
               selection={selection}
-              producesVerdict={verdictEventIds?.has(row.event.id) ?? false}
+              producesVerdict={verdictEventIds.has(row.event.id)}
             />
           ))}
         </ol>

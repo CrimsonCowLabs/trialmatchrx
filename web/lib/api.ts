@@ -17,6 +17,11 @@ type JsonBody<P extends keyof paths, M extends "post"> = paths[P][M] extends {
   ? B
   : never;
 
+/** How a failed call reads on the page. */
+export function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...init,

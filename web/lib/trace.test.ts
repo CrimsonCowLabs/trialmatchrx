@@ -119,6 +119,19 @@ test("folding the replayed emissions gives back the exported trace", () => {
   assert.deepEqual(folded, TRACE);
 });
 
+test("replay never drops an event, even from a trace not in first-appearance order", () => {
+  const a = ev({ id: "a", seq: 2 });
+  const b = ev({ id: "b", seq: 1 });
+  const emissions = replayEmissions([a, b]);
+  assert.deepEqual(
+    emissions.map((e) => [e.seq, e.id, e.status]),
+    [
+      [1, "b", "ok"],
+      [2, "a", "ok"],
+    ],
+  );
+});
+
 test("upsert ignores a stale or duplicate emission", () => {
   const started = replayEmissions(TRACE)[0];
   assert.deepEqual(upsertEvent([trialDone], started), [trialDone]);

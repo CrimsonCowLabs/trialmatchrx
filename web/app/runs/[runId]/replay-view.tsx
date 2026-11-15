@@ -4,14 +4,14 @@
 // (`replayEmissions`), with the original gaps capped at 0.2 s, through the same panel and
 // results as the live page.
 import { Pause, Play, RotateCcw, SkipForward } from "lucide-react";
-import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { RunWithTrace } from "@/components/RunWithTrace";
 import { Button } from "@/components/ui/button";
 import { api, type RunSummary, type TraceEvent } from "@/lib/api";
 import { replayDelays, replayEmissions, upsertEvent } from "@/lib/trace";
+import { useLoad } from "@/lib/use-load";
 
 const GAP_CAP_MS = 200;
 const SPEEDS = [1, 4, 16] as const;
@@ -21,21 +21,6 @@ interface Loaded {
   summary: RunSummary;
 }
 
-function useReplaySource(runId: string): { loaded: Loaded | null; error: string | null } {
-  const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([api.getTrace(runId), api.getRun(runId)]).then(
-      ([trace, summary]) => !cancelled && setLoaded({ trace, summary }),
-      (err: unknown) => !cancelled && setError(err instanceof Error ? err.message : String(err)),
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, [runId]);
-  return { loaded, error };
-}
 
 function Replay({ runId, trace, summary }: { runId: string } & Loaded) {
   const emissions = useMemo(() => replayEmissions(trace), [trace]);
@@ -68,7 +53,7 @@ function Replay({ runId, trace, summary }: { runId: string } & Loaded) {
   };
   const skipToEnd = () => setShown({ index: emissions.length, events: trace });
 
-  const live = summary.status === "running";
+  const stillRecording = summary.status === "running";
   return (
     <RunWithTrace
       runId={runId}
@@ -79,14 +64,10 @@ function Replay({ runId, trace, summary }: { runId: string } & Loaded) {
         variant: finished ? "secondary" : "outline",
       }}
       matches={finished && summary.status === "done" ? summary.matches : null}
+      runStatus={summary.status}
+      link={{ href: `/match/${encodeURIComponent(runId)}`, label: "Live view" }}
     >
-      <p className="text-sm text-muted-foreground">
-        Run <span className="font-mono">{runId}</span> · {summary.status} ·{" "}
-        <Link href={`/match/${encodeURIComponent(runId)}`} className="underline">
-          Live view
-        </Link>
-      </p>
-      {live && (
+      {stillRecording && (
         <p className="text-sm text-amber-600">
           This run is still running; the replay stops at what has been recorded so far.
         </p>
@@ -121,15 +102,19 @@ function Replay({ runId, trace, summary }: { runId: string } & Loaded) {
           seq {emissions[shown.index - 1]?.seq ?? 0} / {emissions.length}
         </span>
       </div>
-      {finished && summary.status === "failed" && (
-        <p className="text-sm text-destructive">Run failed; the error event is in the trace.</p>
-      )}
     </RunWithTrace>
   );
 }
 
 function ReplayRun({ runId }: { runId: string }) {
-  const { loaded, error } = useReplaySource(runId);
+  const load = useCallback(
+    async (): Promise<Loaded> => {
+      const [trace, summary] = await Promise.all([api.getTrace(runId), api.getRun(runId)]);
+      return { trace, summary };
+    },
+    [runId],
+  );
+  const { data: loaded, error } = useLoad(load);
   if (error) return <p className="text-sm text-destructive">{error}</p>;
   if (!loaded) return <p className="text-sm text-muted-foreground">Loading trace…</p>;
   return <Replay runId={runId} {...loaded} />;

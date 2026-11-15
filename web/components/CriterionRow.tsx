@@ -33,7 +33,9 @@ export function CriterionRow({
   const exclusion = verdict.criterion_id.startsWith("exc");
   const ref = useRef<HTMLLIElement>(null);
   useEffect(() => {
-    if (highlighted) ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    // Instant, so it can't cancel the trace panel's smooth scroll started in the same commit
+    // after "Why?"; `nearest` is a no-op when the row is already on screen.
+    if (highlighted) ref.current?.scrollIntoView({ block: "nearest" });
   }, [highlighted]);
   return (
     <li

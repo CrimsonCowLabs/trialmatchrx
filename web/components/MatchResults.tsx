@@ -25,16 +25,21 @@ interface Linking {
 }
 
 function TrialCard({ match, highlightedEventId, onWhy }: { match: TrialMatch } & Linking) {
-  const [userOpen, setOpen] = useState(match.tier !== "ineligible");
-  // A highlighted verdict is always visible, even in a collapsed (e.g. ineligible) trial.
-  const open =
-    userOpen || match.verdicts.some((v) => v.trace_event_id === highlightedEventId);
+  const [open, setOpen] = useState(match.tier !== "ineligible");
+  // When this card starts holding the highlighted verdict, open it (once; the user can still
+  // collapse it). State adjusted during render, React's pattern for reacting to a prop change.
+  const holdsHighlight = match.verdicts.some((v) => v.trace_event_id === highlightedEventId);
+  const [heldHighlight, setHeldHighlight] = useState(false);
+  if (holdsHighlight !== heldHighlight) {
+    setHeldHighlight(holdsHighlight);
+    if (holdsHighlight) setOpen(true);
+  }
   const { pass = 0, fail = 0, unknown = 0 } = match.counts;
   return (
     <li data-testid="trial-match" data-nct={match.nct_id} className="rounded-md border">
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         className="flex w-full flex-wrap items-baseline gap-x-2 gap-y-1 px-3 py-2 text-left hover:bg-muted"
       >
