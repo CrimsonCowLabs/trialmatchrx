@@ -12,6 +12,7 @@ from app.pipeline.match_run import run_match
 from app.pipeline.parse_patient import anthropic_parse_model
 from app.routers.trials import compile_model_factory
 from app.schemas import CloserRequest, MatchRequest, RunStarted
+from app.sources import synthea
 from app.trace import store
 from app.trace.recorder import TraceRecorder
 from app.trace.runner import start_traced_run
@@ -37,9 +38,15 @@ async def start_match(
     judge_model: Annotated[ModelFactory, Depends(judge_model_factory)],
 ) -> RunStarted:
     """Start a match run in the background; poll `GET /api/runs/{run_id}` or stream its
-    events. The compile model is only built on a compile-cache miss."""
-    if not req.note and not req.fhir_bundle:
-        raise HTTPException(status_code=422, detail="provide note or fhir_bundle")
+    events. Exactly one of `note` (parsed by the LLM) or `fhir_bundle` (a Synthea FHIR bundle,
+    mapped in code) is required. The compile model is only built on a compile-cache miss."""
+    if bool(req.note) == (req.fhir_bundle is not None):
+        raise HTTPException(status_code=422, detail="provide exactly one of note or fhir_bundle")
+    if req.fhir_bundle is not None:
+        try:
+            synthea.check_bundle(req.fhir_bundle)
+        except synthea.InvalidBundle as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     async def work(rec: TraceRecorder) -> dict[str, Any]:
         return await run_match(

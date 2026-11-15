@@ -2,7 +2,9 @@
 trials come from saved fixtures in the ctgov cache, their criteria from the compile cache."""
 
 import asyncio
+import json
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -24,6 +26,7 @@ from tests.sse import client, parse_sse
 
 # Fixture trials with a site near Sacramento: ~0 mi, ~132 mi, ~368 mi.
 NEAR = ["NCT07662135", "NCT07271186", "NCT07783802"]
+FHIR_FIXTURES = Path(__file__).parent / "fixtures" / "fhir"
 BODY = {
     "note": "61M, T2D, HbA1c 8.4%, eGFR 48, on metformin",
     "condition": "type 2 diabetes",
@@ -129,6 +132,34 @@ async def test_radius_limits_the_trials(no_api_key: None) -> None:
     summary, _, _ = await run({**BODY, "radius_mi": 50})
     assert [m.nct_id for m in summary.matches] == ["NCT07662135"]
     assert summary.matches[0].distance_mi is not None and summary.matches[0].distance_mi < 1
+
+
+async def test_a_fhir_bundle_is_mapped_without_an_llm(
+    no_api_key: None, fixture_parse_model: FixtureChatModel
+) -> None:
+    await cache_and_compile(["NCT07271186"])
+    bundle = json.loads((FHIR_FIXTURES / "full.json").read_text())
+    summary, trace, _ = await run({**BODY, "note": None, "fhir_bundle": bundle})
+
+    assert summary.status == "done"
+    patient = summary.patient
+    assert patient is not None and patient.sex == "female"
+    assert patient.labs["hba1c"].value == 8.6 and patient.labs["egfr"].value == 44
+    assert patient.vitals["sbp"].value == 142
+    # The mapping is one traced step with no llm event under it; the note parser never ran.
+    (step,) = [e for e in trace if e.name == "parse_patient"]
+    assert step.kind == "step" and step.status == "ok"
+    assert step.input is not None and step.input["source"] == "fhir_bundle"
+    assert not any(e.parent_id == step.id for e in trace)
+    assert fixture_parse_model.calls == 0
+    assert summary.totals.llm_calls == 0
+    # The mapped facts drive the rules: T2D, HbA1c 8.6 and eGFR 44 pass on NCT07271186.
+    [m] = summary.matches
+    by_text: dict[str, list[str]] = {}
+    for v in m.verdicts:
+        by_text.setdefault(v.criterion_quote, []).append(v.outcome)
+    assert by_text["Medical history of type 2 diabetes"] == ["pass"]
+    assert by_text["Hemoglobin A1C (HbA1c) of 6.5 to 10% at screening"] == ["pass", "pass"]
 
 
 # NCT07271186's first criterion with no predicate, and patient evidence from BODY's note.

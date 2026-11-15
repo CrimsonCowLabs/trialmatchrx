@@ -11,9 +11,7 @@ from app.schemas import (
     Criterion,
     EvalLatest,
     EvalRunSummary,
-    Fact,
     FeasibilityResult,
-    PatientFacts,
     Predicate,
     TrialDetail,
     TrialMatch,
@@ -21,23 +19,6 @@ from app.schemas import (
 )
 
 STUB_NCT = "NCT00000000"
-
-# HACK(demo): stub — the SPEC demo patient (61M, T2D, HbA1c 8.4%, eGFR 48, metformin, Sacramento).
-STUB_PATIENT = PatientFacts(
-    age=61,
-    sex="male",
-    conditions=[Fact(value="type 2 diabetes mellitus", source_span="type 2 diabetes")],
-    labs={
-        "hba1c": Fact(value=8.4, unit="%", source_span="HbA1c 8.4%"),
-        "egfr": Fact(value=48, unit="mL/min/1.73m2", source_span="eGFR 48"),
-    },
-    vitals={},
-    meds=[Fact(value="metformin", source_span="on metformin")],
-    pregnant=False,
-    smoker=None,
-    lat=38.5816,
-    lon=-121.4944,
-)
 
 # HACK(demo): stub — two hand-written criteria, one with a predicate, one needing judgment.
 STUB_CRITERIA = [

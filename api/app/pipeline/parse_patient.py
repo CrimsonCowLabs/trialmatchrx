@@ -15,7 +15,7 @@ span against the note (case- and whitespace-insensitive) and builds the frozen `
 - PatientFacts has no span field for age / sex / pregnant / smoker / location, so their
   verified spans are kept in the trace output only.
 
-The FHIR path (`sources/synthea.py`, deterministic) is not here yet.
+The FHIR path is deterministic and lives in `sources/synthea.py` (`parse_bundle`).
 """
 
 import datetime as dt

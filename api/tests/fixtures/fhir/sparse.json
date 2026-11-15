@@ -1,0 +1,94 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:22222222-0000-4000-8000-000000000002",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "22222222-0000-4000-8000-000000000002",
+        "name": [
+          {
+            "use": "official",
+            "family": "Synthetic",
+            "given": [
+              "Test"
+            ]
+          }
+        ],
+        "gender": "male",
+        "birthDate": "1958-07-04"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:s-t2d",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "s-t2d",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "44054006",
+              "display": "Diabetes mellitus type 2 (disorder)"
+            }
+          ],
+          "text": "Diabetes mellitus type 2 (disorder)"
+        },
+        "subject": {
+          "reference": "urn:uuid:22222222-0000-4000-8000-000000000002"
+        },
+        "onsetDateTime": "2020-10-10T09:30:00-08:00"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Condition"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:s-height",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "s-height",
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8302-2",
+              "display": "Body Height"
+            }
+          ],
+          "text": "Body Height"
+        },
+        "subject": {
+          "reference": "urn:uuid:22222222-0000-4000-8000-000000000002"
+        },
+        "effectiveDateTime": "2026-01-15T09:30:00-08:00",
+        "issued": "2026-01-15T09:30:00-08:00",
+        "valueQuantity": {
+          "value": 178.0,
+          "unit": "cm",
+          "system": "http://unitsofmeasure.org",
+          "code": "cm"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    }
+  ]
+}

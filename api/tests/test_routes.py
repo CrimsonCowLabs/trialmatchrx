@@ -1,5 +1,6 @@
 """Every route in the SPEC API table answers with schema-valid data."""
 
+import json
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -24,6 +25,7 @@ from tests.ctgov_fake import FakeCtgov
 from tests.sse import client, parse_sse
 
 PARSE_FIXTURES = Path(__file__).parent / "fixtures" / "parse_patient"
+FHIR_FIXTURES = Path(__file__).parent / "fixtures" / "fhir"
 DEMO_NOTE = (PARSE_FIXTURES / "demo_short.txt").read_text()
 MATCH_BODY = {"note": DEMO_NOTE, "condition": "t2d"}
 
@@ -97,6 +99,22 @@ async def test_match_needs_a_note_or_bundle() -> None:
     async with client() as c:
         response = await c.post("/api/match", json={"condition": "t2d"})
     assert response.status_code == 422
+
+
+async def test_match_takes_a_note_or_a_bundle_not_both() -> None:
+    bundle = json.loads((FHIR_FIXTURES / "sparse.json").read_text())
+    async with client() as c:
+        response = await c.post("/api/match", json={**MATCH_BODY, "fhir_bundle": bundle})
+    assert response.status_code == 422
+    assert "exactly one" in response.json()["detail"]
+
+
+async def test_match_rejects_a_bundle_without_one_patient() -> None:
+    body = {"fhir_bundle": {"resourceType": "Bundle", "entry": []}, "condition": "t2d"}
+    async with client() as c:
+        response = await c.post("/api/match", json=body)
+    assert response.status_code == 422
+    assert "Patient" in response.json()["detail"]
 
 
 async def test_closer_starts_a_streamed_run() -> None:
