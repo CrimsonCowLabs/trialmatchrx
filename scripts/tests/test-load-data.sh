@@ -5,7 +5,7 @@
 #   bash scripts/tests/test-load-data.sh
 #
 # Same rules as test-deploy.sh: bash 3.2 and what macOS ships (sqlite3 included), no
-# network, no Docker, no box. ssh runs the box half here; scp copies; the docker stub stands
+# network, no Docker, no box. git reports a clean tree unless FAKE_GIT_STATUS says not. ssh runs the box half here; scp copies; the docker stub stands
 # in for the API container: its `run ... python -c` reads or replaces $WORK/volume/app.db
 # with the real sqlite3, so the counts compared are a real database's. It logs every call to
 # $WORK/docker-calls. FAKE_RESTORE_FAILS makes the restore fail.
@@ -23,6 +23,13 @@ trap 'rm -rf "$WORK"' EXIT
 
 BIN="$WORK/bin"
 mkdir -p "$BIN"
+
+cat > "$BIN/git" <<STUB
+#!/bin/sh
+echo "\$*" >> "$WORK/git-calls"
+case "\$*" in *status*) printf '%s' "\${FAKE_GIT_STATUS:-}" ;; esac
+exit 0
+STUB
 
 cat > "$BIN/ssh" <<STUB
 #!/bin/sh
@@ -166,6 +173,16 @@ assert_contains "$out" 'the restore failed' 'says so'
 assert_equals "$(cat "$WORK/state/running")" up 'the API is running again'
 assert_equals "$(volume_counts)" '0 0 ' 'on the database it had'
 assert_equals "$(ls "$WORK/stack")" 'compose.yaml' 'the snapshot is not left behind'
+
+section 'an uncommitted edit to the scripts is refused before anything is read or sent'
+
+fresh_box
+out="$(load FAKE_GIT_STATUS=' M scripts/load-data.sh' "$WORK/seeded.db")"
+assert_status "$?" 1 'exits 1'
+assert_contains "$out" 'scripts/load-data.sh' 'names the script'
+assert_contains "$(calls git | grep status)" '-- scripts' 'git status is asked about scripts/ only'
+assert_equals "$(calls docker)$(calls ssh)$(calls scp)" '' 'neither docker, ssh nor scp was called'
+assert_missing "$out" 'Snapshotting' 'the database is not even snapshotted'
 
 section 'a missing local database, --help and --dry-run touch nothing'
 

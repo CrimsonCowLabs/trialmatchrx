@@ -72,8 +72,10 @@ die()  { printf '\n%s: %s\n' "${SCRIPT_NAME:-deploy}" "$*" >&2; exit 1; }
 # Untracked counts: the build context is the working tree, so an unrecorded
 # data/fixtures/runs would ship under a tag that names a commit without it. scripts/ counts
 # because the box half of this file and load-data.sh runs from the working tree too.
-uncommitted() {
-  git -C "$REPO_ROOT" status --porcelain -- api web data/fixtures compose.yaml .dockerignore scripts
+# load-data.sh, which builds nothing, passes just scripts.
+uncommitted() { # [pathspec...]
+  [ $# -gt 0 ] || set -- api web data/fixtures compose.yaml .dockerignore scripts
+  git -C "$REPO_ROOT" status --porcelain -- "$@"
 }
 
 # One of our images, by repository and tag.

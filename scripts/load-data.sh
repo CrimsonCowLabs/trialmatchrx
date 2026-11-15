@@ -12,7 +12,8 @@
 #   The database defaults to api/app.db, what `make seed` writes. HOST, STACK_DIR and
 #   WAIT_TIMEOUT are deploy.sh's, with its defaults.
 #
-# In order: snapshot the database with SQLite's backup API (one complete file, WAL pages
+# In order: refuse uncommitted changes under scripts/ (the box half below runs from the
+# working tree, as deploy.sh's does); snapshot the database with SQLite's backup API (one complete file, WAL pages
 # included); refuse if the box's database has any rows, unless --force; copy the snapshot
 # to the box; stop the API so nothing writes; restore it into the volume from inside the
 # API image, as its uid 10001, so the volume's ownership holds; start the API; check
@@ -142,6 +143,11 @@ load_main() {
     esac
     shift
   done
+  local changes
+  changes="$(uncommitted scripts)"
+  [ -z "$changes" ] || die "uncommitted changes in the scripts that would run on $HOST:
+$changes
+Commit or stash them first. Nothing was copied."
   [ -f "$db" ] || die "no database at $db; run \`make seed\` first, or name one"
 
   if [ -n "$dry_run" ]; then
