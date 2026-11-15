@@ -151,7 +151,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Run Feasibility */
+        /**
+         * Run Feasibility
+         * @description Waterfall of the trial's compiled criteria over the cohort. `overrides` maps a
+         *     criterion id to a new predicate value (e.g. `{"inc-5": 45}` for eGFR >= 45).
+         *
+         *     404 if the trial was never compiled (POST /api/trials/{nct}/compile), 503 if no cohort is
+         *     loaded (`make seed`), 422 for an override the trial's criteria can't take.
+         */
         post: operations["run_feasibility"];
         delete?: never;
         options?: never;
@@ -301,6 +308,10 @@ export interface components {
             }[];
             /** Needs Review */
             needs_review: number;
+            /** Review Criteria */
+            review_criteria: {
+                [key: string]: unknown;
+            }[];
         };
         /** HTTPValidationError */
         HTTPValidationError: {

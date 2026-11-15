@@ -101,9 +101,12 @@ class TrialMatch(BaseModel):
 class FeasibilityResult(BaseModel):
     nct_id: str
     cohort_size: int
-    waterfall: list[dict[str, Any]]  # {criterion_id, text, remaining, dropped}
+    # {criterion_id, text, remaining, dropped} + missing (patients with no data for it), type,
+    # category, field, op, value (after overrides), default_value, unit, numeric (slider-able)
+    waterfall: list[dict[str, Any]]
     leave_one_out: list[dict[str, Any]]  # {criterion_id, added_if_removed}
-    needs_review: int
+    needs_review: int  # patients left after the rules who still face review_criteria
+    review_criteria: list[dict[str, Any]]  # {criterion_id, text, type}: no predicate
 
 
 # --------------------------------------------------------------------------------------------

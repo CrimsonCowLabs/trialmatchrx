@@ -135,3 +135,15 @@ class TrialCacheRow(SQLModel, table=True):
     last_update_post_date: str = Field(primary_key=True)  # ISO "YYYY-MM-DD", sorts as text
     fetched_at: dt.datetime = Field(default_factory=utcnow)
     data: dict[str, Any] = Field(sa_column=Column(JSON, nullable=False))
+
+
+class CohortPatientRow(SQLModel, table=True):
+    """One synthetic patient of the feasibility cohort: `PatientFacts` JSON mapped from a
+    Synthea FHIR bundle by `scripts/load_cohort.py`. Read into a DataFrame once per process."""
+
+    __tablename__ = "cohort"
+
+    id: str = Field(primary_key=True)  # the bundle's Patient id
+    source: str  # bundle file name, so a row can be traced back to its record
+    loaded_at: dt.datetime = Field(default_factory=utcnow)
+    facts: dict[str, Any] = Field(sa_column=Column(JSON, nullable=False))
