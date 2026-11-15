@@ -1,12 +1,20 @@
 """Run status, trace export and the live SSE stream."""
 
-from typing import Any, cast
+from typing import Annotated, Any, cast
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Header, HTTPException, Query
 from sse_starlette import EventSourceResponse
 
 from app.db import RunRow
-from app.schemas import PatientFacts, RunKind, RunStatus, RunSummary, RunTotals, TraceEvent
+from app.schemas import (
+    PatientFacts,
+    RunKind,
+    RunListItem,
+    RunStatus,
+    RunSummary,
+    RunTotals,
+    TraceEvent,
+)
 from app.trace import store
 from app.trace.bus import bus
 from app.trace.stream import run_event_stream
@@ -33,6 +41,45 @@ def compute_totals(run: RunRow, events: list[TraceEvent]) -> RunTotals:
         guardrail_trips=sum(1 for e in events if e.kind == "guardrail" and e.status == "failed"),
         wall_time_s=wall,
     )
+
+
+TIERS = ("likely", "needs_info", "ineligible")
+SEX_LABEL = {"female": "F", "male": "M"}
+
+
+def patient_label(patient: dict[str, Any] | None) -> str | None:
+    """ "58 F" from parsed patient facts; whichever of age / sex is known, None if neither."""
+    if not patient:
+        return None
+    parts = [str(patient["age"]) if patient.get("age") is not None else None]
+    parts.append(SEX_LABEL.get(patient.get("sex") or ""))
+    return " ".join(p for p in parts if p) or None
+
+
+def list_item(run: RunRow) -> RunListItem:
+    result: dict[str, Any] = run.result or {}
+    counts = dict.fromkeys(TIERS, 0)
+    for match in result.get("matches", []):
+        if match.get("tier") in counts:
+            counts[match["tier"]] += 1
+    return RunListItem(
+        run_id=run.id,
+        kind=cast(RunKind, run.kind),
+        status=cast(RunStatus, run.status),
+        created_at=run.created_at,
+        ended_at=run.ended_at,
+        patient_label=patient_label(result.get("patient")),
+        tier_counts=counts,
+    )
+
+
+@router.get("", response_model=list[RunListItem])
+async def list_runs(
+    kind: RunKind = "match", limit: Annotated[int, Query(ge=1, le=200)] = 50
+) -> list[RunListItem]:
+    """Runs of one kind (default `match`), newest first. Reads the runs table only: no trace
+    events, no totals, and not a traced run itself (browsing must not add runs)."""
+    return [list_item(run) for run in store.list_runs(kind, limit)]
 
 
 @router.get("/{run_id}/events", response_class=EventSourceResponse)

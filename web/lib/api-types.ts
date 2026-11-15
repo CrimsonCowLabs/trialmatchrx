@@ -48,6 +48,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Runs
+         * @description Runs of one kind (default `match`), newest first. Reads the runs table only: no trace
+         *     events, no totals, and not a traced run itself (browsing must not add runs).
+         */
+        get: operations["list_runs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/runs/{run_id}/events": {
         parameters: {
             query?: never;
@@ -518,6 +539,39 @@ export interface components {
              */
             type: "inclusion" | "exclusion";
         };
+        /**
+         * RunListItem
+         * @description One row of the runs browser. Derived from the run row alone (no trace events, so no
+         *     totals): `patient_label` is e.g. "58 F" once the patient is parsed, `tier_counts` has
+         *     likely / needs_info / ineligible (zeros until there are matches).
+         */
+        RunListItem: {
+            /** Run Id */
+            run_id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "match" | "closer" | "compile" | "trial";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "done" | "failed";
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Ended At */
+            ended_at: string | null;
+            /** Patient Label */
+            patient_label: string | null;
+            /** Tier Counts */
+            tier_counts: {
+                [key: string]: number;
+            };
+        };
         /** RunStarted */
         RunStarted: {
             /** Run Id */
@@ -820,6 +874,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RunStarted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_runs: {
+        parameters: {
+            query?: {
+                kind?: "match" | "closer" | "compile" | "trial";
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunListItem"][];
                 };
             };
             /** @description Validation Error */

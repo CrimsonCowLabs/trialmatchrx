@@ -215,6 +215,20 @@ class RunSummary(BaseModel):
     closer: CloserOutput | None = None  # a closer run's answer, once it is done
 
 
+class RunListItem(BaseModel):
+    """One row of the runs browser. Derived from the run row alone (no trace events, so no
+    totals): `patient_label` is e.g. "58 F" once the patient is parsed, `tier_counts` has
+    likely / needs_info / ineligible (zeros until there are matches)."""
+
+    run_id: str
+    kind: RunKind
+    status: RunStatus
+    created_at: dt.datetime
+    ended_at: dt.datetime | None
+    patient_label: str | None
+    tier_counts: dict[str, int]
+
+
 class RunDone(BaseModel):
     """Payload of the final `done` SSE event."""
 
