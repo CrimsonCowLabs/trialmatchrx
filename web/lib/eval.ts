@@ -34,6 +34,11 @@ export function byPromptVersion(history: Run[]): PromptVersionRow[] {
   return [...rows.values()];
 }
 
+/** A metric score (nDCG@10, P@10, accuracy) to three decimals; "–" when there is none. */
+export function formatScore(score: number | null | undefined): string {
+  return score == null ? "–" : score.toFixed(3);
+}
+
 export function formatRate(rate: number | null | undefined): string {
   return rate == null ? "–" : `${(rate * 100).toFixed(1)}%`;
 }

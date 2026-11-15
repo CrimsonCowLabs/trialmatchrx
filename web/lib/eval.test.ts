@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import type { EvalLatest } from "./api.ts";
-import { byPromptVersion, formatRate, lifts } from "./eval.ts";
+import { byPromptVersion, formatRate, formatScore, lifts } from "./eval.ts";
 
 type Run = EvalLatest["history"][number];
 
@@ -68,4 +68,11 @@ test("rates format as whole-ish percentages, a missing rate as a dash", () => {
   assert.equal(formatRate(0.434), "43.4%");
   assert.equal(formatRate(null), "–");
   assert.equal(formatRate(undefined), "–");
+});
+
+test("scores format to three decimals, a missing score as a dash", () => {
+  assert.equal(formatScore(0.4351), "0.435");
+  assert.equal(formatScore(0), "0.000");
+  assert.equal(formatScore(null), "–");
+  assert.equal(formatScore(undefined), "–");
 });

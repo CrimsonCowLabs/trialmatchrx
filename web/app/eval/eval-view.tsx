@@ -7,14 +7,10 @@ import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api, type EvalLatest } from "@/lib/api";
-import { byPromptVersion, EVAL_METRICS as METRICS, formatRate, lifts } from "@/lib/eval";
+import { byPromptVersion, EVAL_METRICS as METRICS, formatRate, formatScore, lifts } from "@/lib/eval";
 import { useLoad } from "@/lib/use-load";
 
 const SYSTEMS = { matcher: "Matcher", bm25: "BM25 baseline" } as const;
-
-function fmt(value: number | undefined): string {
-  return value === undefined ? "–" : value.toFixed(3);
-}
 
 function signed(delta: number): string {
   return `${delta >= 0 ? "+" : "−"}${Math.abs(delta).toFixed(3)}`;
@@ -38,7 +34,7 @@ function ScoreCard({ title, metrics, empty, children }: {
             {METRICS.map(({ key, label }) => (
               <div key={key}>
                 <dt className="text-xs text-muted-foreground">{label}</dt>
-                <dd className="text-3xl font-semibold tabular-nums">{fmt(metrics[key])}</dd>
+                <dd className="text-3xl font-semibold tabular-nums">{formatScore(metrics[key])}</dd>
               </div>
             ))}
           </dl>
@@ -81,7 +77,7 @@ function ByPromptVersion({ history }: { history: EvalLatest["history"] }) {
                 <td className="py-1 pr-4 font-mono text-xs">{row.prompt_version ?? "–"}</td>
                 {METRICS.map(({ key }) => (
                   <td key={key} className="py-1 pr-4 text-right whitespace-nowrap tabular-nums">
-                    {fmt(row.matcher?.metrics[key])} / {fmt(row.bm25?.metrics[key])}
+                    {formatScore(row.matcher?.metrics[key])} / {formatScore(row.bm25?.metrics[key])}
                   </td>
                 ))}
                 <td className="py-1 text-right tabular-nums">
@@ -133,7 +129,7 @@ function History({ history }: { history: EvalLatest["history"] }) {
                 </td>
                 {METRICS.map(({ key }) => (
                   <td key={key} className="py-1 pr-4 text-right tabular-nums">
-                    {fmt(run.metrics[key])}
+                    {formatScore(run.metrics[key])}
                   </td>
                 ))}
                 <td className="py-1 pr-4 text-right tabular-nums">
