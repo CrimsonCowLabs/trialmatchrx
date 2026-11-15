@@ -1,0 +1,443 @@
+{
+  "protocolSection": {
+    "identificationModule": {
+      "nctId": "NCT06925217",
+      "orgStudyIdInfo": {
+        "id": "CLICK"
+      },
+      "organization": {
+        "fullName": "Centre Hospitalier Universitaire Vaudois",
+        "class": "OTHER"
+      },
+      "briefTitle": "Closed-Loop Impact on Chronic Kidney Disease in Type 2 Diabetes",
+      "officialTitle": "The Effect of Fully Closed-loop Insulin Delivery on Renal Oxygenation in People With Type 2 Diabetes and Chronic Kidney Disease: an Open-label, Single-center, Randomized Two-arm Parallel Trial",
+      "acronym": "CLICK"
+    },
+    "statusModule": {
+      "statusVerifiedDate": "2026-02",
+      "overallStatus": "RECRUITING",
+      "expandedAccessInfo": {
+        "hasExpandedAccess": false
+      },
+      "startDateStruct": {
+        "date": "2025-06-16",
+        "type": "ACTUAL"
+      },
+      "primaryCompletionDateStruct": {
+        "date": "2027-05",
+        "type": "ESTIMATED"
+      },
+      "completionDateStruct": {
+        "date": "2027-05",
+        "type": "ESTIMATED"
+      },
+      "studyFirstSubmitDate": "2025-03-30",
+      "studyFirstSubmitQcDate": "2025-04-06",
+      "studyFirstPostDateStruct": {
+        "date": "2025-04-13",
+        "type": "ACTUAL"
+      },
+      "lastUpdateSubmitDate": "2026-02-11",
+      "lastUpdatePostDateStruct": {
+        "date": "2026-02-12",
+        "type": "ACTUAL"
+      }
+    },
+    "sponsorCollaboratorsModule": {
+      "responsibleParty": {
+        "type": "SPONSOR_INVESTIGATOR",
+        "investigatorFullName": "Heba Al-Alwan",
+        "investigatorTitle": "Medical doctor",
+        "investigatorAffiliation": "Centre Hospitalier Universitaire Vaudois"
+      },
+      "leadSponsor": {
+        "name": "Heba Al-Alwan",
+        "class": "OTHER"
+      },
+      "collaborators": [
+        {
+          "name": "Swiss National Science Foundation",
+          "class": "OTHER"
+        },
+        {
+          "name": "Institute of Primary Health Care (BIHAM), Switzerland",
+          "class": "UNKNOWN"
+        }
+      ]
+    },
+    "oversightModule": {
+      "oversightHasDmc": false,
+      "isFdaRegulatedDrug": false,
+      "isFdaRegulatedDevice": false
+    },
+    "descriptionModule": {
+      "briefSummary": "The main objective of this study is to evaluate the effect of fully automated closed-loop glucose control on renal tissue oxygenation among people with type 2 diabetes and chronic kidney disease.\n\nThis is a single-center, open-label parallel design study that will compare 26 weeks of fully-automated closed-loop glucose control with standard insulin therapy and continuous glucose monitoring, following a run-in period. A total of up to 76 adults with type 2 diabetes and chronic kidney disease will be recruited through outpatient diabetes and nephrology clinics.\n\nThe primary outcome is renal tissue oxygenation measured using blood oxygenation level-dependent magnetic resonance imaging at 26 weeks. Other key outcomes include glycated hemoglobin at 26 weeks and time spent with glucose levels within and above the target glucose range (3.9-10.0mmol/L). Other glycemic and renal outcomes (including renal function) will also be assessed, as well as patient-reported outcome measures using validated questionnaires. Safety evaluations include severe hypoglycemic episodes and other adverse and serious adverse events.",
+      "detailedDescription": "Recruitment:\n\nThe investigators aim to recruit 76 participants through the Service of Endocrinology, Diabetes, and Metabolism and through the Nephrology and Hypertension Service at the University Hospital of Lausanne (CHUV), as well as other outpatient diabetes clinics in the canton of Vaud if needed.\n\nScreening visit:\n\nPotential participants will have the opportunity to ask questions and will give written informed consent if interested in participating in the study. A screening blood test, a urine analysis, and urine pregnancy test will be done at this visit.\n\nBaseline visit:\n\nThe baseline assessment will consist of a medical history, height and weight measurement, waist-hip ratio measurement and blood pressure measurement. Participants will also answer questionnaires to assess patient-reported outcome measures and undergo a renal MRI. A masked glucose sensor will be worn for 14 days.\n\nVisit 3:\n\nRandomisation will occur in a 1:1 ratio using REDCap to the use of fully closed-loop therapy or standard insulin therapy with continuous glucose monitoring (CGM) for 26 weeks once the participants complete the masked CGM period. Participants will attend the research center and receive training on study devices (closed-loop system or CGM) and study devices will be initiated.\n\nVisit 4:\n\nParticipants will attend the research center around two days after initiation of the study arm to discuss potential issues related to use of study devices. This visit can also be conducted by phone.\n\nTelephone contacts:\n\nParticipants in both arms will be contacted by telephone 1 week after initiation of the study arm, as well as at one, two, four, and five months after initiation of study arm to discuss any issues with devices, adverse events, or changes to medications.\n\nVisit 5 (3 month visit):\n\nParticipants will attend the research center and fill-out questionnaires and a blood test and urine analysis will be performed.\n\nVisit 6 (6 month visit):\n\nParticipants will attend the research center and fill-out questionnaires and a blood test and urine analysis will be performed. A renal MRI will be repeated at this visit. Study devices will be returned, and participants will resume their usual diabetes care.\n\nPatient-reported outcomes:\n\nPatient-reported outcome measures will be assessed using five validated questionnaires: Diabetes Distress Scale, Hypoglycemia Attitudes and Behavior Scale, Audit of Diabetes-Dependent Quality of Life, Diabetes Treatment Satisfaction Questionnaire - status version, Diabetes Treatment Satisfaction Questionnaire - change version\n\nSafety outcomes:\n\nSafety outcomes will include the number of severe hypoglycemia episodes, as well as the nature and severity of other adverse events including serious adverse events."
+    },
+    "conditionsModule": {
+      "conditions": [
+        "Type 2 Diabetes",
+        "Chronic Kidney Disease Stage 3"
+      ],
+      "keywords": [
+        "closed-loop",
+        "type 2 diabetes"
+      ]
+    },
+    "designModule": {
+      "studyType": "INTERVENTIONAL",
+      "phases": [
+        "NA"
+      ],
+      "designInfo": {
+        "allocation": "RANDOMIZED",
+        "interventionModel": "PARALLEL",
+        "primaryPurpose": "TREATMENT",
+        "maskingInfo": {
+          "masking": "SINGLE",
+          "whoMasked": [
+            "OUTCOMES_ASSESSOR"
+          ]
+        }
+      },
+      "enrollmentInfo": {
+        "count": 76,
+        "type": "ESTIMATED"
+      }
+    },
+    "armsInterventionsModule": {
+      "armGroups": [
+        {
+          "label": "Fully closed-loop insulin delivery (CamAPS HX)",
+          "type": "EXPERIMENTAL",
+          "description": "The CamAPS HX closed-loop system will consist of :\n\n* mylife Ypsopump insulin pump (Ypsomed, Switzerland)\n* FreeStyle Libre 3 CGM (Abbott, USA)\n* Cambridge model predictive control algorithm on a smartphone (CamAPS, UK)\n* Cloud upload system to review CGM/insulin data",
+          "interventionNames": [
+            "Device: CamAPS HX"
+          ]
+        },
+        {
+          "label": "Standard insulin therapy with CGM",
+          "type": "ACTIVE_COMPARATOR",
+          "description": "Participants in the control arm will continue their standard insulin therapy. They will also receive a Freestyle Libre 3 glucose sensor (Abbott, USA).",
+          "interventionNames": [
+            "Device: Standard insulin therapy with CGM"
+          ]
+        }
+      ],
+      "interventions": [
+        {
+          "type": "DEVICE",
+          "name": "CamAPS HX",
+          "description": "The CamAPS HX fully closed-loop system consists of an insulin pump, a continuous glucose monitoring (CGM) sensor, as well as the CamAPS HX app, which resides on a smartphone and communicates wirelessly with the insulin pump.",
+          "armGroupLabels": [
+            "Fully closed-loop insulin delivery (CamAPS HX)"
+          ]
+        },
+        {
+          "type": "DEVICE",
+          "name": "Standard insulin therapy with CGM",
+          "description": "Participants will continue their standard insulin therapy with a Freestyle Libre 3 CGM",
+          "armGroupLabels": [
+            "Standard insulin therapy with CGM"
+          ]
+        }
+      ]
+    },
+    "outcomesModule": {
+      "primaryOutcomes": [
+        {
+          "measure": "Cortical renal tissue oxygenation (R2*)",
+          "description": "Measured using BOLD-MRI",
+          "timeFrame": "at 26 weeks"
+        }
+      ],
+      "secondaryOutcomes": [
+        {
+          "measure": "Proportion of time spent in the target glucose range (3.9 to 10.0mmol/l)",
+          "description": "Sensor glucose metric measured as a percentage",
+          "timeFrame": "over 26 weeks"
+        },
+        {
+          "measure": "Glycated hemoglobin",
+          "timeFrame": "at 26 weeks"
+        },
+        {
+          "measure": "Proportion of time spent above target glucose (>10.0mmol/l)",
+          "description": "Sensor glucose metric measured as a percentage",
+          "timeFrame": "over 26 weeks"
+        },
+        {
+          "measure": "Mean sensor glucose",
+          "description": "Sensor glucose metric measured in mmol/l",
+          "timeFrame": "over 26 weeks"
+        },
+        {
+          "measure": "Non-inferiority for time spent below target glucose (<3.9mmol/L)",
+          "description": "Sensor glucose metric measured as a percentage",
+          "timeFrame": "over 26 weeks"
+        },
+        {
+          "measure": "Standard deviation of sensor glucose",
+          "description": "Sensor glucose metric measured in mmol/L",
+          "timeFrame": "over 26 weeks"
+        },
+        {
+          "measure": "Coefficient of variation of sensor glucose",
+          "description": "Sensor glucose metric measured as a percentage",
+          "timeFrame": "over 26 weeks"
+        },
+        {
+          "measure": "Proportion of time spent below target glucose (<3.5mmol/L)",
+          "description": "Sensor glucose metric measured as a percentage",
+          "timeFrame": "over 26 weeks"
+        },
+        {
+          "measure": "Proportion of time spent below target glucose (<3.0mmol/L)",
+          "description": "Sensor glucose metric measured as a percentage",
+          "timeFrame": "over 26 weeks"
+        },
+        {
+          "measure": "Proportion of time spent above target glucose (>13.9mmol/l)",
+          "description": "Sensor glucose metric measured as a percentage",
+          "timeFrame": "over 26 weeks"
+        },
+        {
+          "measure": "Proportion of time spent above target glucose (>16.7mmol/l)",
+          "description": "Sensor glucose metric measured as a percentage",
+          "timeFrame": "over 26 weeks"
+        },
+        {
+          "measure": "Proportion of time spent above target glucose (>20.0mmol/l)",
+          "description": "Sensor glucose metric measured as a percentage",
+          "timeFrame": "over 26 weeks"
+        },
+        {
+          "measure": "Per-kidney renal perfusion (ml/min)",
+          "description": "MRI-assessed outcome",
+          "timeFrame": "at 26 weeks"
+        },
+        {
+          "measure": "Kidney inflammation (T1, msec)",
+          "description": "MRI-assessed outcome",
+          "timeFrame": "at 26 weeks"
+        },
+        {
+          "measure": "Medullary renal tissue oxygenation (R2*)",
+          "description": "measured using BOLD-MRI",
+          "timeFrame": "at 26 weeks"
+        },
+        {
+          "measure": "R2* slope",
+          "description": "measured using BOLD-MRI",
+          "timeFrame": "at 26 weeks"
+        },
+        {
+          "measure": "Serum creatinine (umol/l)",
+          "timeFrame": "at 26 weeks"
+        },
+        {
+          "measure": "Serum urea (umol/l)",
+          "timeFrame": "at 26 weeks"
+        },
+        {
+          "measure": "Urine albumin/creatinine ratio (ACR)",
+          "timeFrame": "at 26 weeks"
+        }
+      ]
+    },
+    "eligibilityModule": {
+      "eligibilityCriteria": "Inclusion Criteria:\n\n* Informed consent signed by the subject\n* Age 18 years and older\n* Type 2 diabetes diagnosed for at least 12 months\n* Treatment with insulin therapy for at least 6 months\n* CKD defined either as an eGFR 30-59 ml/min/1.73m\u00b2 or presence of albuminuria \\> 3 mg/mmol (stage A2 or A3 according to KDIGO) with an eGFR \\> 30 ml/min/1.73m\u00b2. CKD must be present for at least 6 months.\n* HbA1c \\< 12% based on a venous blood sample from the screening visit\n* Receiving treatment with an SGLT2 inhibitor and/or GLP-1 receptor agonist for at least 3 months, have been offered these therapies previously, or contraindication/intolerance to receiving these therapies\n* Willing to wear study devices and follow study instructions\n* Capable of giving an informed consent\n\nExclusion Criteria:\n\n* Type 1 diabetes\n* Current use of insulin pump\n* Current use of any closed-loop system\n* Alternative cause of CKD according to medical records such as polycystic kidney disease, glomerulonephritis, congenital urogenital tract diseases, etc.\n* Known or suspected allergy against insulin\n* Pregnancy, planned pregnancy, or breast feeding\n* Severe visual impairment\n* Severe hearing impairment\n* Two or more episodes of severe hypoglycemia in the last 6 months\n* Medically documented allergy towards the adhesive (glue) of plasters\n* Serious skin diseases located at places of the body, which potentially are possible to be used for localisation of the glucose sensor\n* Any physical/psychological disease or medication(s) likely to interfere with the conduct of the study and interpretation of the study results, as judged by study clinician\n* Recent (less than three months) history of myocardial infarction, percutaneous coronary intervention, stroke, or hospitalization for heart failure with reduced ejection fraction\n* History of renal transplantation requiring ongoing immunosuppressive therapy\n* Known or suspected non-compliance, drug or alcohol abuse\n* Inability to follow the procedures of the investigation, e.g. due to language problems\n* Incapacity to give informed consent\n* Contra-indication to undergo MR-imaging according to a standard checklist such as the presence of a pacemaker or other implanted metallic device or severe claustrophobia.\n* Subject refuses to be informed of incidental findings related to their health discovered during imaging or other study-related exams\n* Participation in another investigation with an investigational drug or another MD within the 30 days preceding and during the present investigation\n* Previous enrolment into the current investigation\n* Enrolment of the PI, his/her family members, employees and other dependent persons",
+      "healthyVolunteers": false,
+      "sex": "ALL",
+      "minimumAge": "18 Years",
+      "stdAges": [
+        "ADULT",
+        "OLDER_ADULT"
+      ]
+    },
+    "contactsLocationsModule": {
+      "centralContacts": [
+        {
+          "name": "Heba Al-Alwan, MD, PhD",
+          "role": "CONTACT",
+          "phone": "+4179 556 27 98",
+          "email": "heba.al-alwan@chuv.ch"
+        }
+      ],
+      "locations": [
+        {
+          "facility": "Centre Hospitalier Universitaire Vaudois",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Lausanne",
+          "state": "Canton of Vaud",
+          "zip": "1011",
+          "country": "Switzerland",
+          "contacts": [
+            {
+              "name": "Heba Al-Alwan, MD, PhD",
+              "role": "CONTACT",
+              "phone": "+4179 556 27 98",
+              "email": "heba.al-alwan@chuv.ch"
+            },
+            {
+              "name": "Heba Al-Alwan, MD, PhD",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 46.516,
+            "lon": 6.63282
+          }
+        },
+        {
+          "facility": "CHUV",
+          "status": "RECRUITING",
+          "city": "Lausanne",
+          "country": "Switzerland",
+          "contacts": [
+            {
+              "name": "Heba Alwan",
+              "role": "CONTACT",
+              "phone": "41795562798",
+              "email": "heba.al-alwan@chuv.ch"
+            }
+          ],
+          "geoPoint": {
+            "lat": 46.516,
+            "lon": 6.63282
+          }
+        }
+      ]
+    },
+    "ipdSharingStatementModule": {
+      "ipdSharing": "YES",
+      "description": "Anonymized individual participant data can be requested by other researchers 6 months following publication (data available upon reasonable request). To gain access, data requestors will need to sign a data access agreement."
+    }
+  },
+  "derivedSection": {
+    "miscInfoModule": {
+      "versionHolder": "2026-11-10"
+    },
+    "conditionBrowseModule": {
+      "meshes": [
+        {
+          "id": "D003924",
+          "term": "Diabetes Mellitus, Type 2"
+        },
+        {
+          "id": "D051436",
+          "term": "Renal Insufficiency, Chronic"
+        }
+      ],
+      "ancestors": [
+        {
+          "id": "D003920",
+          "term": "Diabetes Mellitus"
+        },
+        {
+          "id": "D044882",
+          "term": "Glucose Metabolism Disorders"
+        },
+        {
+          "id": "D008659",
+          "term": "Metabolic Diseases"
+        },
+        {
+          "id": "D009750",
+          "term": "Nutritional and Metabolic Diseases"
+        },
+        {
+          "id": "D004700",
+          "term": "Endocrine System Diseases"
+        },
+        {
+          "id": "D051437",
+          "term": "Renal Insufficiency"
+        },
+        {
+          "id": "D007674",
+          "term": "Kidney Diseases"
+        },
+        {
+          "id": "D014570",
+          "term": "Urologic Diseases"
+        },
+        {
+          "id": "D052776",
+          "term": "Female Urogenital Diseases"
+        },
+        {
+          "id": "D005261",
+          "term": "Female Urogenital Diseases and Pregnancy Complications"
+        },
+        {
+          "id": "D000091642",
+          "term": "Urogenital Diseases"
+        },
+        {
+          "id": "D052801",
+          "term": "Male Urogenital Diseases"
+        },
+        {
+          "id": "D002908",
+          "term": "Chronic Disease"
+        },
+        {
+          "id": "D020969",
+          "term": "Disease Attributes"
+        },
+        {
+          "id": "D010335",
+          "term": "Pathologic Processes"
+        },
+        {
+          "id": "D013568",
+          "term": "Pathological Conditions, Signs and Symptoms"
+        }
+      ]
+    },
+    "interventionBrowseModule": {
+      "meshes": [
+        {
+          "id": "D000095583",
+          "term": "Continuous Glucose Monitoring"
+        }
+      ],
+      "ancestors": [
+        {
+          "id": "D001774",
+          "term": "Blood Chemical Analysis"
+        },
+        {
+          "id": "D019963",
+          "term": "Clinical Chemistry Tests"
+        },
+        {
+          "id": "D019411",
+          "term": "Clinical Laboratory Techniques"
+        },
+        {
+          "id": "D019937",
+          "term": "Diagnostic Techniques and Procedures"
+        },
+        {
+          "id": "D003933",
+          "term": "Diagnosis"
+        },
+        {
+          "id": "D003940",
+          "term": "Diagnostic Techniques, Endocrine"
+        },
+        {
+          "id": "D008991",
+          "term": "Monitoring, Physiologic"
+        },
+        {
+          "id": "D008919",
+          "term": "Investigative Techniques"
+        }
+      ]
+    }
+  },
+  "hasResults": false
+}

@@ -1,0 +1,1338 @@
+{
+  "protocolSection": {
+    "identificationModule": {
+      "nctId": "NCT07783802",
+      "orgStudyIdInfo": {
+        "id": "27929"
+      },
+      "secondaryIdInfos": [
+        {
+          "id": "J7Y-MC-EXAA",
+          "type": "OTHER",
+          "domain": "Eli Lilly and Company"
+        }
+      ],
+      "organization": {
+        "fullName": "Eli Lilly and Company",
+        "class": "INDUSTRY"
+      },
+      "briefTitle": "A Study of Clazakizumab (LY5724886) in Adults With Elevated hsCRP and at Increased Risk for Cardiovascular Event",
+      "officialTitle": "A Phase 2b, Randomized, Double-Blind, Placebo-Controlled Study to Investigate the Efficacy and Safety of Clazakizumab in Reducing hsCRP in Adults With Elevated hsCRP and Established ASCVD or at Increased Risk for ASCVD Events",
+      "acronym": "CLARITY-CRP"
+    },
+    "statusModule": {
+      "statusVerifiedDate": "2026-10",
+      "overallStatus": "RECRUITING",
+      "expandedAccessInfo": {
+        "hasExpandedAccess": false
+      },
+      "startDateStruct": {
+        "date": "2026-08-27",
+        "type": "ACTUAL"
+      },
+      "primaryCompletionDateStruct": {
+        "date": "2027-05",
+        "type": "ESTIMATED"
+      },
+      "completionDateStruct": {
+        "date": "2027-10",
+        "type": "ESTIMATED"
+      },
+      "studyFirstSubmitDate": "2026-08-21",
+      "studyFirstSubmitQcDate": "2026-08-21",
+      "studyFirstPostDateStruct": {
+        "date": "2026-08-25",
+        "type": "ACTUAL"
+      },
+      "lastUpdateSubmitDate": "2026-10-30",
+      "lastUpdatePostDateStruct": {
+        "date": "2026-11-03",
+        "type": "ACTUAL"
+      }
+    },
+    "sponsorCollaboratorsModule": {
+      "responsibleParty": {
+        "type": "SPONSOR"
+      },
+      "leadSponsor": {
+        "name": "Eli Lilly and Company",
+        "class": "INDUSTRY"
+      }
+    },
+    "oversightModule": {
+      "oversightHasDmc": false,
+      "isFdaRegulatedDrug": true,
+      "isFdaRegulatedDevice": false
+    },
+    "descriptionModule": {
+      "briefSummary": "The purpose of this study is to measure the change in high-sensitivity C-reactive protein (hsCRP), a marker of inflammation in the body, with clazakizumab compared with placebo in adults who have elevated hsCRP and at increased risk for cardiovascular event.\n\nParticipation in the study will last about 9 months."
+    },
+    "conditionsModule": {
+      "conditions": [
+        "Atherosclerosis",
+        "Cardiovascular Disease",
+        "Obesity",
+        "Hypertension",
+        "Diabetes Mellitus, Type 2",
+        "Renal Insufficiency, Chronic"
+      ],
+      "keywords": [
+        "Interleukin-6 (IL-6)",
+        "IL-6 inhibition",
+        "C-reactive protein",
+        "Residual inflammatory risk",
+        "Cardiovascular risk",
+        "Monoclonal antibody"
+      ]
+    },
+    "designModule": {
+      "studyType": "INTERVENTIONAL",
+      "phases": [
+        "PHASE2"
+      ],
+      "designInfo": {
+        "allocation": "RANDOMIZED",
+        "interventionModel": "PARALLEL",
+        "primaryPurpose": "TREATMENT",
+        "maskingInfo": {
+          "masking": "DOUBLE",
+          "whoMasked": [
+            "PARTICIPANT",
+            "INVESTIGATOR"
+          ]
+        }
+      },
+      "enrollmentInfo": {
+        "count": 120,
+        "type": "ESTIMATED"
+      }
+    },
+    "armsInterventionsModule": {
+      "armGroups": [
+        {
+          "label": "Clazakizumab Dose 1",
+          "type": "EXPERIMENTAL",
+          "description": "Participants will receive clazakizumab subcutaneously (SC)",
+          "interventionNames": [
+            "Drug: Clazakizumab"
+          ]
+        },
+        {
+          "label": "Clazakizumab Dose 2",
+          "type": "EXPERIMENTAL",
+          "description": "Participants will receive clazakizumab SC",
+          "interventionNames": [
+            "Drug: Clazakizumab"
+          ]
+        },
+        {
+          "label": "Clazakizumab Dose 3",
+          "type": "EXPERIMENTAL",
+          "description": "Participants will receive clazakizumab SC",
+          "interventionNames": [
+            "Drug: Clazakizumab"
+          ]
+        },
+        {
+          "label": "Placebo",
+          "type": "PLACEBO_COMPARATOR",
+          "description": "Participants will receive placebo SC",
+          "interventionNames": [
+            "Drug: Placebo"
+          ]
+        }
+      ],
+      "interventions": [
+        {
+          "type": "DRUG",
+          "name": "Clazakizumab",
+          "description": "Administered SC",
+          "armGroupLabels": [
+            "Clazakizumab Dose 1",
+            "Clazakizumab Dose 2",
+            "Clazakizumab Dose 3"
+          ],
+          "otherNames": [
+            "LY5724886"
+          ]
+        },
+        {
+          "type": "DRUG",
+          "name": "Placebo",
+          "description": "Administered SC",
+          "armGroupLabels": [
+            "Placebo"
+          ]
+        }
+      ]
+    },
+    "outcomesModule": {
+      "primaryOutcomes": [
+        {
+          "measure": "Percent Change from Baseline in hsCRP",
+          "timeFrame": "Baseline, Week 12"
+        }
+      ],
+      "secondaryOutcomes": [
+        {
+          "measure": "Percent Change from Baseline in hsCRP",
+          "timeFrame": "Baseline, Week 24"
+        },
+        {
+          "measure": "Pharmacokinetics (PK): Area Under the Concentration Versus Time Curve of Clazakizumab",
+          "timeFrame": "Day 1 (Week 0) through Week 32"
+        }
+      ]
+    },
+    "eligibilityModule": {
+      "eligibilityCriteria": "Inclusion Criteria:\n\n* hsCRP \u22652 mg/L and \u226415 mg/L at screening\n* At least one of the following chronic conditions:\n\n  * Established atherosclerotic cardiovascular disease (ASCVD)\n  * Obesity (body mass index (BMI) \u226530 kg/m2)\n  * Type 2 diabetes\n  * Hypertension\n  * Chronic kidney disease Grade 3 or 4\n\nExclusion Criteria:\n\n* Acute cardiovascular event within 60 days prior to screening\n* Acute decompensated heart failure hospitalization within 60 days prior to screening\n* Planned coronary revascularization (percutaneous coronary intervention or coronary artery bypass grafting) or major surgery at the time of randomization\n* New York Heart Association Class III or IV heart failure\n* Uncontrolled hypertension at screening (systolic blood pressure (BP) \u2265160 mmHg or diastolic BP \u2265100 mmHg)\n* Type 1 diabetes\n* Type 2 diabetes with Hemoglobin A1c \u22659.0% (86 mmol/mol) at screening\n* Nephrotic syndrome, estimated glomerular filtration rate (eGFR) \\<15 mL/min/1.73 m\u00b2, or history of kidney transplant\n* Dialysis or acute kidney injury within 60 days prior to screening\n* Congenital/hereditary kidney disease, polycystic kidney disease, lupus nephritis, or antineutrophil cytoplasmic antibody-associated vasculitis\n* Active tuberculosis, untreated latent tuberculosis, or known hepatitis B or hepatitis C infection\n* Serious, opportunistic, chronic, or recurrent infection requiring treatment within 12 weeks prior to screening\n* Significant active autoimmune disease\n* Suspected or confirmed immunocompromised state (e.g., HIV infection)\n* History of peptic ulcer disease or gastrointestinal ulceration within 12 months prior to screening\n* History of symptomatic diverticular disease (diverticulitis), gastrointestinal perforation, or major gastrointestinal surgery\n* Mechanical heart valve prosthesis requiring chronic vitamin K antagonist anticoagulation\n* Use of colchicine within 14 days prior to screening or anticipated need during the study\n* Use of immunosuppressive or immunomodulatory agents, including other biologic anti-IL-6 therapies, within specified windows prior to screening\n* Use of systemic corticosteroids within 14 days prior to screening\n* Chronic use of nonsteroidal anti-inflammatory drugs (NSAIDs)",
+      "healthyVolunteers": false,
+      "sex": "ALL",
+      "minimumAge": "18 Years",
+      "stdAges": [
+        "ADULT",
+        "OLDER_ADULT"
+      ]
+    },
+    "contactsLocationsModule": {
+      "centralContacts": [
+        {
+          "name": "Trial questions or participation questions: 1-877-CTLILLY (1-877-285-4559) or",
+          "role": "CONTACT",
+          "phone": "317-615-4559",
+          "email": "LillyTrials@Lilly.com"
+        },
+        {
+          "name": "Physicians interested in becoming principal investigators please contact",
+          "role": "CONTACT",
+          "email": "clinical_inquiry_hub@lilly.com"
+        }
+      ],
+      "overallOfficials": [
+        {
+          "name": "Call 1-877-CTLILLY (1-877-285-4559) or 1-317-615-4559 Mon - Fri 8 AM - 8 PM Eastern time (UTC/GMT - 5 hours, EST)",
+          "affiliation": "Eli Lilly and Company",
+          "role": "STUDY_DIRECTOR"
+        }
+      ],
+      "locations": [
+        {
+          "facility": "Heart Center Research, LLC",
+          "status": "RECRUITING",
+          "city": "Huntsville",
+          "state": "Alabama",
+          "zip": "35801",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "2565198472"
+            },
+            {
+              "name": "Walter Haught",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 34.7304,
+            "lon": -86.58594
+          }
+        },
+        {
+          "facility": "Pima Heart",
+          "status": "RECRUITING",
+          "city": "Tucson",
+          "state": "Arizona",
+          "zip": "85741",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "7176150659"
+            },
+            {
+              "name": "Ajay Tuli",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 32.22174,
+            "lon": -110.92648
+          }
+        },
+        {
+          "facility": "Eclipse Clinical Research",
+          "status": "RECRUITING",
+          "city": "Tucson",
+          "state": "Arizona",
+          "zip": "85745",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "5206479926"
+            },
+            {
+              "name": "Eve Shapiro",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 32.22174,
+            "lon": -110.92648
+          }
+        },
+        {
+          "facility": "Thrive Clinical Research Group",
+          "status": "RECRUITING",
+          "city": "Glendora",
+          "state": "California",
+          "zip": "91740",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "626-727-7254"
+            },
+            {
+              "name": "Fahed Bitar",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 34.13612,
+            "lon": -117.86534
+          }
+        },
+        {
+          "facility": "Omega Research Orlando",
+          "status": "RECRUITING",
+          "city": "Altamonte Springs",
+          "state": "Florida",
+          "zip": "32714",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "386-668-4202"
+            },
+            {
+              "name": "Kwabena Ayesu",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 28.66111,
+            "lon": -81.36562
+          }
+        },
+        {
+          "facility": "American Research Institute",
+          "status": "RECRUITING",
+          "city": "Cutler Bay",
+          "state": "Florida",
+          "zip": "33157",
+          "country": "United States",
+          "contacts": [
+            {
+              "name": "Manuel Garcia Estrada",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 25.5783,
+            "lon": -80.3377
+          }
+        },
+        {
+          "facility": "K2 Medical Research - Maitland",
+          "status": "RECRUITING",
+          "city": "Maitland",
+          "state": "Florida",
+          "zip": "32751",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "407-810-2790"
+            },
+            {
+              "name": "Neel Patel",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 28.62778,
+            "lon": -81.36312
+          }
+        },
+        {
+          "facility": "Florida Institute For Clinical Research, LLC",
+          "status": "RECRUITING",
+          "city": "Orlando",
+          "state": "Florida",
+          "zip": "32825",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "407-658-0966"
+            },
+            {
+              "name": "Humberto Cruz",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 28.53834,
+            "lon": -81.37924
+          }
+        },
+        {
+          "facility": "North Georgia Clinical Research",
+          "status": "RECRUITING",
+          "city": "Woodstock",
+          "state": "Georgia",
+          "zip": "30189",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "6784945735"
+            },
+            {
+              "name": "Bram Wieskopf",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 34.10149,
+            "lon": -84.51938
+          }
+        },
+        {
+          "facility": "Accellacare - DuPage",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Lombard",
+          "state": "Illinois",
+          "zip": "60148",
+          "country": "United States",
+          "contacts": [
+            {
+              "name": "Yoko Momoyama",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 41.88003,
+            "lon": -88.00784
+          }
+        },
+        {
+          "facility": "Franciscan Physician Network - Indiana Heart Physicians",
+          "status": "RECRUITING",
+          "city": "Indianapolis",
+          "state": "Indiana",
+          "zip": "46237",
+          "country": "United States",
+          "contacts": [
+            {
+              "name": "Anthony Bashall",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 39.76838,
+            "lon": -86.15804
+          }
+        },
+        {
+          "facility": "K2 Medical Research - Foxborough",
+          "status": "RECRUITING",
+          "city": "Foxborough",
+          "state": "Massachusetts",
+          "zip": "02035",
+          "country": "United States",
+          "contacts": [
+            {
+              "name": "Daniel Sacchetti",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 42.06538,
+            "lon": -71.24783
+          }
+        },
+        {
+          "facility": "Revival Research Institute, LLC",
+          "status": "RECRUITING",
+          "city": "Dearborn",
+          "state": "Michigan",
+          "zip": "48126",
+          "country": "United States",
+          "contacts": [
+            {
+              "name": "Qaiser Shafiq",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 42.32226,
+            "lon": -83.17631
+          }
+        },
+        {
+          "facility": "Olive Branch Family Medical Center",
+          "status": "RECRUITING",
+          "city": "Olive Branch",
+          "state": "Mississippi",
+          "zip": "38654-3514",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "662-893-8474"
+            },
+            {
+              "name": "Randall Huling",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 34.96176,
+            "lon": -89.82953
+          }
+        },
+        {
+          "facility": "Excel Clinical Research, LLC",
+          "status": "RECRUITING",
+          "city": "Las Vegas",
+          "state": "Nevada",
+          "zip": "89109",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "7026801500"
+            },
+            {
+              "name": "Robby Quintos",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 36.17497,
+            "lon": -115.13722
+          }
+        },
+        {
+          "facility": "Palm Research Center Tenaya",
+          "status": "RECRUITING",
+          "city": "Las Vegas",
+          "state": "Nevada",
+          "zip": "89128",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "7027365161"
+            },
+            {
+              "name": "Samer Nakhle",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 36.17497,
+            "lon": -115.13722
+          }
+        },
+        {
+          "facility": "Rochester Clinical Research - Buffalo",
+          "status": "RECRUITING",
+          "city": "Buffalo",
+          "state": "New York",
+          "zip": "14217",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "7164158380"
+            },
+            {
+              "name": "Richard Carlson",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 42.88645,
+            "lon": -78.87837
+          }
+        },
+        {
+          "facility": "CHEAR Center LLC",
+          "status": "RECRUITING",
+          "city": "The Bronx",
+          "state": "New York",
+          "zip": "10455",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "13472701111"
+            },
+            {
+              "name": "David Bernard",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 40.84985,
+            "lon": -73.86641
+          }
+        },
+        {
+          "facility": "Velocity Clinical Research, Cincinnati, Springdale",
+          "status": "RECRUITING",
+          "city": "Cincinnati",
+          "state": "Ohio",
+          "zip": "45246",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "5136718080"
+            },
+            {
+              "name": "Charles Eger",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 39.12711,
+            "lon": -84.51439
+          }
+        },
+        {
+          "facility": "Suburban Research Associates",
+          "status": "RECRUITING",
+          "city": "West Chester",
+          "state": "Pennsylvania",
+          "zip": "19380",
+          "country": "United States",
+          "contacts": [
+            {
+              "name": "Omer Abdullah",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 39.96097,
+            "lon": -75.60804
+          }
+        },
+        {
+          "facility": "Cardiology Consultants of Philadelphia Yardley",
+          "status": "RECRUITING",
+          "city": "Yardley",
+          "state": "Pennsylvania",
+          "zip": "19067",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "2153217400"
+            },
+            {
+              "name": "Paul Grena",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 40.24566,
+            "lon": -74.846
+          }
+        },
+        {
+          "facility": "Monroe Biomedical Research - Charleston",
+          "status": "RECRUITING",
+          "city": "North Charleston",
+          "state": "South Carolina",
+          "zip": "29406",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "8037662680"
+            },
+            {
+              "name": "Gregory Feldman",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 32.85462,
+            "lon": -79.97481
+          }
+        },
+        {
+          "facility": "Horizon Clinical Research Group",
+          "status": "RECRUITING",
+          "city": "Cypress",
+          "state": "Texas",
+          "zip": "77429",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "9494910710"
+            },
+            {
+              "name": "Fadi Alameddine",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 29.96911,
+            "lon": -95.69717
+          }
+        },
+        {
+          "facility": "Cardiovascular Specialists of Willowbrook",
+          "status": "RECRUITING",
+          "city": "Houston",
+          "state": "Texas",
+          "zip": "77070",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "19494910710"
+            },
+            {
+              "name": "Aditya Samal",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 29.76328,
+            "lon": -95.36327
+          }
+        },
+        {
+          "facility": "Texas Cardiology Associates of Houston",
+          "status": "RECRUITING",
+          "city": "Kingwood",
+          "state": "Texas",
+          "zip": "77339",
+          "country": "United States",
+          "contacts": [
+            {
+              "name": "Robert Salazar",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 30.05691,
+            "lon": -95.18349
+          }
+        },
+        {
+          "facility": "Revival Research Institute, LLC",
+          "status": "RECRUITING",
+          "city": "McKinney",
+          "state": "Texas",
+          "zip": "75071",
+          "country": "United States",
+          "contacts": [
+            {
+              "name": "Asad Karim",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 33.19762,
+            "lon": -96.61527
+          }
+        },
+        {
+          "facility": "Texas Institute of Cardiology, PA",
+          "status": "RECRUITING",
+          "city": "McKinney",
+          "state": "Texas",
+          "zip": "75071",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "214-544-7555"
+            },
+            {
+              "name": "Faisal Wahid",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 33.19762,
+            "lon": -96.61527
+          }
+        },
+        {
+          "facility": "Ogden Clinic - Canyon View",
+          "status": "RECRUITING",
+          "city": "Ogden",
+          "state": "Utah",
+          "zip": "84404",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "(385) 271-0684"
+            },
+            {
+              "name": "Stephen Bruce",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 41.223,
+            "lon": -111.97383
+          }
+        },
+        {
+          "facility": "Carient Heart & Vascular - Manassas",
+          "status": "RECRUITING",
+          "city": "Manassas",
+          "state": "Virginia",
+          "zip": "20109",
+          "country": "United States",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "7033358750"
+            },
+            {
+              "name": "Hamid Taheri",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 38.75095,
+            "lon": -77.47527
+          }
+        },
+        {
+          "facility": "Carient Heart and Vascular LLC-Reston",
+          "status": "RECRUITING",
+          "city": "Reston",
+          "state": "Virginia",
+          "zip": "20190",
+          "country": "United States",
+          "contacts": [
+            {
+              "name": "Adeeb Aghdassi",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 38.96872,
+            "lon": -77.3411
+          }
+        },
+        {
+          "facility": "CIPREC",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Buenos Aires",
+          "zip": "1061",
+          "country": "Argentina",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "5491144074402"
+            },
+            {
+              "name": "Cesar Zaidman",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": -34.61315,
+            "lon": -58.37723
+          }
+        },
+        {
+          "facility": "Cicemo Srl",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Buenos Aires",
+          "zip": "1424",
+          "country": "Argentina",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "5491157417654"
+            },
+            {
+              "name": "Pablo Costanzo",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": -34.61315,
+            "lon": -58.37723
+          }
+        },
+        {
+          "facility": "CARDIAMET Investigaciones M\u00e9dicas",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Buenos Aires",
+          "zip": "C1014ACP",
+          "country": "Argentina",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "5491150961905"
+            },
+            {
+              "name": "Cecilia Reyna",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": -34.61315,
+            "lon": -58.37723
+          }
+        },
+        {
+          "facility": "Mautalen Salud e Investigaci\u00f3n",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Buenos Aires",
+          "zip": "C1128AAF",
+          "country": "Argentina",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "541145143400"
+            },
+            {
+              "name": "Jose Fretes",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": -34.61315,
+            "lon": -58.37723
+          }
+        },
+        {
+          "facility": "CEMEDIC",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Buenos Aires",
+          "zip": "C1407GTN",
+          "country": "Argentina",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "5491157506974"
+            },
+            {
+              "name": "Facundo Lombardi",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": -34.61315,
+            "lon": -58.37723
+          }
+        },
+        {
+          "facility": "Centro Medico Dra. Laura Maffei- Investigacion Clinica Aplicada",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Buenos Aires",
+          "zip": "C1425AGC",
+          "country": "Argentina",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "541148019001"
+            },
+            {
+              "name": "Emilio Alaguibe",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": -34.61315,
+            "lon": -58.37723
+          }
+        },
+        {
+          "facility": "Fundaci\u00f3n Respirar",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Buenos Aires",
+          "zip": "C1426ABP",
+          "country": "Argentina",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "5411 7078 1548"
+            },
+            {
+              "name": "Marina Uhrig",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": -34.61315,
+            "lon": -58.37723
+          }
+        },
+        {
+          "facility": "Instituto M\u00e9dico Catamarca IMEC",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Rosario",
+          "zip": "2000",
+          "country": "Argentina",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "3416176661"
+            },
+            {
+              "name": "Natacha Maldonado",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": -32.94682,
+            "lon": -60.63932
+          }
+        },
+        {
+          "facility": "Centro de Investigaciones Clinicas del Litoral",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Santa Fe",
+          "zip": "S3000FWO",
+          "country": "Argentina",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "5403424562779"
+            },
+            {
+              "name": "Miguel Hominal",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": -31.64881,
+            "lon": -60.70868
+          }
+        },
+        {
+          "facility": "Centro de Salud e Investigaciones M\u00e9dicas",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Santa Rosa",
+          "zip": "L6300",
+          "country": "Argentina",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "542954244444"
+            },
+            {
+              "name": "Marcos Mayer",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": -36.61617,
+            "lon": -64.28991
+          }
+        },
+        {
+          "facility": "Minamino Cardiovascular Hospital",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Hachi\u014dji",
+          "zip": "192-0918",
+          "country": "Japan",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "81120023812"
+            },
+            {
+              "name": "Yoshiki Hata",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 35.65583,
+            "lon": 139.32389
+          }
+        },
+        {
+          "facility": "Takai Internal Medicine Clinic",
+          "status": "RECRUITING",
+          "city": "Kamakura-shi",
+          "zip": "247-0056",
+          "country": "Japan",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "81120023812"
+            },
+            {
+              "name": "Masahiko Takai",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ]
+        },
+        {
+          "facility": "Nakakinen clinic",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Naka",
+          "zip": "311-0113",
+          "country": "Japan",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "81120023812"
+            },
+            {
+              "name": "Takeshi Osonoi",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 36.05,
+            "lon": 140.16667
+          }
+        },
+        {
+          "facility": "International University of Health and Welfare Narita Hospital",
+          "status": "NOT_YET_RECRUITING",
+          "city": "Narita",
+          "zip": "286-8520",
+          "country": "Japan",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "81120023812"
+            },
+            {
+              "name": "Tomoya Hoshi",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 35.78333,
+            "lon": 140.31667
+          }
+        },
+        {
+          "facility": "Dorado Medical Complex",
+          "status": "RECRUITING",
+          "city": "Dorado",
+          "zip": "00646",
+          "country": "Puerto Rico",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "787-278-1576"
+            },
+            {
+              "name": "Luis Pagan-Cardona",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 18.45883,
+            "lon": -66.26767
+          }
+        },
+        {
+          "facility": "Wellness clinical Research Vega Baja",
+          "status": "RECRUITING",
+          "city": "Vega Baja",
+          "zip": "00693",
+          "country": "Puerto Rico",
+          "contacts": [
+            {
+              "role": "CONTACT",
+              "phone": "787-654-9444"
+            },
+            {
+              "name": "Gustavo Albizu Angulo",
+              "role": "PRINCIPAL_INVESTIGATOR"
+            }
+          ],
+          "geoPoint": {
+            "lat": 18.44439,
+            "lon": -66.38767
+          }
+        }
+      ]
+    },
+    "referencesModule": {
+      "seeAlsoLinks": [
+        {
+          "label": "A clinical trial of clazakizumab in people with high body inflammation who have atherosclerotic cardiovascular disease or are at risk of developing it (CLARITY-CRP)",
+          "url": "https://trials.lilly.com/en-US/trial/739619"
+        }
+      ]
+    },
+    "ipdSharingStatementModule": {
+      "ipdSharing": "YES",
+      "description": "Anonymized individual patient level data will be provided in a secure access environment upon approval of a research proposal and a signed data sharing agreement.",
+      "infoTypes": [
+        "STUDY_PROTOCOL",
+        "SAP",
+        "CSR"
+      ],
+      "timeFrame": "Data are available 6 months after the primary publication or approval of the indication studied in the US and EU, whichever is later. Data will be indefinitely available for requesting.",
+      "accessCriteria": "A research proposal should be approved by an independent review panel and researchers should sign a data sharing agreement.",
+      "url": "https://vivli.org/"
+    }
+  },
+  "derivedSection": {
+    "miscInfoModule": {
+      "versionHolder": "2026-11-10"
+    },
+    "conditionBrowseModule": {
+      "meshes": [
+        {
+          "id": "D050197",
+          "term": "Atherosclerosis"
+        },
+        {
+          "id": "D002318",
+          "term": "Cardiovascular Diseases"
+        },
+        {
+          "id": "D009765",
+          "term": "Obesity"
+        },
+        {
+          "id": "D006973",
+          "term": "Hypertension"
+        },
+        {
+          "id": "D003924",
+          "term": "Diabetes Mellitus, Type 2"
+        },
+        {
+          "id": "D051436",
+          "term": "Renal Insufficiency, Chronic"
+        }
+      ],
+      "ancestors": [
+        {
+          "id": "D001161",
+          "term": "Arteriosclerosis"
+        },
+        {
+          "id": "D001157",
+          "term": "Arterial Occlusive Diseases"
+        },
+        {
+          "id": "D014652",
+          "term": "Vascular Diseases"
+        },
+        {
+          "id": "D050177",
+          "term": "Overweight"
+        },
+        {
+          "id": "D044343",
+          "term": "Overnutrition"
+        },
+        {
+          "id": "D009748",
+          "term": "Nutrition Disorders"
+        },
+        {
+          "id": "D009750",
+          "term": "Nutritional and Metabolic Diseases"
+        },
+        {
+          "id": "D001835",
+          "term": "Body Weight"
+        },
+        {
+          "id": "D012816",
+          "term": "Signs and Symptoms"
+        },
+        {
+          "id": "D013568",
+          "term": "Pathological Conditions, Signs and Symptoms"
+        },
+        {
+          "id": "D003920",
+          "term": "Diabetes Mellitus"
+        },
+        {
+          "id": "D044882",
+          "term": "Glucose Metabolism Disorders"
+        },
+        {
+          "id": "D008659",
+          "term": "Metabolic Diseases"
+        },
+        {
+          "id": "D004700",
+          "term": "Endocrine System Diseases"
+        },
+        {
+          "id": "D051437",
+          "term": "Renal Insufficiency"
+        },
+        {
+          "id": "D007674",
+          "term": "Kidney Diseases"
+        },
+        {
+          "id": "D014570",
+          "term": "Urologic Diseases"
+        },
+        {
+          "id": "D052776",
+          "term": "Female Urogenital Diseases"
+        },
+        {
+          "id": "D005261",
+          "term": "Female Urogenital Diseases and Pregnancy Complications"
+        },
+        {
+          "id": "D000091642",
+          "term": "Urogenital Diseases"
+        },
+        {
+          "id": "D052801",
+          "term": "Male Urogenital Diseases"
+        },
+        {
+          "id": "D002908",
+          "term": "Chronic Disease"
+        },
+        {
+          "id": "D020969",
+          "term": "Disease Attributes"
+        },
+        {
+          "id": "D010335",
+          "term": "Pathologic Processes"
+        }
+      ]
+    },
+    "interventionBrowseModule": {
+      "meshes": [
+        {
+          "id": "C000604955",
+          "term": "clazakizumab"
+        }
+      ]
+    }
+  },
+  "hasResults": false
+}
