@@ -186,3 +186,30 @@ async def test_lab_in_another_unit_is_unknown() -> None:
     other_unit = {"egfr": Fact(value=0.8, unit="mL/s/1.73m2")}
     crit = criterion("labs.egfr", ">=", 45, unit="mL/min/1.73m2")
     assert await outcome(crit, patient(labs=other_unit)) == "unknown"
+
+
+async def rationale(crit: Criterion, facts: PatientFacts | None = None) -> str:
+    verdict = await evaluate_criterion(NCT, crit, facts or patient(), recorder())
+    return verdict.rationale
+
+
+async def test_a_rule_rationale_never_states_a_comparison_that_is_false() -> None:
+    # "fev1_fvc 0.75 < 0.7 -> pass (exclusion)" read as if the system thought 0.75 < 0.7.
+    fev1 = {"fev1_fvc": Fact(value=0.75, unit="ratio", source_span="FEV1/FVC 0.75")}
+    excl = criterion("labs.fev1_fvc", "<", 0.7, type="exclusion", crit_id="exc-1")
+    assert await rationale(excl, patient(labs=fev1)) == (
+        "fev1_fvc 0.75 is not < 0.7 -> pass (exclusion does not apply)"
+    )
+    fev1["fev1_fvc"] = Fact(value=0.66, unit="ratio", source_span="FEV1/FVC 0.66")
+    assert await rationale(excl, patient(labs=fev1)) == (
+        "fev1_fvc 0.66 < 0.7 -> fail (exclusion applies)"
+    )
+    assert await rationale(criterion("labs.egfr", ">=", 45)) == (
+        "egfr 48 >= 45 -> pass (inclusion met)"
+    )
+    assert await rationale(criterion("labs.egfr", ">=", 60)) == (
+        "egfr 48 is not >= 60 -> fail (inclusion not met)"
+    )
+    assert await rationale(criterion("labs.hba1c", ">=", 7)) == (
+        "no hba1c in the patient facts -> unknown (inclusion)"
+    )
