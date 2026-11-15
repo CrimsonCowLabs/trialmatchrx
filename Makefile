@@ -73,9 +73,9 @@ eval:
 	cd api && uv run python -m scripts.run_eval $(ARGS)
 
 # Shortcuts for the usual loop: `make eval-smoke` after a pipeline change (one topic live, stops
-# at the first failure, never recorded; needs ANTHROPIC_API_KEY, costs a little), `make
-# eval-offline` to re-score for free from the caches (no LLM calls; a fully cached run is still
-# recorded), `make eval` only when you want a recorded score. Both take ARGS too.
+# at the first failure, never recorded; needs ANTHROPIC_API_KEY, spends a few tokens), then
+# `make eval-offline` to re-score for free (no LLM calls, no tokens; records only a complete
+# replay). `make eval` is the run that fills the caches and records a score. Both take ARGS too.
 eval-offline:
 	cd api && uv run python -m scripts.run_eval --offline $(ARGS)
 
