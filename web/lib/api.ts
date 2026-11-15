@@ -18,6 +18,7 @@ export type RunListItem = Schemas["RunListItem"];
 export type RunKind = RunListItem["kind"];
 export type Tier = Schemas["TrialMatch"]["tier"];
 export type TierCounts = Schemas["TierCounts"];
+export type Health = Schemas["Health"];
 
 // Called directly (not through a Next rewrite) so the SSE stream is never buffered.
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8045";
@@ -69,6 +70,7 @@ export const api = {
     request<RunListItem[]>(
       `/api/runs?${new URLSearchParams({ kind, ...(limit && { limit: String(limit) }) })}`,
     ),
+  getHealth: () => request<Health>("/api/health"),
   getEvalLatest: () => request<EvalLatest>("/api/eval/latest"),
   eventsUrl: (runId: string) => `${API_URL}/api/runs/${encodeURIComponent(runId)}/events`,
   feasibility: (nct: string, body: FeasibilityRequest, signal?: AbortSignal) =>

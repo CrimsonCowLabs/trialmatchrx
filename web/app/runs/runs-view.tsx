@@ -22,7 +22,7 @@ export function RunsView() {
     return (
       <p className="text-sm text-muted-foreground">
         No match runs yet.{" "}
-        <Link href="/match" className="text-teal underline">
+        <Link href="/match" className="link underline">
           Match a patient
         </Link>{" "}
         to start one.
@@ -74,7 +74,7 @@ export function RunsView() {
                       {links.replay && (
                         <Link
                           href={links.replay}
-                          className="font-medium text-teal hover:text-teal-strong"
+                          className="font-medium link"
                         >
                           Replay
                         </Link>

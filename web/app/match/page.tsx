@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
+import { Page } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +35,7 @@ export default function MatchPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-4 px-4 py-6 sm:p-8">
+    <Page width="narrow">
       <PageHeader breadcrumb={[{ label: "Home", href: "/" }]} title="Match a patient" />
       <form onSubmit={onSubmit} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
@@ -56,6 +57,6 @@ export default function MatchPage() {
         </Button>
         {error && <p className="text-sm text-destructive">{error}</p>}
       </form>
-    </main>
+    </Page>
   );
 }

@@ -74,7 +74,7 @@ export function TrialsView() {
                         <td className="py-2.5 pr-4 font-mono text-xs whitespace-nowrap">
                           <Link
                             href={`/feasibility/${encodeURIComponent(trial.nct_id)}`}
-                            className="font-medium text-teal hover:text-teal-strong hover:underline"
+                            className="font-medium link hover:underline"
                           >
                             {trial.nct_id}
                           </Link>
