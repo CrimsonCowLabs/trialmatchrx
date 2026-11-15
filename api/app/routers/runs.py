@@ -1,6 +1,7 @@
 """Run status, trace export and the live SSE stream."""
 
 from collections import Counter
+from statistics import median
 from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Header, HTTPException, Query
@@ -11,6 +12,7 @@ from app.schemas import (
     PatientFacts,
     RunKind,
     RunListItem,
+    RunStats,
     RunStatus,
     RunSummary,
     RunTotals,
@@ -83,6 +85,24 @@ async def list_runs(
     """Runs of one kind (default `match`), newest first. Reads the runs table only: no trace
     events, no totals, and not a traced run itself (browsing must not add runs)."""
     return [_run_list_item(run) for run in store.list_runs(kind, limit)]
+
+
+@router.get("/stats", response_model=RunStats)
+async def run_stats(limit: Annotated[int, Query(ge=1, le=200)] = 20) -> RunStats:
+    """Wall-time range and median cost of the most recent `limit` finished (`done`) match
+    runs, from the runs table and their stored trace events. Read-only and not traced, like
+    the list. Declared before `/{run_id}` so "stats" is never read as a run id."""
+    totals = [
+        compute_totals(run, store.latest_events(run.id))
+        for run in store.list_runs("match", limit, status="done")
+    ]
+    walls = [t.wall_time_s for t in totals if t.wall_time_s is not None]
+    return RunStats(
+        runs=len(totals),
+        wall_time_min_s=min(walls, default=None),
+        wall_time_max_s=max(walls, default=None),
+        cost_usd_median=median(t.cost_usd for t in totals) if totals else None,
+    )
 
 
 @router.get("/{run_id}/events", response_class=EventSourceResponse)

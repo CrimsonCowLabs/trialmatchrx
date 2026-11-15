@@ -69,6 +69,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/runs/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Run Stats
+         * @description Wall-time range and median cost of the most recent `limit` finished (`done`) match
+         *     runs, from the runs table and their stored trace events. Read-only and not traced, like
+         *     the list. Declared before `/{run_id}` so "stats" is never read as a run id.
+         */
+        get: operations["run_stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/runs/{run_id}/events": {
         parameters: {
             query?: never;
@@ -574,6 +596,21 @@ export interface components {
             /** Run Id */
             run_id: string;
         };
+        /**
+         * RunStats
+         * @description What recent finished (`done`) match runs took, for the match form's hint. From stored
+         *     runs and their trace events; every figure is None when `runs` is 0.
+         */
+        RunStats: {
+            /** Runs */
+            runs: number;
+            /** Wall Time Min S */
+            wall_time_min_s: number | null;
+            /** Wall Time Max S */
+            wall_time_max_s: number | null;
+            /** Cost Usd Median */
+            cost_usd_median: number | null;
+        };
         /** RunSummary */
         RunSummary: {
             /** Run Id */
@@ -924,6 +961,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RunListItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_stats: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunStats"];
                 };
             };
             /** @description Validation Error */
