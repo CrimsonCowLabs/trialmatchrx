@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
+import { DEMO_MATCH } from "@/lib/demo";
 import {
   AGENT_STEPS,
   DEFAULT_RADIUS_MI,
@@ -20,16 +21,14 @@ import {
 } from "@/lib/match-form";
 import { useLoad } from "@/lib/use-load";
 
-// HACK(demo): prefilled synthetic demo patient from SPEC.md; default condition too.
-const DEMO_NOTE =
-  "61-year-old man with type 2 diabetes, HbA1c 8.4%, eGFR 48, on metformin. Lives in Sacramento.";
+const DEMO_NOTE = DEMO_MATCH.note;
 
 const loadStats = () => api.getRunStats();
 
 export default function MatchPage() {
   const router = useRouter();
   const [note, setNote] = useState(DEMO_NOTE);
-  const [condition, setCondition] = useState("type 2 diabetes");
+  const [condition, setCondition] = useState(DEMO_MATCH.condition);
   const [radius, setRadius] = useState<RadiusMi>(DEFAULT_RADIUS_MI);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -71,7 +70,7 @@ export default function MatchPage() {
                       <button
                         type="button"
                         onClick={() => setNote("")}
-                        className="font-medium text-teal hover:text-teal-strong hover:underline"
+                        className="link font-medium hover:underline"
                       >
                         Clear
                       </button>
@@ -81,7 +80,7 @@ export default function MatchPage() {
                       <button
                         type="button"
                         onClick={() => setNote(DEMO_NOTE)}
-                        className="text-xs font-medium text-teal hover:text-teal-strong hover:underline"
+                        className="link text-xs font-medium hover:underline"
                       >
                         Load demo patient
                       </button>
