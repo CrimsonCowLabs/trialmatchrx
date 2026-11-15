@@ -199,7 +199,6 @@ def anthropic_closer_model() -> BaseChatModel:
         model=settings.model_closer,
         api_key=SecretStr(settings.anthropic_api_key),
         max_tokens=4000,
-        temperature=0,
     )
 
 
