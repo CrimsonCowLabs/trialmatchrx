@@ -31,7 +31,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field, SecretStr, ValidationError, field_validator
 
 from app.config import get_settings
-from app.pipeline.predicate_fields import LAB_UNITS, VITAL_UNITS
+from app.pipeline.predicate_fields import LAB_RANGES, LAB_UNITS, VITAL_UNITS, units_match
 from app.prompts import load_prompt
 from app.schemas import Fact, PatientFacts
 from app.trace.recorder import TraceRecorder
@@ -153,10 +153,6 @@ def find_span(span: str, note: str) -> str | None:
     return m.group(0) if m else None
 
 
-def _norm_unit(unit: str) -> str:
-    return unit.replace("²", "2").replace(" ", "").lower()
-
-
 class _Assembler:
     """Checks one draft against the note, recording a guardrail event per dropped fact."""
 
@@ -193,17 +189,24 @@ class _Assembler:
         return out
 
     def measurements(
-        self, head: str, drafts: list[DraftMeasurement], units: dict[str, str]
+        self,
+        head: str,
+        drafts: list[DraftMeasurement],
+        units: dict[str, str],
+        ranges: dict[str, tuple[float, float]] | None = None,
     ) -> dict[str, Fact]:
         out: dict[str, Fact] = {}
         for d in drafts:
             key = d.name.strip().lower()
             path = f"{head}.{key}"
             canonical = units.get(key)
-            if canonical is not None and (
-                d.unit is None or _norm_unit(d.unit) != _norm_unit(canonical)
-            ):
+            if canonical is not None and not units_match(d.unit, canonical):
                 self._drop("unit", path, d, f"unit {d.unit!r} is not the canonical {canonical!r}")
+                continue
+            bounds = (ranges or {}).get(key)
+            if bounds is not None and not bounds[0] <= d.value <= bounds[1]:
+                lo, hi = bounds
+                self._drop("range", path, d, f"{d.value:g} is outside {lo:g}-{hi:g} {canonical}")
                 continue
             span = self.verify(path, d)
             if span is None:
@@ -245,7 +248,7 @@ class _Assembler:
             age=age,
             sex=sex,
             conditions=self.named("conditions", draft.conditions),
-            labs=self.measurements("labs", draft.labs, LAB_UNITS),
+            labs=self.measurements("labs", draft.labs, LAB_UNITS, LAB_RANGES),
             vitals=self.measurements("vitals", draft.vitals, VITAL_UNITS),
             meds=self.named("meds", draft.meds),
             pregnant=pregnant,

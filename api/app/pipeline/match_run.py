@@ -180,6 +180,7 @@ async def run_match(
         radius_mi=req.radius_mi,
         limit=get_settings().match_max_trials,
         condition=req.condition,
+        patient_conditions=[str(c.value) for c in facts.conditions],
     )
 
     results = await match_trials(
