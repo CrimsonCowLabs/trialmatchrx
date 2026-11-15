@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 
 from app.pipeline import criteria_cache
 from app.pipeline.compile_criteria import (
+    CompileFailed,
     CompileModelUnavailable,
     ModelFactory,
     anthropic_compile_model,
@@ -62,5 +63,7 @@ async def compile_trial(
             raise HTTPException(404, f"trial {nct} not found") from exc
         except CompileModelUnavailable as exc:
             raise HTTPException(503, str(exc)) from exc
+        except CompileFailed as exc:
+            raise HTTPException(502, str(exc)) from exc
         run.result = {"criteria": [c.model_dump(mode="json") for c in criteria]}
     return criteria

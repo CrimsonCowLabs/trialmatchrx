@@ -1,11 +1,16 @@
 """compile_study: eligibility module -> cached, traced list[Criterion]. Fake model, no network."""
 
-from typing import Any
+from typing import Any, get_args
 
 import pytest
+from pydantic import BaseModel
+from sqlmodel import select
 
-from app.pipeline.compile_criteria import compile_study
+from app.db import CompiledCriteriaRow, session_scope
+from app.pipeline import criteria_cache
+from app.pipeline.compile_criteria import CompileFailed, DraftCriterion, compile_study
 from app.pipeline.fixture_model import FixtureChatModel
+from app.pipeline.predicate_fields import NUMERIC_OPS
 from app.schemas import Criterion, Predicate, TraceEvent
 from app.trace import store
 from app.trace.bus import EventBus
@@ -183,3 +188,35 @@ async def test_a_quote_not_found_in_the_text_is_flagged() -> None:
     assert crit.needs_judgment
     guard = named(rec, "quote:inc-1")
     assert (guard.kind, guard.status) == ("guardrail", "failed")
+
+
+async def test_malformed_llm_output_fails_the_step_with_compile_failed() -> None:
+    rec = recorder()
+    bad = {"criteria": [{"type": "maybe", "text": "T2D", "category": "lab", "predicate": None}]}
+
+    with pytest.raises(CompileFailed, match="malformed compile output"):
+        await compile_study(study(), rec, model_factory=lambda: FixtureChatModel(output=bad))
+
+    assert named(rec, "llm_split").status == "failed"
+    assert criteria_cache.latest("NCT00000001") == []
+
+
+async def test_cache_records_the_model_that_ran_or_none() -> None:
+    await compile_study(
+        study(), recorder(), model_factory=lambda: FixtureChatModel(output=DRAFT, model_name="m-1")
+    )
+    other = {**study(""), "protocolSection": {**study("")["protocolSection"]}}
+    other["protocolSection"]["identificationModule"] = {"nctId": "NCT00000002"}
+    await compile_study(other, recorder(), model_factory=lambda: FixtureChatModel(output=DRAFT))
+
+    with session_scope() as s:
+        models = {r.nct_id: r.model for r in s.exec(select(CompiledCriteriaRow))}
+    assert models == {"NCT00000001": "m-1", "NCT00000002": None}
+
+
+def test_llm_category_and_ops_match_the_frozen_schema() -> None:
+    def literal_values(model: type[BaseModel], name: str) -> set[object]:
+        return set(get_args(model.model_fields[name].annotation))
+
+    assert literal_values(DraftCriterion, "category") == literal_values(Criterion, "category")
+    assert set(NUMERIC_OPS) <= literal_values(Predicate, "op")

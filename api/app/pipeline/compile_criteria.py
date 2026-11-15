@@ -14,9 +14,10 @@ from collections.abc import Callable
 from typing import Any, Literal
 
 from langchain_anthropic import ChatAnthropic
+from langchain_core.exceptions import OutputParserException
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import BaseModel, Field, SecretStr, ValidationError
 
 from app.config import get_settings
 from app.pipeline import criteria_cache
@@ -149,13 +150,21 @@ def _normalize(text: str) -> str:
     return " ".join(text.lower().split())
 
 
+def predicate_count(criteria: list[Criterion]) -> int:
+    return sum(c.predicate is not None for c in criteria)
+
+
 def compile_rate(criteria: list[Criterion]) -> float | None:
     """Share of criteria with a predicate (SPEC.md target: ~60%)."""
-    return sum(c.predicate is not None for c in criteria) / len(criteria) if criteria else None
+    return predicate_count(criteria) / len(criteria) if criteria else None
 
 
 class CompileModelUnavailable(RuntimeError):
     """No compile model can be built (no API key) and the cache missed."""
+
+
+class CompileFailed(RuntimeError):
+    """The compile model's answer could not be parsed into CompiledCriteria."""
 
 
 def anthropic_compile_model() -> BaseChatModel:
@@ -226,7 +235,8 @@ def _finalize(
 
 async def _llm_split(
     nct_id: str, text: str, rec: TraceRecorder, model_factory: ModelFactory
-) -> list[Criterion]:
+) -> tuple[list[Criterion], str | None]:
+    """The LLM part: returns the numbered, validated criteria and the model id that ran."""
     prompt = load_prompt(PROMPT_NAME)
     messages = [
         SystemMessage(prompt.render_system(vocabulary=describe_vocabulary())),
@@ -236,16 +246,21 @@ async def _llm_split(
         "llm_split", "step", {"prompt": prompt.name, "prompt_version": prompt.version}
     ) as s:
         model = model_factory()
+        model_id = getattr(model, "model", None) or getattr(model, "model_name", None)
         runnable = model.with_structured_output(CompiledCriteria)
-        result = await runnable.ainvoke(
-            messages,
-            config={
-                "callbacks": [rec.langchain_handler()],
-                "metadata": {"parent_id": s.id, "prompt_version": prompt.version},
-            },
-        )
+        try:
+            result = await runnable.ainvoke(
+                messages,
+                config={
+                    "callbacks": [rec.langchain_handler()],
+                    "metadata": {"parent_id": s.id, "prompt_version": prompt.version},
+                },
+            )
+        except (OutputParserException, ValidationError) as exc:
+            raise CompileFailed(f"{nct_id}: malformed compile output: {exc}") from exc
         if not isinstance(result, CompiledCriteria):
-            raise TypeError(f"compile model returned {type(result).__name__}")
+            # e.g. no tool call at all (max_tokens hit, or the model answered in prose)
+            raise CompileFailed(f"{nct_id}: compile model returned {type(result).__name__}")
         criteria = _finalize(result.criteria, text, rec)
         s.output = {
             "criteria": len(criteria),
@@ -254,7 +269,7 @@ async def _llm_split(
                 for d, c in zip(result.criteria, criteria, strict=True)
             ),
         }
-        return criteria
+        return criteria, (str(model_id) if model_id else None)
 
 
 async def compile_study(
@@ -301,14 +316,16 @@ async def compile_study(
                 s.output = {"criteria": [c.model_dump(mode="json") for c in structured]}
 
             text = clean_eligibility_text(eligibility.get("eligibilityCriteria") or "")
-            llm_criteria = await _llm_split(nct_id, text, rec, model_factory) if text else []
+            llm_criteria, model_id = (
+                await _llm_split(nct_id, text, rec, model_factory) if text else ([], None)
+            )
             criteria = structured + llm_criteria
-            criteria_cache.put(nct_id, key, prompt.version, get_settings().model_compile, criteria)
+            criteria_cache.put(nct_id, key, prompt.version, model_id, criteria)
 
         rate = compile_rate(criteria)
         top.output = {
             "criteria": len(criteria),
-            "with_predicate": sum(c.predicate is not None for c in criteria),
+            "with_predicate": predicate_count(criteria),
             "compile_rate": rate,
         }
         if rate is not None:

@@ -16,7 +16,13 @@ from pathlib import Path
 
 from app import db
 from app.config import get_settings
-from app.pipeline.compile_criteria import ModelFactory, anthropic_compile_model, compile_study
+from app.pipeline.compile_criteria import (
+    ModelFactory,
+    anthropic_compile_model,
+    compile_rate,
+    compile_study,
+    predicate_count,
+)
 from app.pipeline.fixture_model import FixtureChatModel, load_llm_fixture
 from app.pipeline.study_source import fixture_nct_ids, load_study
 from app.trace.runner import traced_run
@@ -43,9 +49,9 @@ async def run(ncts: list[str], *, use_fixtures: bool, force: bool) -> None:
                 force=force,
             )
             trace.result = {"criteria": [c.model_dump(mode="json") for c in criteria]}
-        n, k = len(criteria), sum(c.predicate is not None for c in criteria)
+        n, k, rate_or_none = len(criteria), predicate_count(criteria), compile_rate(criteria)
         total, with_predicate = total + n, with_predicate + k
-        rate = f"{k / n:.0%}" if n else "-"
+        rate = f"{rate_or_none:.0%}" if rate_or_none is not None else "-"
         print(f"{nct:<12} {n:>8} {k:>9} {rate:>6}  {trace.run_id}")
     overall = with_predicate / total if total else 0.0
     print(f"{'overall':<12} {total:>8} {with_predicate:>9} {overall:>6.0%}")

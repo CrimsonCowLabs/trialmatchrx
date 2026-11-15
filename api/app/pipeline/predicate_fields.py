@@ -128,14 +128,19 @@ def validate_predicate(raw: Mapping[str, Any]) -> Predicate:
 
 def describe_vocabulary() -> str:
     """The field list as it appears in the compile prompt."""
+
+    def names(kind: FieldKind) -> str:
+        return ", ".join(f"`{f}`" for f, k in FIELD_KINDS.items() if k == kind and f not in _KEYED)
+
+    numeric_ops = ", ".join(NUMERIC_OPS)
     lines = [
-        "- `age` (years): >=, <=, >, <, == with a number",
-        '- `sex`: == with "female" or "male"',
-        '- `pregnant`, `smoker`: == with "true" or "false"',
-        "- `conditions`, `meds`: `has` / `not_has` with one lowercase name, or `in` with a list"
+        f"- {names('numeric')} (years): {numeric_ops} with a number",
+        f'- {names("sex")}: == with "female" or "male"',
+        f'- {names("bool")}: == with "true" or "false"',
+        f"- {names('list')}: `has` / `not_has` with one lowercase name, or `in` with a list"
         " of names (any of them)",
     ]
     for head, units in _KEYED.items():
         keys = ", ".join(f"`{head}.{k}` ({u})" for k, u in units.items())
-        lines.append(f"- {keys}: >=, <=, >, <, == with a number in that unit")
+        lines.append(f"- {keys}: {numeric_ops} with a number in that unit")
     return "\n".join(lines)
