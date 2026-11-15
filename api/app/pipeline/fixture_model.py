@@ -55,6 +55,11 @@ class FixtureChatModel(BaseChatModel):
     def _llm_type(self) -> str:
         return "fixture"
 
+    @property
+    def _identifying_params(self) -> dict[str, Any]:
+        # What an LLM cache keys on besides the prompt, as ChatAnthropic's model id does.
+        return {"model_name": self.model_name, "tool_name": self.tool_name}
+
     def bind_tools(self, tools: Any, **kwargs: Any) -> Runnable[LanguageModelInput, AIMessage]:
         return self
 

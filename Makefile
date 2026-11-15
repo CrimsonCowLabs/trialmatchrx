@@ -60,8 +60,10 @@ cohort:
 		--generate.only_alive_patients=true California Sacramento)
 	cd api && uv run python -m scripts.load_cohort --as-of $(SYNTHEA_DATE)
 
-# BM25 on the fixed TREC sample -> eval_runs. Builds data/fixtures/trec/sample.json on first run
-# (network); `make eval ARGS=--rebuild` redraws and refetches it.
+# Matcher + BM25 on the fixed TREC sample -> eval_runs. Builds data/fixtures/trec/sample.json on
+# first run (network); `make eval ARGS=--rebuild` redraws and refetches it. The matcher needs
+# ANTHROPIC_API_KEY (skipped without it) and replays cached LLM answers on a re-run;
+# `ARGS=--bm25-only` skips it.
 eval:
 	cd api && uv run python -m scripts.run_eval $(ARGS)
 

@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from app.eval.runs import BM25, latest_eval, record_eval_run, score_bm25
+from app.eval.runs import BM25, MATCHER, latest_eval, record_eval_run, score_bm25
 from app.schemas import EvalLatest
 from app.sources.trec import Judgment, Topic, TrecSample
 from tests.sse import client
@@ -47,9 +47,12 @@ def _sample() -> TrecSample:
 def test_bm25_scores_are_the_mean_over_topics() -> None:
     # Topic 1 ranks A (2), C (1), B (0): nDCG 1.0, P@10 0.1.
     # Topic 2 ranks E (0, "gout flare") above D (2, "acne"): nDCG 1/log2(3) = 0.63093, P@10 0.1.
+    # Keyword search can't exclude anyone, so it calls every judged trial eligible: right on
+    # A and D (label 2), wrong on C (label 1) -> accuracy 2/3.
     assert score_bm25(_sample()) == {
         "ndcg@10": pytest.approx((1.0 + 0.6309297535714575) / 2),
         "p@10": pytest.approx(0.1),
+        "accuracy": pytest.approx(2 / 3),
     }
 
 
@@ -77,3 +80,19 @@ def test_latest_with_no_runs_is_empty() -> None:
     latest = latest_eval()
 
     assert (latest.metrics, latest.baseline, latest.sample_size, latest.history) == ({}, {}, 0, [])
+    assert latest.compile_rate is None
+
+
+def test_latest_shows_the_newest_matcher_run_and_its_compile_rate() -> None:
+    sample = _sample()
+    baseline = {"ndcg@10": 0.4, "p@10": 0.3, "accuracy": 0.5}
+    record_eval_run(BM25, baseline, sample=sample, git_sha="a")
+    matcher = {"ndcg@10": 0.6, "p@10": 0.4, "accuracy": 0.7, "compile_rate": 0.55}
+    record_eval_run(MATCHER, matcher, sample=sample, git_sha="b")
+
+    latest = latest_eval()
+
+    assert latest.metrics == matcher
+    assert latest.baseline == baseline
+    assert latest.compile_rate == 0.55
+    assert [h.system for h in latest.history] == ["matcher", "bm25"]
