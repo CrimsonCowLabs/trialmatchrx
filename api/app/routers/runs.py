@@ -57,6 +57,7 @@ async def get_run(run_id: str) -> RunSummary:
         patient=PatientFacts.model_validate(patient) if patient else None,
         matches=result.get("matches", []),
         totals=compute_totals(run, store.latest_events(run_id)),
+        closer=result.get("closer"),
     )
 
 

@@ -34,14 +34,22 @@ def haversine_mi(a: tuple[float, float], b: tuple[float, float]) -> float:
     return 2 * EARTH_RADIUS_MI * math.asin(math.sqrt(h))
 
 
-def nearest_site_mi(study: dict[str, Any], origin: tuple[float, float]) -> float | None:
+def sites_by_distance(
+    study: dict[str, Any], origin: tuple[float, float]
+) -> list[tuple[float, dict[str, Any]]]:
+    """(miles from `origin`, raw location) for every site with coordinates, nearest first."""
     locations = study["protocolSection"].get("contactsLocationsModule", {}).get("locations", [])
-    distances = [
-        haversine_mi(origin, (geo["lat"], geo["lon"]))
+    sites = [
+        (haversine_mi(origin, (geo["lat"], geo["lon"])), loc)
         for loc in locations
         if (geo := loc.get("geoPoint")) and "lat" in geo and "lon" in geo
     ]
-    return round(min(distances), 1) if distances else None
+    return sorted(sites, key=lambda site: site[0])
+
+
+def nearest_site_mi(study: dict[str, Any], origin: tuple[float, float]) -> float | None:
+    sites = sites_by_distance(study, origin)
+    return round(sites[0][0], 1) if sites else None
 
 
 def _candidate(study: dict[str, Any], origin: tuple[float, float]) -> CandidateTrial:

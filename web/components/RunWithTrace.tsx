@@ -2,13 +2,14 @@
 
 // A run page body: results on the left, the trace drawer on the right, linked both ways.
 // "Why?" on a verdict focuses its trace event; selecting a trace event highlights the verdict
-// it produced. Used by the live match page and the replay page.
+// it produced. Used by the live match and closer pages and the replay page.
 import Link from "next/link";
 import { useMemo, type ReactNode } from "react";
 
+import { CloserResult } from "@/components/CloserResult";
 import { MatchResults } from "@/components/MatchResults";
 import { TracePanel, type TracePanelProps } from "@/components/TracePanel";
-import type { Schemas, TraceEvent } from "@/lib/api";
+import type { CloserOutput, Schemas, TraceEvent } from "@/lib/api";
 import { verdictEventFor } from "@/lib/trace";
 import { useTraceSelection } from "@/lib/use-trace-selection";
 
@@ -18,6 +19,8 @@ export function RunWithTrace({
   live,
   status,
   matches,
+  closer = null,
+  onNextSteps,
   runStatus,
   link,
   children,
@@ -28,6 +31,10 @@ export function RunWithTrace({
   status: TracePanelProps["status"];
   /** null until the run's results are loaded. */
   matches: Schemas["TrialMatch"][] | null;
+  /** A closer run's answer (null until loaded, or for a match run). */
+  closer?: CloserOutput | null;
+  /** "Next steps" on a trial: start the closer agent for it (live match page only). */
+  onNextSteps?: (nctId: string) => void;
   /** The run's own status ("running", "done", "failed"). */
   runStatus: string;
   /** The other view of this run (live <-> replay). */
@@ -60,11 +67,13 @@ export function RunWithTrace({
         {runStatus === "failed" && (
           <p className="text-sm text-destructive">Run failed; the error event is in the trace.</p>
         )}
+        {closer && <CloserResult output={closer} />}
         {matches && (
           <MatchResults
             matches={matches}
             highlightedEventId={highlighted}
             onWhy={selection.focus}
+            onNextSteps={onNextSteps}
           />
         )}
       </div>

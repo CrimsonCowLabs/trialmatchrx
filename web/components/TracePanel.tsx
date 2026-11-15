@@ -22,6 +22,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { api, errorMessage, type TraceEvent } from "@/lib/api";
+import type { StreamState } from "@/lib/sse";
 import { computeTotals, latencyMs, traceRows, type TraceRow } from "@/lib/trace";
 import type { TraceSelection } from "@/lib/use-trace-selection";
 
@@ -36,6 +37,14 @@ const KIND_ICON: Record<TraceEvent["kind"], LucideIcon> = {
 };
 
 export type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
+
+/** The status badge of a live run page, by SSE stream state. */
+export const STREAM_VARIANT: Record<StreamState, BadgeVariant> = {
+  connecting: "outline",
+  open: "outline",
+  done: "secondary",
+  error: "destructive",
+};
 
 const STATUS_VARIANT: Record<TraceEvent["status"], BadgeVariant> = {
   started: "outline",

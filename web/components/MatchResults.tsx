@@ -2,11 +2,13 @@
 
 // Ranked trials grouped by tier; each trial lists its criterion verdicts.
 // The API already returns matches in rank order, so grouping keeps that order within a tier.
+import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 import { CriterionRow } from "@/components/CriterionRow";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Schemas } from "@/lib/api";
 
@@ -23,9 +25,17 @@ interface Linking {
   /** `trace_event_id` of the verdict to highlight (the selected trace event produced it). */
   highlightedEventId?: string | null;
   onWhy?: (traceEventId: string) => void;
+  /** "Next steps": run the closer agent on a trial. No button when absent, or on an
+   *  ineligible trial (a disqualifying criterion has no follow-up that helps). */
+  onNextSteps?: (nctId: string) => void;
 }
 
-function TrialCard({ match, highlightedEventId, onWhy }: { match: TrialMatch } & Linking) {
+function TrialCard({
+  match,
+  highlightedEventId,
+  onWhy,
+  onNextSteps,
+}: { match: TrialMatch } & Linking) {
   const [open, setOpen] = useState(match.tier !== "ineligible");
   // When this card starts holding the highlighted verdict, open it (once; the user can still
   // collapse it). State adjusted during render, React's pattern for reacting to a prop change.
@@ -66,7 +76,17 @@ function TrialCard({ match, highlightedEventId, onWhy }: { match: TrialMatch } &
               onWhy={onWhy}
             />
           ))}
-          <li className="py-2 text-xs">
+          <li className="flex flex-wrap items-center gap-3 py-2 text-xs">
+            {onNextSteps && match.tier !== "ineligible" && (
+              <Button
+                size="sm"
+                onClick={() => onNextSteps(match.nct_id)}
+                data-testid="next-steps"
+                title="Agent: follow-ups for the unknowns, a coordinator email, a Spanish summary"
+              >
+                <Sparkles /> Next steps
+              </Button>
+            )}
             <Link href={`/feasibility/${encodeURIComponent(match.nct_id)}`} className="underline">
               Feasibility over the 1,000-patient cohort
             </Link>
@@ -81,6 +101,7 @@ export function MatchResults({
   matches,
   highlightedEventId,
   onWhy,
+  onNextSteps,
 }: { matches: TrialMatch[] } & Linking) {
   if (matches.length === 0) {
     return (
@@ -114,6 +135,7 @@ export function MatchResults({
                       match={m}
                       highlightedEventId={highlightedEventId}
                       onWhy={onWhy}
+                      onNextSteps={onNextSteps}
                     />
                   ))}
                 </ul>

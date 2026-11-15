@@ -1,11 +1,17 @@
 """POST /api/match and POST /api/closer: start a background run, return its id."""
 
-import asyncio
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.config import get_settings
+from app.pipeline.closer_agent import (
+    CloserModelUnavailable,
+    CloserToolError,
+    MatchRunNotFinished,
+    anthropic_closer_model,
+    find_trial_match,
+    run_closer,
+)
 from app.pipeline.compile_criteria import ModelFactory
 from app.pipeline.judge import anthropic_judge_model
 from app.pipeline.match_run import run_match
@@ -13,7 +19,6 @@ from app.pipeline.parse_patient import anthropic_parse_model
 from app.routers.trials import compile_model_factory
 from app.schemas import CloserRequest, MatchRequest, RunStarted
 from app.sources import synthea
-from app.trace import store
 from app.trace.recorder import TraceRecorder
 from app.trace.runner import start_traced_run
 
@@ -61,35 +66,32 @@ async def start_match(
     return RunStarted(run_id=start_traced_run("match", req.model_dump(mode="json"), work))
 
 
-# HACK(demo): stub — fake agent steps and canned output until the LangGraph agent (M6).
-async def stub_closer(rec: TraceRecorder, req: CloserRequest) -> dict[str, Any]:
-    delay = get_settings().stub_event_delay_s
-    async with rec.step("closer_agent", "run", {"run_id": req.run_id, "nct_id": req.nct_id}) as s:
-        await asyncio.sleep(delay)
-        rec.event(
-            "get_unknown_criteria",
-            "tool",
-            input={"run_id": req.run_id, "nct": req.nct_id},
-            output={"criteria": ["exc-1"]},
-            note="1 unknown criterion (stub)",
-        )
-        await asyncio.sleep(delay)
-        s.output = {
-            "followups": [{"criterion_id": "exc-1", "ask": "Any DKA in the last 6 months?"}],
-            "coordinator_email": "Stub email.",
-            "patient_summary": {"en": "Stub summary.", "es": "Resumen de prueba."},
-        }
-    return {"closer": s.output}
+def closer_model_factory() -> ModelFactory:
+    """Dependency: how a closer run builds its agent model (tests override it)."""
+    return anthropic_closer_model
 
 
 @router.post("/closer", response_model=RunStarted)
-async def start_closer(req: CloserRequest) -> RunStarted:
-    if store.get_run(req.run_id) is None:
-        raise HTTPException(status_code=404, detail=f"run {req.run_id} not found")
+async def start_closer(
+    req: CloserRequest,
+    model_factory: Annotated[ModelFactory, Depends(closer_model_factory)],
+) -> RunStarted:
+    """Start the closer agent on one trial of a finished match run; stream it like a match.
+    404 if the run or the trial isn't there, 409 while the match is still running, 503 with
+    no API key."""
+    try:
+        find_trial_match(req.run_id, req.nct_id)
+    except MatchRunNotFinished as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except CloserToolError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    try:
+        model = model_factory()
+    except CloserModelUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     async def work(rec: TraceRecorder) -> dict[str, Any]:
-        return await stub_closer(rec, req)  # HACK(demo): stub
+        return await run_closer(rec, req, model=model)
 
-    # HACK(demo): stub — DEMO_MODE=replay is not implemented yet (M7); always runs the stub.
-
+    # HACK(demo): DEMO_MODE=replay is not implemented yet (M7); always runs the agent.
     return RunStarted(run_id=start_traced_run("closer", req.model_dump(mode="json"), work))

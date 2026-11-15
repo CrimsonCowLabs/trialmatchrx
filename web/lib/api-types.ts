@@ -35,7 +35,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Start Closer */
+        /**
+         * Start Closer
+         * @description Start the closer agent on one trial of a finished match run; stream it like a match.
+         *     404 if the run or the trial isn't there, 409 while the match is still running, 503 with
+         *     no API key.
+         */
         post: operations["start_closer"];
         delete?: never;
         options?: never;
@@ -207,6 +212,22 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * CloserOutput
+         * @description Next steps for one patient and one trial: follow-ups for every unknown criterion, an
+         *     email to the study coordinator, and a plain-language summary for the patient.
+         */
+        CloserOutput: {
+            /** Nct Id */
+            nct_id: string;
+            /**
+             * Followups
+             * @description One per unknown criterion, in trial order
+             */
+            followups: components["schemas"]["Followup"][];
+            coordinator_email: components["schemas"]["CoordinatorEmail"];
+            patient_summary: components["schemas"]["PatientSummary"];
+        };
         /** CloserRequest */
         CloserRequest: {
             /** Run Id */
@@ -221,6 +242,21 @@ export interface components {
              * @default false
              */
             force: boolean;
+        };
+        /** CoordinatorEmail */
+        CoordinatorEmail: {
+            /**
+             * To
+             * @description The trial contact's email address from get_trial_contacts; null if none
+             */
+            to: string | null;
+            /** Subject */
+            subject: string;
+            /**
+             * Body
+             * @description Plain text, under 200 words, no patient name or identifiers
+             */
+            body: string;
         };
         /** Criterion */
         Criterion: {
@@ -321,6 +357,33 @@ export interface components {
             /** Review Criteria */
             review_criteria: components["schemas"]["ReviewCriterion"][];
         };
+        /**
+         * Followup
+         * @description One follow-up: what resolves one `unknown` criterion.
+         */
+        Followup: {
+            /**
+             * Criterion Id
+             * @description Id of the unknown criterion this resolves, e.g. inc-7
+             */
+            criterion_id: string;
+            /**
+             * Kind
+             * @description test = a lab or exam to order; question = something to ask the patient or their clinician
+             * @enum {string}
+             */
+            kind: "test" | "question";
+            /**
+             * Action
+             * @description The test to order or the question to ask, in one sentence
+             */
+            action: string;
+            /**
+             * Why
+             * @description How the answer decides the criterion
+             */
+            why: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -387,6 +450,19 @@ export interface components {
             /** Lon */
             lon: number | null;
         };
+        /** PatientSummary */
+        PatientSummary: {
+            /**
+             * En
+             * @description English, 6th-grade reading level, under 120 words
+             */
+            en: string;
+            /**
+             * Es
+             * @description The same summary in Spanish, 6th-grade reading level
+             */
+            es: string;
+        };
         /** Predicate */
         Predicate: {
             /** Field */
@@ -439,6 +515,7 @@ export interface components {
             /** Matches */
             matches: components["schemas"]["TrialMatch"][];
             totals: components["schemas"]["RunTotals"];
+            closer?: components["schemas"]["CloserOutput"] | null;
         };
         /**
          * RunTotals

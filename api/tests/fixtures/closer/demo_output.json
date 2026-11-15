@@ -1,0 +1,56 @@
+{
+  "nct_id": "NCT07271186",
+  "followups": [
+    {
+      "criterion_id": "inc-2",
+      "kind": "question",
+      "action": "Confirm the patient is on medical therapy or lifestyle changes for glucose control (the note lists metformin 1000 mg twice daily).",
+      "why": "The criterion asks for ongoing glucose-management therapy; the record names a drug but not the regimen's status."
+    },
+    {
+      "criterion_id": "inc-7",
+      "kind": "test",
+      "action": "Order a spot urine albumin-to-creatinine ratio (UACR) at screening.",
+      "why": "The trial needs UACR 500 to 5000 mg/g; no UACR is in the patient facts."
+    },
+    {
+      "criterion_id": "inc-8",
+      "kind": "test",
+      "action": "Use the same screening UACR result (repeat if the first is borderline).",
+      "why": "Second UACR criterion with the same 500 to 5000 mg/g range."
+    },
+    {
+      "criterion_id": "exc-1",
+      "kind": "question",
+      "action": "Ask the nephrologist whether any non-diabetic kidney disease has been diagnosed or suspected (e.g., biopsy, glomerulonephritis).",
+      "why": "Excludes non-diabetic renal disease; the note does not say."
+    },
+    {
+      "criterion_id": "exc-2",
+      "kind": "question",
+      "action": "Ask whether the patient has ever had immunosuppressive treatment (steroids, rituximab, etc.) for a kidney condition.",
+      "why": "Excludes renal disease treated with systemic immunosuppression; not documented."
+    },
+    {
+      "criterion_id": "exc-3",
+      "kind": "question",
+      "action": "Confirm the patient has never been on chronic dialysis and has no kidney transplant.",
+      "why": "Excludes end-stage kidney disease on dialysis or transplant; eGFR 48 makes it unlikely but it is not stated."
+    },
+    {
+      "criterion_id": "exc-4",
+      "kind": "question",
+      "action": "Ask about any hospital stay over 24 hours in recent months; the investigator also judges medical stability.",
+      "why": "Excludes medically unstable patients or recent hospitalization; not in the record."
+    }
+  ],
+  "coordinator_email": {
+    "to": "clinicaltrials@regeneron.com",
+    "subject": "Possible participant for NCT07271186 (ALN-ANG3 in diabetic kidney disease)",
+    "body": "Hello,\n\nI am referring a 61-year-old man with type 2 diabetes and stage 3a CKD who may fit NCT07271186. He meets the age, diagnosis, HbA1c (8.4%) and eGFR (48) criteria. Still open: UACR (we will order one), and confirmation that he has no non-diabetic kidney disease, no prior immunosuppression for kidney disease, no dialysis or transplant, and no recent hospitalization.\n\nCould you tell me the nearest active site and the next steps for pre-screening?\n\nThank you."
+  },
+  "patient_summary": {
+    "en": "There is a research study for people with type 2 diabetes and kidney disease. You may be a good fit. First, we need a simple urine test and a few answers about your kidney health. A study nurse may call you. Taking part is your choice.",
+    "es": "Hay un estudio de investigación para personas con diabetes tipo 2 y enfermedad de los riñones. Usted podría calificar. Primero necesitamos una prueba sencilla de orina y algunas respuestas sobre la salud de sus riñones. Una enfermera del estudio podría llamarle. Participar es su decisión."
+  }
+}
