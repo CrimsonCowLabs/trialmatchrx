@@ -5,6 +5,7 @@
 Tests never hit the network: `set_transport()` swaps the transport every client is built with.
 """
 
+import asyncio
 from dataclasses import dataclass
 from typing import Any
 
@@ -21,6 +22,8 @@ SACRAMENTO = (38.5816, -121.4944)
 # The four modules SPEC.md names, plus `Phase` (designModule.phases) because TrialDetail and
 # TrialMatch both carry `phase`. Everything else in designModule is left out.
 FIELDS = "IdentificationModule,StatusModule,EligibilityModule,ContactsLocationsModule,Phase"
+RETRIES = 5
+RETRY_BACKOFF_S = 2.0  # doubles per attempt unless the API sends Retry-After
 
 _transport: httpx.AsyncBaseTransport | None = None
 
@@ -33,6 +36,18 @@ def set_transport(transport: httpx.AsyncBaseTransport | None) -> None:
 
 def make_client() -> httpx.AsyncClient:
     return httpx.AsyncClient(base_url=BASE_URL, transport=_transport, timeout=30.0)
+
+
+async def _get(client: httpx.AsyncClient, path: str, params: dict[str, Any]) -> httpx.Response:
+    """GET with a retry on 429 (the API rate-limits bursts, e.g. during `make seed`)."""
+    for attempt in range(RETRIES):
+        resp = await client.get(path, params=params)
+        if resp.status_code != 429 or attempt == RETRIES - 1:
+            return resp
+        retry_after = resp.headers.get("Retry-After", "")
+        delay = float(retry_after) if retry_after.isdigit() else RETRY_BACKOFF_S * 2**attempt
+        await asyncio.sleep(delay)
+    raise AssertionError("unreachable")
 
 
 def search_params(
@@ -56,7 +71,7 @@ async def search_studies(
     params = search_params(cond, radius_mi=radius_mi)
     studies: list[dict[str, Any]] = []
     while True:
-        page = (await client.get("/studies", params=params)).raise_for_status().json()
+        page = (await _get(client, "/studies", params)).raise_for_status().json()
         studies.extend(page.get("studies", []))
         token = page.get("nextPageToken")
         if not token:
@@ -66,7 +81,7 @@ async def search_studies(
 
 async def fetch_study(nct: str, *, client: httpx.AsyncClient) -> dict[str, Any] | None:
     """One study by NCT ID from the API, or None if ClinicalTrials.gov doesn't know it."""
-    resp = await client.get(f"/studies/{nct}", params={"fields": FIELDS})
+    resp = await _get(client, f"/studies/{nct}", {"fields": FIELDS})
     if resp.status_code == 404:
         return None
     study: dict[str, Any] = resp.raise_for_status().json()

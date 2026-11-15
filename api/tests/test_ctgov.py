@@ -133,3 +133,31 @@ async def test_seed_caches_every_condition_and_dedupes() -> None:
         "distance(38.5816,-121.4944,100mi)"
     }
     assert all(ctgov.cached_study(n) is not None for n in unique)
+
+
+async def test_rate_limited_requests_are_retried(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(ctgov, "RETRY_BACKOFF_S", 0.0)
+    fake = FakeCtgov()
+    calls = 0
+
+    def flaky(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(429) if calls <= 2 else fake(request)
+
+    ctgov.set_transport(httpx.MockTransport(flaky))
+    study = await ctgov.get_study(nct_ids([load("study.json")])[0])
+
+    assert study == load("study.json")
+    assert calls == 3
+
+
+@pytest.mark.live
+async def test_live_search_returns_recruiting_studies_with_cache_keys() -> None:
+    async with ctgov.make_client() as client:
+        studies = await ctgov.search_studies("type 2 diabetes", client=client)
+
+    assert studies
+    for study in studies:
+        ctgov.study_key(study)  # every study carries nctId + lastUpdatePostDate
+        assert study["protocolSection"]["statusModule"]["overallStatus"] == "RECRUITING"
