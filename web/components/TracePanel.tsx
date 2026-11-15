@@ -7,10 +7,14 @@
 // parsed output, and the prompt, raw output and errors behind disclosures. Selection state
 // lives in the page (`useTraceSelection`) so "Why?" on a verdict can drive it.
 //
+// Below `lg` (the mobile Trace tab) the tree drops the tokens and cost columns under `sm`, and
+// a selected event's details open in a bottom sheet instead of inline, with "View verdict"
+// back to the criterion it produced.
+//
 // The panel fills its container's height (capped at the viewport) and scrolls the tree inside,
 // so a tall sticky column keeps it in view.
-import { ChevronDown, ChevronRight, Download } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ChevronDown, ChevronRight, Download, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +30,7 @@ import {
   statusStyle,
   totalsStrip,
   traceRows,
+  verdictEventFor,
   type PromptMessage,
   type RunTotals,
   type TraceRow,
@@ -138,15 +143,13 @@ function Messages({ messages }: { messages: PromptMessage[] }) {
   );
 }
 
-function Details({ event, indent }: { event: TraceEvent; indent: string }) {
+/** A selected event's details: meta line, errors, headline output, then the prompt, input and
+ *  raw output behind disclosures. Inline under its row from `lg`; in the bottom sheet below. */
+function DetailsBody({ event, meta }: { event: TraceEvent; meta?: string[] }) {
   const d = eventDetail(event);
   return (
-    <div
-      data-testid="trace-details"
-      className="flex flex-col gap-2 pr-3.5 pb-3"
-      style={{ paddingLeft: indent }}
-    >
-      <p className="text-xs text-ink-4">{d.meta.join(" · ")}</p>
+    <>
+      <p className="text-xs text-ink-4">{(meta ?? d.meta).join(" · ")}</p>
       {d.errors.length > 0 && (
         <Section title="Errors">
           <div className="rounded-lg ring-1 ring-verdict-fail/40 text-verdict-fail">
@@ -174,6 +177,74 @@ function Details({ event, indent }: { event: TraceEvent; indent: string }) {
           <Json value={d.raw} />
         </Disclosure>
       )}
+    </>
+  );
+}
+
+function Details({ event, indent }: { event: TraceEvent; indent: string }) {
+  return (
+    // Below `lg` the bottom sheet shows these instead.
+    <div
+      data-testid="trace-details"
+      className="hidden flex-col gap-2 pr-3.5 pb-3 lg:flex"
+      style={{ paddingLeft: indent }}
+    >
+      <DetailsBody event={event} />
+    </div>
+  );
+}
+
+/** Below `lg`, a tapped event's details slide up from the bottom (design 03 "Trace mobile"),
+ *  with "View verdict" when the event belongs to a verdict. */
+function DetailSheet({
+  event,
+  verdictEventId,
+  onViewVerdict,
+  onClose,
+}: {
+  event: TraceEvent;
+  verdictEventId: string | null;
+  onViewVerdict?: (verdictEventId: string) => void;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const meta = [...eventDetail(event).meta, formatLatency(latencyMs(event))];
+  return (
+    <div
+      role="dialog"
+      aria-label={`Trace event ${event.name}`}
+      data-testid="trace-sheet"
+      className="fixed inset-x-0 bottom-0 z-50 flex max-h-[60dvh] flex-col gap-2 overflow-y-auto rounded-t-2xl border-t border-line bg-surface px-4 pt-2 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgb(20_23_26/0.08)] lg:hidden"
+    >
+      <span aria-hidden className="h-1 w-9 shrink-0 self-center rounded-full bg-line" />
+      <div className="flex items-baseline gap-3">
+        <h3 className="min-w-0 flex-1 truncate font-mono text-sm font-medium" title={event.name}>
+          {event.name}
+        </h3>
+        {verdictEventId && onViewVerdict && (
+          <button
+            type="button"
+            onClick={() => onViewVerdict(verdictEventId)}
+            className="shrink-0 text-[0.8125rem] font-medium link"
+            data-testid="view-verdict"
+          >
+            View verdict
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close details"
+          className="-mr-1 flex size-7 shrink-0 items-center justify-center self-center rounded text-ink-4 hover:text-ink"
+        >
+          <X className="size-4" />
+        </button>
+      </div>
+      <DetailsBody event={event} meta={meta} />
     </div>
   );
 }
@@ -249,10 +320,11 @@ function Row({
           <span className="w-14 shrink-0 text-right font-mono text-xs tabular-nums text-ink-4">
             {formatLatency(latencyMs(event))}
           </span>
-          <span className="w-12 shrink-0 text-right font-mono text-xs tabular-nums text-ink-4">
+          {/* Tokens and cost need the width; on a phone the sheet shows them. */}
+          <span className="hidden w-12 shrink-0 text-right font-mono text-xs tabular-nums text-ink-4 sm:inline">
             {formatTokens(spend.tokensIn + spend.tokensOut)}
           </span>
-          <span className="w-14 shrink-0 text-right font-mono text-xs tabular-nums text-ink-4">
+          <span className="hidden w-14 shrink-0 text-right font-mono text-xs tabular-nums text-ink-4 sm:inline">
             {spend.costUsd ? formatUsd(spend.costUsd) : ""}
           </span>
         </button>
@@ -314,6 +386,8 @@ export interface TracePanelProps {
   /** The run's `RunTotals` once its summary is loaded; until then the strip counts the
    *  events seen so far by the same rules (`totalsStrip`). */
   totals?: RunTotals | null;
+  /** "View verdict" in the mobile detail sheet: show the verdict this event belongs to. */
+  onViewVerdict?: (verdictEventId: string) => void;
 }
 
 export function TracePanel({
@@ -324,24 +398,38 @@ export function TracePanel({
   live,
   status,
   totals,
+  onViewVerdict,
 }: TracePanelProps) {
   const rows = useMemo(() => traceRows(events, selection.expanded), [events, selection.expanded]);
   const listRef = useRef<HTMLOListElement>(null);
-  const { scrollRequest } = selection;
+  const { scrollRequest, selectedId, closeDetails } = selection;
+  const sheetEvent =
+    selectedId && selection.details.has(selectedId)
+      ? (events.find((e) => e.id === selectedId) ?? null)
+      : null;
+  const closeSheet = useCallback(() => {
+    if (selectedId) closeDetails(selectedId);
+  }, [selectedId, closeDetails]);
 
   useEffect(() => {
     if (!scrollRequest) return;
-    // Scroll the trace list only (not the window), so the verdict stays where the user clicked.
     const list = listRef.current;
     const el = list?.querySelector<HTMLElement>(
       `[data-event-id="${CSS.escape(scrollRequest.id)}"]`,
     );
-    if (list && el) list.scrollTo({ top: el.offsetTop, behavior: "smooth" });
+    if (!list || !el) return;
+    // From `lg` the list scrolls inside the panel: scroll it only (not the window), so the
+    // verdict stays where the user clicked. Below `lg` (the Trace tab) the page scrolls.
+    if (list.scrollHeight > list.clientHeight) {
+      list.scrollTo({ top: el.offsetTop, behavior: "smooth" });
+    } else {
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
   }, [scrollRequest]);
 
   return (
     <section
-      className="flex h-full max-h-[calc(100vh-2rem)] min-h-0 flex-col overflow-hidden rounded-card border border-line bg-surface"
+      className="flex min-h-0 flex-col overflow-hidden rounded-card border border-line bg-surface lg:h-full lg:max-h-[calc(100vh-2rem)]"
       aria-label="Trace"
     >
       <header className="flex shrink-0 items-center gap-2.5 border-b border-line-soft px-4 py-3">
@@ -353,7 +441,11 @@ export function TracePanel({
       {rows.length === 0 ? (
         <p className="px-4 py-6 text-center text-sm text-ink-4">Waiting for events…</p>
       ) : (
-        <ol ref={listRef} className="relative min-h-0 flex-1 overflow-y-auto">
+        <ol
+          ref={listRef}
+          // While the sheet is up, room below the last row so it can scroll clear of the sheet.
+          className={`relative min-h-0 flex-1 overflow-y-auto ${sheetEvent ? "pb-[60dvh] lg:pb-0" : ""}`}
+        >
           {rows.map((row) => (
             <Row
               key={row.event.id}
@@ -363,6 +455,14 @@ export function TracePanel({
             />
           ))}
         </ol>
+      )}
+      {sheetEvent && (
+        <DetailSheet
+          event={sheetEvent}
+          verdictEventId={verdictEventFor(events, sheetEvent.id, verdictEventIds)}
+          onViewVerdict={onViewVerdict}
+          onClose={closeSheet}
+        />
       )}
     </section>
   );

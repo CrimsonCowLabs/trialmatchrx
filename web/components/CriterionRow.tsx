@@ -28,13 +28,20 @@ const METHOD: Record<Verdict["method"], { label: string; title: string }> = {
 export function CriterionRow({
   verdict,
   highlighted = false,
+  revealNonce,
   onWhy,
+  collapsedOnMobile = false,
 }: {
   verdict: Verdict;
   /** The selected trace event produced this verdict. */
   highlighted?: boolean;
+  /** Bumped by "View verdict" on the mobile trace sheet: scroll this (highlighted) row to the
+   *  middle of the screen, even when it was already highlighted. */
+  revealNonce?: number;
   /** "Why?": jump to the trace event that produced this verdict. */
   onWhy?: (traceEventId: string) => void;
+  /** Behind "Show all N criteria" on a phone (always shown from `lg`). */
+  collapsedOnMobile?: boolean;
 }) {
   const { icon: Icon, label, tone } = OUTCOME[verdict.outcome];
   const method = METHOD[verdict.method];
@@ -45,6 +52,10 @@ export function CriterionRow({
     // after "Why?"; `nearest` is a no-op when the row is already on screen.
     if (highlighted) ref.current?.scrollIntoView({ block: "nearest" });
   }, [highlighted]);
+  useEffect(() => {
+    // The Results tab was hidden until this commit, so the row is likely off screen.
+    if (highlighted && revealNonce) ref.current?.scrollIntoView({ block: "center" });
+  }, [highlighted, revealNonce]);
   return (
     <li
       ref={ref}
@@ -52,7 +63,7 @@ export function CriterionRow({
       data-outcome={verdict.outcome}
       data-trace-event-id={verdict.trace_event_id}
       data-highlighted={highlighted || undefined}
-      className={`grid grid-cols-[1.25rem_minmax(0,1fr)] gap-x-3 gap-y-1 border-b border-line-soft px-4 py-3 last:border-b-0 sm:grid-cols-[1.25rem_minmax(0,1fr)_auto] sm:px-5 ${highlighted ? "bg-teal-selected shadow-[inset_3px_0_0_var(--teal)]" : ""}`}
+      className={`${collapsedOnMobile ? "hidden lg:grid" : "grid"} grid-cols-[1.25rem_minmax(0,1fr)] gap-x-3 gap-y-1 border-b border-line-soft px-4 py-3 last:border-b-0 sm:grid-cols-[1.25rem_minmax(0,1fr)_auto] sm:px-5 ${highlighted ? "bg-teal-selected shadow-[inset_3px_0_0_var(--teal)]" : ""}`}
     >
       <span
         role="img"

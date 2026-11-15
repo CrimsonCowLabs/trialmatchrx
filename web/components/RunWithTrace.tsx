@@ -4,12 +4,21 @@
 // link; the patient and their facts), then results on the left and the trace on the right,
 // linked both ways. "Why?" on a verdict focuses its trace event; selecting a trace event
 // highlights the verdict it produced. The trace column stays in view while the results scroll.
+// Below `lg` the two columns become Results / "Trace · N" tabs: Why? switches to the trace and
+// opens its event in a bottom sheet, whose View verdict switches back to the criterion.
 // Used by the live match and closer pages and the replay page. A closer run's header is its
 // own: "Next steps for a 61 M patient", the trial's title, its NCT ID on the breadcrumb line.
 // With `collapsibleTrace` (the live closer page) a Show / Hide trace toggle folds the trace
-// column away once the agent's answer is there (`traceShown`).
+// column away once the agent's answer is there (`traceShown`); while folded there are no tabs.
 import Link from "next/link";
-import { useMemo, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useMemo,
+  useReducer,
+  useState,
+  type Dispatch,
+  type ReactNode,
+} from "react";
 
 import { CloserResult } from "@/components/CloserResult";
 import { MatchResults } from "@/components/MatchResults";
@@ -18,7 +27,16 @@ import { StatusPill, type RunStatus } from "@/components/StatusPill";
 import { TracePanel, type TracePanelProps } from "@/components/TracePanel";
 import type { CloserOutput, RunSummary, Schemas, TraceEvent } from "@/lib/api";
 import { closerTitle, traceShown } from "@/lib/closer";
-import { formatRunDuration, patientFactChips, patientTitle } from "@/lib/match-results";
+import {
+  formatRunDuration,
+  INITIAL_RUN_TABS,
+  patientFactChips,
+  patientTitle,
+  runTabsReducer,
+  traceTabLabel,
+  type RunTab,
+  type RunTabsAction,
+} from "@/lib/match-results";
 import { verdictEventFor } from "@/lib/trace";
 import { useTraceSelection } from "@/lib/use-trace-selection";
 
@@ -26,16 +44,63 @@ function FactsStrip({ patient }: { patient: RunSummary["patient"] }) {
   const chips = patientFactChips(patient);
   if (chips.length === 0) return null;
   return (
-    <ul aria-label="Patient facts" className="flex flex-wrap gap-2" data-testid="patient-facts">
+    <ul
+      aria-label="Patient facts"
+      className="flex flex-wrap gap-2"
+      data-testid="patient-facts"
+    >
       {chips.map(({ label, value }) => (
         <li
           key={label}
           className="rounded-md border bg-surface-sunken px-2.5 py-1 text-sm text-foreground"
         >
-          <span className="text-ink-4">{label}</span> <span className="font-medium">{value}</span>
+          <span className="text-ink-4">{label}</span>{" "}
+          <span className="font-medium">{value}</span>
         </li>
       ))}
     </ul>
+  );
+}
+
+/** Results / "Trace · N" below `lg` (design 03, mobile frames); hidden from `lg`. */
+function RunTabBar({
+  tab,
+  eventCount,
+  onShow,
+}: {
+  tab: RunTab;
+  eventCount: number;
+  onShow: Dispatch<RunTabsAction>;
+}) {
+  const tabs: { id: RunTab; label: string }[] = [
+    { id: "results", label: "Results" },
+    { id: "trace", label: traceTabLabel(eventCount) },
+  ];
+  return (
+    <div
+      role="tablist"
+      aria-label="Run view"
+      className="mb-4 flex rounded-[0.625rem] bg-surface-sunken p-0.5 text-[0.9375rem] font-medium lg:hidden"
+    >
+      {tabs.map(({ id, label }) => {
+        const selected = tab === id;
+        return (
+          <button
+            key={id}
+            id={`run-tab-${id}`}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            aria-controls={`run-${id}`}
+            data-testid={`run-tab-${id}`}
+            onClick={() => onShow({ type: "show", tab: id })}
+            className={`flex-1 rounded-lg py-2 text-center ${selected ? "bg-surface shadow-xs" : "text-ink-3"}`}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -83,14 +148,24 @@ export function RunWithTrace({
   children?: ReactNode;
 }) {
   const selection = useTraceSelection(events);
+  const [tabs, dispatchTabs] = useReducer(runTabsReducer, INITIAL_RUN_TABS);
   const verdictEventIds = useMemo(
-    () => new Set((matches ?? []).flatMap((m) => m.verdicts.map((v) => v.trace_event_id))),
+    () =>
+      new Set(
+        (matches ?? []).flatMap((m) => m.verdicts.map((v) => v.trace_event_id)),
+      ),
     [matches],
   );
-  const highlighted = verdictEventFor(events, selection.selectedId, verdictEventIds);
-  const wallTime = runStatus === "running" ? null : (summary?.totals.wall_time_s ?? null);
+  const highlighted = verdictEventFor(
+    events,
+    selection.selectedId,
+    verdictEventIds,
+  );
+  const wallTime =
+    runStatus === "running" ? null : (summary?.totals.wall_time_s ?? null);
   const [traceChoice, setTraceChoice] = useState<boolean | null>(null);
-  const showTrace = !collapsibleTrace || traceShown(traceChoice, closer !== null);
+  const showTrace =
+    !collapsibleTrace || traceShown(traceChoice, closer !== null);
   const header =
     summary?.kind === "closer"
       ? { title: closerTitle(summary), description: summary.trial_title }
@@ -98,6 +173,22 @@ export function RunWithTrace({
           title: patientTitle(summary) ?? title,
           description: summary && <FactsStrip patient={summary.patient} />,
         };
+  const { focus } = selection;
+  const onWhy = useCallback(
+    (eventId: string) => {
+      focus(eventId);
+      dispatchTabs({ type: "why" });
+    },
+    [focus],
+  );
+  const onViewVerdict = useCallback(
+    (eventId: string) => dispatchTabs({ type: "view-verdict", eventId }),
+    [],
+  );
+  // Below `lg` only the chosen tab's column shows; from `lg` both sit side by side. With the
+  // trace folded away there are no tabs and the results always show.
+  const shownBelowLg = (tab: RunTab) =>
+    !showTrace || tabs.tab === tab ? "" : "max-lg:hidden";
 
   return (
     <>
@@ -105,7 +196,9 @@ export function RunWithTrace({
         breadcrumb={breadcrumb}
         trail={
           <>
-            <span className="font-mono break-all text-foreground">{closer?.nct_id ?? runId}</span>
+            <span className="font-mono break-all text-foreground">
+              {closer?.nct_id ?? runId}
+            </span>
             <StatusPill
               status={runStatus}
               detail={wallTime === null ? null : formatRunDuration(wallTime)}
@@ -121,7 +214,7 @@ export function RunWithTrace({
                   type="button"
                   className="font-medium link"
                   aria-expanded={showTrace}
-                  aria-controls="run-trace-column"
+                  aria-controls="run-trace"
                   onClick={() => setTraceChoice(!showTrace)}
                   data-testid="trace-toggle"
                 >
@@ -134,13 +227,27 @@ export function RunWithTrace({
         title={header.title}
         description={header.description}
       />
+      {showTrace && (
+        <RunTabBar
+          tab={tabs.tab}
+          eventCount={events.length}
+          onShow={dispatchTabs}
+        />
+      )}
       <div
         className={`grid grid-cols-[minmax(0,1fr)] items-start gap-6 ${showTrace ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)]" : ""}`}
       >
-        <div className="flex min-w-0 flex-col gap-4">
+        <div
+          id="run-results"
+          role="tabpanel"
+          aria-labelledby="run-tab-results"
+          className={`flex min-w-0 flex-col gap-4 ${shownBelowLg("results")}`}
+        >
           {children}
           {runStatus === "failed" && (
-            <p className="text-sm text-destructive">Run failed; the error event is in the trace.</p>
+            <p className="text-sm text-destructive">
+              Run failed; the error event is in the trace.
+            </p>
           )}
           {closer && <CloserResult key={closer.nct_id} output={closer} />}
           {matches && summary && (
@@ -148,18 +255,22 @@ export function RunWithTrace({
               matches={matches}
               maxUnknownsForLikely={summary.max_unknowns_for_likely}
               highlightedEventId={highlighted}
-              onWhy={selection.focus}
+              reveal={tabs.reveal}
+              onWhy={onWhy}
               onNextSteps={onNextSteps}
             />
           )}
         </div>
         {/* Sticky wrapper: the trace stays in view while the results column scrolls. */}
         <div
-          id="run-trace-column"
-          className={`min-w-0 lg:sticky lg:top-4 ${showTrace ? "" : "hidden"}`}
+          id="run-trace"
+          role="tabpanel"
+          aria-labelledby="run-tab-trace"
+          className={`min-w-0 lg:sticky lg:top-4 ${showTrace ? shownBelowLg("trace") : "hidden"}`}
           data-testid="trace-column"
         >
           <TracePanel
+            onViewVerdict={onViewVerdict}
             runId={runId}
             events={events}
             selection={selection}
