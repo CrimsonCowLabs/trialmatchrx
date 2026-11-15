@@ -1,58 +1,35 @@
 "use client";
 
-// The trace drawer on every run page: a totals strip, then the timeline tree (run > trial >
-// criterion > llm call) with one row per event. Clicking a row selects it (highlighting the
-// verdict it produced) and expands its prompt, raw output, parsed output and errors.
-// Selection state lives in the page (`useTraceSelection`) so "Why?" on a verdict can drive it.
-import {
-  Brain,
-  ChevronDown,
-  ChevronRight,
-  Download,
-  ListTree,
-  Play,
-  Scale,
-  ShieldCheck,
-  TriangleAlert,
-  Wrench,
-  type LucideIcon,
-} from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+// The trace panel on every run page (design section 03, right-hand column): a header with the
+// stream status and Export JSON, the run totals, then the event tree (run > trial >
+// criterion > llm call) with one row per event, coloured by kind. Clicking a row selects it
+// (highlighting the verdict it produced) and opens its details inline: model, tokens, cost,
+// parsed output, and the prompt, raw output and errors behind disclosures. Selection state
+// lives in the page (`useTraceSelection`) so "Why?" on a verdict can drive it.
+//
+// The panel fills its container's height (capped at the viewport) and scrolls the tree inside,
+// so a tall sticky column keeps it in view.
+import { ChevronDown, ChevronRight, Download } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { api, errorMessage, type TraceEvent } from "@/lib/api";
 import type { StreamState } from "@/lib/sse";
 import {
-  formatUsd as usd,
+  eventDetail,
+  formatLatency,
+  formatTokens,
+  formatUsd,
+  kindStyle,
   latencyMs,
   totalsStrip,
   traceRows,
+  type PromptMessage,
   type RunTotals,
   type TraceRow,
 } from "@/lib/trace";
 import type { TraceSelection } from "@/lib/use-trace-selection";
-
-const KIND_ICON: Record<TraceEvent["kind"], LucideIcon> = {
-  run: Play,
-  step: ListTree,
-  llm: Brain,
-  tool: Wrench,
-  rule: Scale,
-  guardrail: ShieldCheck,
-  error: TriangleAlert,
-};
-
-// Literal class names so Tailwind sees them; colours are the trace-kind tokens in globals.css.
-const KIND_COLOR: Record<TraceEvent["kind"], string> = {
-  run: "text-kind-run",
-  step: "text-kind-step",
-  llm: "text-kind-llm",
-  tool: "text-kind-tool",
-  rule: "text-kind-rule",
-  guardrail: "text-kind-guardrail",
-  error: "text-kind-error",
-};
 
 export type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
 
@@ -64,15 +41,7 @@ export const STREAM_VARIANT: Record<StreamState, BadgeVariant> = {
   error: "destructive",
 };
 
-const STATUS_VARIANT: Record<TraceEvent["status"], BadgeVariant> = {
-  started: "outline",
-  ok: "secondary",
-  failed: "destructive",
-  skipped: "outline",
-};
-
-
-/** Re-renders every `ms` while `active`, so the wall clock ticks between events. */
+/** Re-renders every `ms` while `active`, so the elapsed clock ticks between events. */
 function useNow(active: boolean, ms = 500): number | undefined {
   const [now, setNow] = useState<number | undefined>(undefined);
   useEffect(() => {
@@ -83,16 +52,7 @@ function useNow(active: boolean, ms = 500): number | undefined {
   return active ? now : undefined;
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="flex flex-col">
-      <span className="text-sm font-medium tabular-nums">{value}</span>
-      <span className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">{label}</span>
-    </div>
-  );
-}
-
-function TotalsStrip({
+function TotalsGrid({
   totals,
   events,
   live,
@@ -102,60 +62,74 @@ function TotalsStrip({
   live: boolean;
 }) {
   const now = useNow(live && !totals);
-  const { cells } = totalsStrip(totals, events, now);
+  const { final, cells } = totalsStrip(totals, events, now);
   return (
-    <div
+    <dl
       data-testid="trace-totals"
-      className="grid grid-cols-3 gap-x-4 gap-y-2 border-b px-3 py-2 sm:grid-cols-6"
+      data-final={final || undefined}
+      title={
+        final
+          ? "Run totals"
+          : "Counted from the events so far; the run's totals replace these when it ends"
+      }
+      className="grid shrink-0 grid-cols-3 border-b border-line-soft"
     >
       {cells.map((c) => (
-        <Stat key={c.label} label={c.label} value={c.value} />
+        <div
+          key={c.label}
+          className="flex flex-col-reverse border-r border-b border-surface-sunken px-4 py-3 nth-[3n]:border-r-0"
+        >
+          <dt className="mt-0.5 text-[0.6875rem] font-medium tracking-wider text-ink-4 uppercase">
+            {c.label}
+          </dt>
+          <dd className="font-mono text-[1.0625rem] font-medium tabular-nums">{c.value}</dd>
+        </div>
       ))}
-    </div>
+    </dl>
   );
 }
 
 function Json({ value }: { value: unknown }) {
   return (
-    <pre className="max-h-64 overflow-auto rounded bg-muted p-2 text-xs whitespace-pre-wrap break-words">
-      {JSON.stringify(value, null, 2)}
+    <pre className="max-h-64 overflow-auto rounded-lg bg-canvas px-3 py-2.5 font-mono text-xs/relaxed whitespace-pre-wrap break-words text-ink">
+      {typeof value === "string" ? value : JSON.stringify(value, null, 2)}
     </pre>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+const SECTION_TITLE = "text-[0.625rem] font-semibold tracking-wider text-ink-4 uppercase";
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-1">
-      <h4 className="text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
-        {title}
-      </h4>
+    <div className="flex flex-col gap-1.5">
+      <h4 className={SECTION_TITLE}>{title}</h4>
       {children}
     </div>
   );
 }
 
-interface PromptMessage {
-  role?: string;
-  content?: unknown;
-  tool_calls?: unknown;
-}
-
-/** LangChain chat input is `{messages: [[{role, content}, ...]]}` (one batch per call). */
-function promptMessages(input: TraceEvent["input"]): PromptMessage[] | null {
-  const batches = input?.messages;
-  if (!Array.isArray(batches)) return null;
-  return batches.flatMap((b) => (Array.isArray(b) ? b : [b])) as PromptMessage[];
+/** A collapsed section: the prompt and raw output are there to audit, not to read first. */
+function Disclosure({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <details className="group flex flex-col gap-1.5">
+      <summary className={`${SECTION_TITLE} flex cursor-pointer list-none items-center gap-1`}>
+        <ChevronRight className="size-3 group-open:rotate-90" aria-hidden />
+        {title}
+      </summary>
+      <div className="mt-1.5">{children}</div>
+    </details>
+  );
 }
 
 function Messages({ messages }: { messages: PromptMessage[] }) {
   return (
-    <ol className="flex flex-col gap-1">
+    <ol className="flex flex-col gap-1.5">
       {messages.map((m, i) => (
-        <li key={i} className="rounded bg-muted p-2 text-xs">
-          <span className="font-mono font-semibold">{m.role ?? "message"}</span>
-          <pre className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap break-words">
-            {typeof m.content === "string" ? m.content : JSON.stringify(m.content, null, 2)}
-          </pre>
+        <li key={i} className="flex flex-col gap-1">
+          <span className="font-mono text-[0.6875rem] font-semibold text-ink-3">
+            {m.role ?? "message"}
+          </span>
+          <Json value={m.content} />
           {m.tool_calls !== undefined && <Json value={m.tool_calls} />}
         </li>
       ))}
@@ -163,82 +137,48 @@ function Messages({ messages }: { messages: PromptMessage[] }) {
   );
 }
 
-/** Structured output of an `llm` event: the args of each tool call in its returned messages
- *  (`with_structured_output` answers with a tool call). */
-function toolCallArgs(output: TraceEvent["output"]): unknown[] {
-  const messages = output?.messages;
-  if (!Array.isArray(messages)) return [];
-  return (messages as PromptMessage[]).flatMap((m) =>
-    Array.isArray(m.tool_calls) ? m.tool_calls.map((c: { args?: unknown }) => c.args ?? c) : [],
-  );
-}
-
-const ERROR_KEYS =["error", "errors", "failed"];
-
-/** Whatever an event's output says went wrong: `error`, `errors`, or guardrail `failed`. */
-function errorsOf(output: TraceEvent["output"]): unknown[] {
-  if (!output) return [];
-  return ERROR_KEYS.map((k) => output[k]).filter(
-    (v) => v !== undefined && v !== null && !(Array.isArray(v) && v.length === 0),
-  );
-}
-
-function Details({ event }: { event: TraceEvent }) {
-  const messages = promptMessages(event.input);
-  const errors = errorsOf(event.output);
-  const parsed = toolCallArgs(event.output);
-  const output = Object.fromEntries(
-    Object.entries(event.output ?? {}).filter(([k]) => !ERROR_KEYS.includes(k)),
-  );
-  const meta = [
-    event.model && `model ${event.model}`,
-    `seq ${event.seq}`,
-    event.tokens_in !== null && `${event.tokens_in} in / ${event.tokens_out ?? 0} out tokens`,
-    event.cost_usd !== null && usd(event.cost_usd),
-    event.cache_hit && "cache hit",
-  ].filter(Boolean);
+function Details({ event, indent }: { event: TraceEvent; indent: string }) {
+  const d = eventDetail(event);
   return (
-    <div data-testid="trace-details" className="mx-3 mb-2 flex flex-col gap-2">
-      <p className="text-xs text-muted-foreground">{meta.join(" · ")}</p>
-      {messages ? (
-        <Section title="Prompt messages">
-          <Messages messages={messages} />
-        </Section>
-      ) : (
-        event.input && (
-          <Section title="Input">
-            <Json value={event.input} />
-          </Section>
-        )
-      )}
-      {event.kind === "llm" && event.output ? (
-        <>
-          <Section title="Raw model output">
-            <Json value={output} />
-          </Section>
-          {parsed.length > 0 && (
-            <Section title="Parsed output">
-              <Json value={parsed.length === 1 ? parsed[0] : parsed} />
-            </Section>
-          )}
-        </>
-      ) : (
-        Object.keys(output).length > 0 && (
-          <Section title="Output">
-            <Json value={output} />
-          </Section>
-        )
-      )}
-      {errors.length > 0 && (
+    <div
+      data-testid="trace-details"
+      className="flex flex-col gap-2 pr-3.5 pb-3"
+      style={{ paddingLeft: indent }}
+    >
+      <p className="text-xs text-ink-4">{d.meta.join(" · ")}</p>
+      {d.errors.length > 0 && (
         <Section title="Errors">
-          <div className="rounded border border-destructive/40 text-destructive">
-            <Json value={errors.length === 1 ? errors[0] : errors} />
+          <div className="rounded-lg ring-1 ring-verdict-fail/40 text-verdict-fail">
+            <Json value={d.errors.length === 1 ? d.errors[0] : d.errors} />
           </div>
         </Section>
+      )}
+      {d.primary && (
+        <Section title={d.primary.title}>
+          <Json value={d.primary.value} />
+        </Section>
+      )}
+      {d.messages && (
+        <Disclosure title="Prompt messages">
+          <Messages messages={d.messages} />
+        </Disclosure>
+      )}
+      {d.input && (
+        <Disclosure title="Input">
+          <Json value={d.input} />
+        </Disclosure>
+      )}
+      {d.raw && (
+        <Disclosure title="Raw model output">
+          <Json value={d.raw} />
+        </Disclosure>
       )}
     </div>
   );
 }
+
+const ROW_PAD_REM = 0.875; // the design's 14px row inset
+const DEPTH_REM = 1; // and 16px per level
 
 function Row({
   row,
@@ -249,30 +189,28 @@ function Row({
   selection: TraceSelection;
   producesVerdict: boolean;
 }) {
-  const { event, depth, hasChildren } = row;
-  const Icon = KIND_ICON[event.kind];
-  const ms = latencyMs(event);
-  const tokens = (event.tokens_in ?? 0) + (event.tokens_out ?? 0);
+  const { event, depth, hasChildren, tokens, costUsd } = row;
+  const kind = kindStyle(event.kind);
   const expanded = selection.expanded.has(event.id);
   const open = selection.details.has(event.id);
   const selected = selection.selectedId === event.id;
-  const indent = `${0.25 + depth * 1}rem`;
+  const indent = `${ROW_PAD_REM + depth * DEPTH_REM}rem`;
 
   return (
     <li
       data-testid="trace-row"
       data-event-id={event.id}
       data-selected={selected || undefined}
-      className={`border-b last:border-b-0 ${selected ? "bg-teal-selected shadow-[inset_3px_0_0_var(--teal)]" : ""}`}
+      className={`border-b border-surface-sunken last:border-b-0 ${selected ? "bg-teal-selected shadow-[inset_3px_0_0_var(--teal)]" : ""}`}
     >
-      <div className="flex items-center" style={{ paddingLeft: indent }}>
+      <div className="flex items-center gap-2 pr-3.5" style={{ paddingLeft: indent }}>
         {hasChildren ? (
           <button
             type="button"
             onClick={() => selection.toggleExpanded(event.id)}
             aria-label={`${expanded ? "Collapse" : "Expand"} ${event.name}`}
             aria-expanded={expanded}
-            className="flex size-5 shrink-0 items-center justify-center text-muted-foreground"
+            className="-mx-1 flex size-5 shrink-0 items-center justify-center rounded text-ink-5 hover:text-ink"
           >
             {expanded ? (
               <ChevronDown className="size-3.5" />
@@ -281,44 +219,53 @@ function Row({
             )}
           </button>
         ) : (
-          <span className="size-5 shrink-0" />
+          <span className="-mx-1 size-5 shrink-0" />
         )}
         <button
           type="button"
           onClick={() => selection.select(event.id)}
           aria-pressed={selected}
-          className="flex min-w-0 flex-1 items-center gap-2 py-1.5 pr-3 text-left text-sm hover:bg-muted"
+          aria-expanded={open}
+          className="flex min-w-0 flex-1 items-center gap-2 py-2 text-left"
         >
-          <Icon
-            className={`size-4 shrink-0 ${KIND_COLOR[event.kind]}`}
-            aria-label={event.kind}
-            role="img"
-          />
-          <span className="flex-1 truncate font-mono text-xs" title={event.name}>
-            {event.name}
-            {producesVerdict && <span className="ml-1 text-teal">· verdict</span>}
+          <span
+            className={`w-[3.25rem] shrink-0 rounded px-1.5 py-0.5 text-center font-mono text-[0.625rem] font-medium uppercase ${kind.className}`}
+          >
+            {kind.label}
           </span>
-          <Badge variant={STATUS_VARIANT[event.status]}>{event.status}</Badge>
-          <span className="w-14 text-right text-xs tabular-nums text-muted-foreground">
-            {ms === null ? "…" : `${ms} ms`}
+          <span className="flex min-w-0 flex-1 gap-1 font-mono text-[0.8125rem]">
+            <span className="truncate text-ink" title={event.name}>
+              {event.name}
+            </span>
+            {producesVerdict && <span className="shrink-0 text-teal">· verdict</span>}
           </span>
-          <span className="w-14 text-right text-xs tabular-nums text-muted-foreground">
-            {tokens ? `${tokens} tok` : ""}
+          {(event.status === "failed" || event.status === "skipped") && (
+            <span
+              className={`shrink-0 text-[0.6875rem] font-medium ${event.status === "failed" ? "text-verdict-fail" : "text-ink-5"}`}
+            >
+              {event.status}
+            </span>
+          )}
+          <span className="w-14 shrink-0 text-right font-mono text-xs tabular-nums text-ink-4">
+            {formatLatency(latencyMs(event))}
           </span>
-          <span className="w-14 text-right text-xs tabular-nums text-muted-foreground">
-            {event.cost_usd ? usd(event.cost_usd) : ""}
+          <span className="w-12 shrink-0 text-right font-mono text-xs tabular-nums text-ink-4">
+            {formatTokens(tokens)}
+          </span>
+          <span className="w-14 shrink-0 text-right font-mono text-xs tabular-nums text-ink-4">
+            {costUsd ? formatUsd(costUsd) : ""}
           </span>
         </button>
       </div>
       {event.note && (
         <p
-          className="pb-1 pr-3 text-xs text-muted-foreground"
-          style={{ paddingLeft: `calc(${indent} + 1.25rem)` }}
+          className="-mt-1 pr-3.5 pb-2 text-xs text-ink-4"
+          style={{ paddingLeft: `calc(${indent} + 1.5rem)` }}
         >
           {event.note}
         </p>
       )}
-      {open && <Details event={event} />}
+      {open && <Details event={event} indent={`calc(${indent} + 1.5rem)`} />}
     </li>
   );
 }
@@ -340,7 +287,8 @@ function ExportButton({ runId }: { runId: string }) {
   return (
     <Button
       variant="outline"
-      size="xs"
+      size="sm"
+      className="ml-auto"
       title={error ?? "Download GET /api/runs/{run_id}/trace"}
       onClick={() =>
         downloadTrace(runId).then(
@@ -360,7 +308,7 @@ export interface TracePanelProps {
   selection: TraceSelection;
   /** Event ids some verdict points at (`trace_event_id`), marked in the tree. */
   verdictEventIds: ReadonlySet<string>;
-  /** True while events are still arriving: the wall clock ticks. */
+  /** True while events are still arriving: the elapsed clock ticks. */
   live: boolean;
   status: { label: string; variant: BadgeVariant };
   /** The run's `RunTotals` once its summary is loaded; until then the strip counts the
@@ -393,19 +341,17 @@ export function TracePanel({
 
   return (
     <section
-      className="flex max-h-[calc(100vh-2rem)] flex-col rounded-lg border bg-card md:sticky md:top-4"
+      className="flex h-full max-h-[calc(100vh-2rem)] min-h-0 flex-col overflow-hidden rounded-card border border-line bg-surface md:sticky md:top-4"
       aria-label="Trace"
     >
-      <header className="flex items-center justify-between gap-2 border-b px-3 py-2">
-        <h2 className="text-sm font-semibold">Trace</h2>
-        <div className="flex items-center gap-2">
-          <Badge variant={status.variant}>{status.label}</Badge>
-          <ExportButton runId={runId} />
-        </div>
+      <header className="flex shrink-0 items-center gap-2.5 border-b border-line-soft px-4 py-3">
+        <h2 className="text-base font-semibold">Trace</h2>
+        <Badge variant={status.variant}>{status.label}</Badge>
+        <ExportButton runId={runId} />
       </header>
-      <TotalsStrip totals={totals} events={events} live={live} />
+      <TotalsGrid totals={totals} events={events} live={live} />
       {rows.length === 0 ? (
-        <p className="px-3 py-6 text-center text-sm text-muted-foreground">Waiting for events…</p>
+        <p className="px-4 py-6 text-center text-sm text-ink-4">Waiting for events…</p>
       ) : (
         <ol ref={listRef} className="relative min-h-0 flex-1 overflow-y-auto">
           {rows.map((row) => (
