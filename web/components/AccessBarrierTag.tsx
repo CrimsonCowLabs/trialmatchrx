@@ -14,7 +14,7 @@ export function AccessBarrierTag({ barrier }: { barrier: AccessBarrier | null | 
   return (
     <Badge
       variant="outline"
-      className="border-line-strong align-[1px] text-ink-2"
+      className="ml-1.5 border-line-strong align-[1px] text-ink-2"
       title={title}
       data-testid="access-barrier"
       data-barrier={barrier}

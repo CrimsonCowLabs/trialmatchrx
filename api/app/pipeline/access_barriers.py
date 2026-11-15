@@ -19,7 +19,7 @@ from collections.abc import Sequence
 from app.schemas import AccessBarrier, Criterion
 from app.trace.recorder import TraceRecorder
 
-RULES_VERSION = "1"
+RULES_VERSION = "2"
 
 _ENGLISH_VERBS = r"read|write|speak|understand|comprehend|communicate|fluent|literate|proficient"
 
@@ -29,19 +29,26 @@ PATTERNS: dict[AccessBarrier, tuple[str, ...]] = {
         r"\benglish[- ](?:speak\w*|language|literate|literacy|proficien\w*|fluen\w*)\b",
         r"\bnon[- ]?english\b",
         r"\blanguage barriers?\b",
-        r"\b(?:il)?litera(?:te|cy)\b",
+        # Reading at all; "computer / digital literacy" is technology.
+        r"(?<!computer\s)(?<!digital\s)\b(?:il)?litera(?:te|cy)\b",
     ),
     "visit_burden": (
-        # How often or how many: "weekly study visits", "14 in-person visits", "frequent visits".
-        r"\b(?:frequent|weekly|daily|twice[- ]weekly|bi-?weekly|monthly|multiple|numerous|many"
-        r"|several|\d+|two|three|four|five|six|seven|eight|nine|ten|twelve)"
+        # How often: "weekly study visits", "frequent visits".
+        r"\b(?:frequent|weekly|daily|twice[- ]weekly|bi-?weekly|monthly|numerous)"
         r"\s+(?:(?:study|clinic|site|in[- ]person|on[- ]site|outpatient|scheduled)\s+)*visits\b",
-        # Staying at the site: "overnight stays", "inpatient period" (not "overnight fast" or a
-        # past "inpatient hospitalization").
-        r"\b(?:overnight|inpatient|in-patient|in[- ]clinic|in[- ]house|residential)"
-        r"\s+(?:stays?|visits?|periods?|confinement|admissions?\s+to\s+the\s+(?:study\s+)?"
-        r"(?:site|clinic|unit))\b",
-        r"\bconfine(?:d|ment)\b[^.;]{0,30}\b(?:clinic|unit|site|centre|center|hospital)\b",
+        # How many, only after a verb of attending: "complete 14 in-person visits", not a
+        # measurement "at two clinic visits" or "on 2 visits".
+        r"\b(?:attend|complete|make|undergo|return\s+for|come\s+in\s+for)\w*\s+"
+        r"(?:at\s+least\s+|up\s+to\s+)?(?:multiple|many|several|\d+|two|three|four|five|six"
+        r"|seven|eight|nine|ten|twelve)\s+"
+        r"(?:(?:study|clinic|site|in[- ]person|on[- ]site|outpatient|scheduled)\s+)*visits\b",
+        # Staying at the site: "overnight stays", "inpatient period" (not "overnight fast", nor a
+        # past "inpatient stay / hospitalization" for heart failure).
+        r"\b(?:overnight|in[- ]clinic|in[- ]house|residential)\s+(?:stays?|visits?|periods?"
+        r"|confinement)\b",
+        r"\bin-?patient\s+(?:periods?|confinement)\b",
+        # Confined to the study clinic, not "confined to a hospital or nursing home" (health).
+        r"\bconfine(?:d|ment)\b[^.;]{0,30}\b(?:clinic|unit|site|centre|center)\b",
         r"\b(?:remain|stay|reside)\w*\b[^.;]{0,20}\b(?:at|in)\s+the\s+(?:clinical\s+)?"
         r"(?:study\s+|research\s+)?(?:site|clinic|unit|centre|center)\b",
         r"\btravel\w*\b[^.;]{0,30}\bto\s+the\s+(?:study\s+|trial\s+|research\s+)?"
@@ -53,7 +60,8 @@ PATTERNS: dict[AccessBarrier, tuple[str, ...]] = {
         r"\be-?diar(?:y|ies)\b|\belectronic\s+diar(?:y|ies)\b",
         r"\b(?:mobile|smartphone|study|web)\s+app(?:lication)?s?\b|\bweb[- ]based\b",
         r"\bonline\s+(?:portal|questionnaires?|surveys?)\b",
-        r"\bemail\s+(?:address|account)\b|\bcomputer\b|\blaptop\b",
+        r"\bemail\s+(?:address|account)\b|\blaptop\b",
+        r"\bcomputer\b(?!\s+tomograph)|\b(?:computer|digital)\s+litera(?:te|cy)\b",
         r"\bvideo\s+(?:calls?|visits?|conferenc\w*)\b",
     ),
     "support": (
@@ -71,7 +79,7 @@ BARRIER_ORDER: tuple[AccessBarrier, ...] = ("language", "visit_burden", "technol
 _COMPILED = {b: [re.compile(p, re.I) for p in ps] for b, ps in PATTERNS.items()}
 _STAFF = re.compile(
     r"\b(?:site|study|research|clinical)\s+(?:staff|personnel|team|coordinators?)\b"
-    r"|\binvestigators?\b|\bsponsors?\b|\bphysicians?\b|\bclinicians?\b",
+    r"|\binvestigators?\b",
     re.I,
 )
 _PATIENT = re.compile(
@@ -90,10 +98,12 @@ def _match(text: str) -> tuple[AccessBarrier, str] | None:
     return None
 
 
-# "In the opinion of the investigator, the participant ..." judges the patient: not about staff.
+# "In the opinion of the investigator, the participant ...", "as judged by the investigator":
+# the investigator judges the patient, so the criterion is still about the patient.
 _JUDGMENT = re.compile(
     r"\b(?:opinion|judge?ment|discretion|assessment)\s+of\s+(?:the\s+)?(?:\w+\s+)?investigators?"
-    r"|\binvestigators?'?s?\s+(?:opinion|judge?ment|discretion|assessment)",
+    r"|\binvestigators?'?s?\s+(?:opinion|judge?ment|discretion|assessment)"
+    r"|\b(?:judged|assessed|determined|deemed)\s+by\s+(?:the\s+)?(?:\w+\s+)?investigators?",
     re.I,
 )
 
@@ -121,10 +131,22 @@ def classify(text: str) -> AccessBarrier | None:
     return found[0] if found else None
 
 
+def _flagged(criteria: Sequence[Criterion]) -> tuple[list[Criterion], dict[str, dict[str, str]]]:
+    """The criteria with `access_barrier` set, and {criterion id: {barrier, match}} for those
+    flagged. The one place the flag is applied, traced or not."""
+    out, flagged = [], {}
+    for c in criteria:
+        found = explain(c.text)
+        if found:
+            flagged[c.id] = {"barrier": found[0], "match": found[1]}
+        out.append(c.model_copy(update={"access_barrier": found[0] if found else None}))
+    return out, flagged
+
+
 def with_access_barriers(criteria: Sequence[Criterion]) -> list[Criterion]:
     """Each criterion with `access_barrier` set from its text (pure; prefer the traced
     `flag_access_barriers` wherever a recorder exists)."""
-    return [c.model_copy(update={"access_barrier": classify(c.text)}) for c in criteria]
+    return _flagged(criteria)[0]
 
 
 async def flag_access_barriers(
@@ -137,13 +159,7 @@ async def flag_access_barriers(
         "rule",
         {"nct": nct_id, "criteria": len(criteria), "rules_version": RULES_VERSION},
     ) as s:
-        flagged: dict[str, dict[str, str]] = {}
-        out = []
-        for c in criteria:
-            found = explain(c.text)
-            if found:
-                flagged[c.id] = {"barrier": found[0], "match": found[1]}
-            out.append(c.model_copy(update={"access_barrier": found[0] if found else None}))
+        out, flagged = _flagged(criteria)
         s.output = {"flagged": flagged}
         n = len(flagged)
         detail = ", ".join(f"{cid} {f['barrier']}" for cid, f in flagged.items())

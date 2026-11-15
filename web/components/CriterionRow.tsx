@@ -80,7 +80,7 @@ export function CriterionRow({
             {verdict.criterion_id}
             {exclusion ? " (excl.)" : ""}
           </span>
-          {verdict.criterion_quote} <UnverifiedQuoteBadge verified={verdict.verified} />{" "}
+          {verdict.criterion_quote} <UnverifiedQuoteBadge verified={verdict.verified} />
           <AccessBarrierTag barrier={verdict.access_barrier} />
         </p>
         <p className="text-[0.8125rem] text-ink-4">
