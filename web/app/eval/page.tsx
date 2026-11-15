@@ -12,7 +12,7 @@ export default function EvalPage() {
         breadcrumb={[{ label: "Home", href: "/" }]}
         title="Eval"
         actions={
-          <Link href="/match" className="text-sm font-medium text-teal hover:text-teal-strong">
+          <Link href="/match" className="text-sm font-medium link">
             Match a patient
           </Link>
         }

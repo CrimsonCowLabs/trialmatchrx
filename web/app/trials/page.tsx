@@ -13,7 +13,7 @@ export default function TrialsPage() {
         title="Trials"
         description="Every trial in the local trials cache (the pool a match searches), read without calling ClinicalTrials.gov. Open one to see how many synthetic patients qualify."
         actions={
-          <Link href="/runs" className="text-sm font-medium text-teal hover:text-teal-strong">
+          <Link href="/runs" className="text-sm font-medium link">
             Match runs
           </Link>
         }

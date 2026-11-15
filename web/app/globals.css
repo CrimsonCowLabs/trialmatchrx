@@ -99,6 +99,15 @@
   --radius-card: 12px;
 }
 
+/* The one teal text-link style (teal, darker on hover). Size, weight and underline stay with the
+   caller: `className="link text-sm font-medium"`. */
+@utility link {
+  color: var(--teal);
+  &:hover {
+    color: var(--teal-strong);
+  }
+}
+
 :root {
   /* Palette from the claude.ai/design project (SPEC.md, "UI design"). The only place raw colour
      values live: components use the Tailwind classes these map to in @theme inline. */

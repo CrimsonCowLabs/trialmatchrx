@@ -69,7 +69,7 @@ export function CriterionRow({
         <button
           type="button"
           onClick={() => onWhy(verdict.trace_event_id)}
-          className="self-start text-xs text-teal underline-offset-2 hover:text-teal-strong hover:underline"
+          className="self-start text-xs link underline-offset-2 hover:underline"
           title="Show the trace event that produced this verdict"
         >
           Why?

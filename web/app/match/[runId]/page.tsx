@@ -13,7 +13,7 @@ export default function MatchRunPage() {
         breadcrumb={[{ label: "Home", href: "/" }, { label: "Match runs", href: "/runs" }]}
         title="Match run"
         actions={
-          <Link href="/match" className="text-sm font-medium text-teal hover:text-teal-strong">
+          <Link href="/match" className="text-sm font-medium link">
             New match
           </Link>
         }
