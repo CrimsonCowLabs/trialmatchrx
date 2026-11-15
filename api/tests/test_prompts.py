@@ -43,7 +43,7 @@ def test_retry_section_is_optional() -> None:
 def test_parse_patient_prompt_has_a_version_and_fills_the_note() -> None:
     prompt = load_prompt("parse_patient")
 
-    assert prompt.version == "parse-patient-v1"
+    assert prompt.version == "parse-patient-v2"
     assert "{{" not in prompt.render_system(units="- labs: `egfr`")
     assert "61M, T2D" in prompt.render_user(note="61M, T2D")
 

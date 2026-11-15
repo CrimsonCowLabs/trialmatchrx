@@ -27,7 +27,7 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.exceptions import OutputParserException
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
-from pydantic import BaseModel, Field, SecretStr, ValidationError
+from pydantic import BaseModel, Field, SecretStr, ValidationError, field_validator
 
 from app.config import get_settings
 from app.pipeline.predicate_fields import LAB_UNITS, VITAL_UNITS
@@ -93,6 +93,12 @@ class DraftPatient(BaseModel):
     pregnant: DraftFlag | None = None
     smoker: DraftFlag | None = None
     location: DraftLocation | None = None
+
+    # Haiku sometimes answers an unmentioned list with null or the string "null" instead of [].
+    @field_validator("conditions", "labs", "vitals", "meds", mode="before")
+    @classmethod
+    def _null_list_is_empty(cls, v: Any) -> Any:
+        return [] if v is None or v == "null" else v
 
 
 # --------------------------------------------------------------------------------------------
