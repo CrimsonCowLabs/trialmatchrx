@@ -10,8 +10,10 @@ from app.sources.trec import (
     EVAL_FIELDS,
     Judgment,
     Topic,
+    TrecSample,
     build_sample,
     draw_sample,
+    first_topics,
     load_sample,
     parse_qrels,
     parse_topics,
@@ -178,3 +180,42 @@ async def test_build_sample_drops_trials_merged_into_another_record() -> None:
     assert sample.dropped == {"NCT00000003": "merged into NCT09999999"}
     assert sorted(sample.trials) == ["NCT00000001", "NCT00000002"]
     assert len(fake.requests) == 3  # the redirect is not followed
+
+
+def _three_topic_sample() -> TrecSample:
+    # Topics in sample order 3, 1, 2; NCT0B is judged under both topic 3 and topic 2.
+    judged = {3: ["NCT0A", "NCT0B"], 1: ["NCT0C"], 2: ["NCT0B", "NCT0D"]}
+    return TrecSample(
+        seed=1,
+        n_topics=3,
+        per_topic=2,
+        topics=[Topic(id=t, text=f"topic {t}") for t in judged],
+        judgments=[
+            Judgment(topic_id=t, nct_id=nct, label=2) for t, ncts in judged.items() for nct in ncts
+        ],
+        trials={
+            nct: _study(nct, "Inclusion: adults") for nct in ("NCT0A", "NCT0B", "NCT0C", "NCT0D")
+        },
+        dropped={"NCT0E": "not found"},
+    )
+
+
+def test_first_topics_keeps_the_first_n_topics_their_judgments_and_trials() -> None:
+    partial = first_topics(_three_topic_sample(), 2)
+
+    assert [t.id for t in partial.topics] == [3, 1]
+    assert [(j.topic_id, j.nct_id) for j in partial.judgments] == [
+        (3, "NCT0A"),
+        (3, "NCT0B"),
+        (1, "NCT0C"),
+    ]
+    assert sorted(partial.trials) == ["NCT0A", "NCT0B", "NCT0C"]
+    assert partial.partial
+    assert not _three_topic_sample().partial
+    assert not first_topics(_three_topic_sample(), 3).partial  # all of them is the full sample
+
+
+@pytest.mark.parametrize("n", [0, -1, 4])
+def test_first_topics_rejects_an_out_of_range_count(n: int) -> None:
+    with pytest.raises(ValueError, match=r"must be between 1 and 3"):
+        first_topics(_three_topic_sample(), n)

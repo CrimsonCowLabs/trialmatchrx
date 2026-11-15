@@ -5,8 +5,8 @@ from typing import Any
 import pytest
 
 from app.eval.runs import BM25, MATCHER, latest_eval, record_eval_run, score_bm25
-from app.schemas import EvalLatest
-from app.sources.trec import Judgment, Topic, TrecSample
+from app.schemas import EvalLatest, EvalSystem
+from app.sources.trec import Judgment, Topic, TrecSample, first_topics
 from tests.sse import client
 
 
@@ -96,3 +96,12 @@ def test_latest_shows_the_newest_matcher_run_and_its_compile_rate() -> None:
     assert latest.baseline == baseline
     assert latest.compile_rate == 0.55
     assert [h.system for h in latest.history] == ["matcher", "bm25"]
+
+
+@pytest.mark.parametrize("system", [BM25, MATCHER])
+def test_a_partial_sample_is_never_recorded(system: EvalSystem) -> None:
+    # A score over the first N topics can't be compared with a full one.
+    with pytest.raises(ValueError, match="partial sample"):
+        record_eval_run(system, {"ndcg@10": 1.0}, sample=first_topics(_sample(), 1), git_sha="a")
+
+    assert latest_eval().history == []

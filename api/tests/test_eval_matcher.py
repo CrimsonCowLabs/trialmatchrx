@@ -17,7 +17,7 @@ from langchain_core.outputs import ChatResult
 from app.eval.matcher import score_matcher
 from app.pipeline.compile_criteria import CompileModelUnavailable
 from app.pipeline.fixture_model import FixtureChatModel
-from app.sources.trec import Judgment, Topic, TrecSample
+from app.sources.trec import Judgment, Topic, TrecSample, first_topics
 from app.trace import store
 
 EGFR = "mL/min/1.73m2"
@@ -330,3 +330,44 @@ async def test_when_every_topic_fails_there_is_nothing_to_score() -> None:
 
     assert [f.topic_id for f in score.failed] == [1, 2]
     assert (score.rankings, score.metrics) == ({}, {})
+
+
+def _topic_2_first() -> TrecSample:
+    """The sample with topic 2 (NCT04, NCT01, NCT02; nothing to judge) drawn first."""
+    sample = _sample()
+    return sample.model_copy(update={"topics": sample.topics[::-1]})
+
+
+async def test_a_partial_run_matches_only_the_first_topics_and_compiles_only_their_trials() -> None:
+    models = Models()
+    score = await models.score(first_topics(_topic_2_first(), 1))
+
+    assert score.rankings == {2: ["NCT01", "NCT02", "NCT04"]}
+    assert sorted(score.run_ids) == [2]
+    # NCT03 is judged only under topic 1: never compiled, nothing judged.
+    assert models.calls == (3, 1, 0)
+    # Topic 2 alone: labels [1, 0, 2] -> nDCG 0.5, P@10 0.1; accuracy 1/2 (NCT04 right, NCT01
+    # wrongly eligible); all three trials are rules.
+    assert score.metrics == {
+        "ndcg@10": pytest.approx(0.5),
+        "p@10": pytest.approx(0.1),
+        "accuracy": pytest.approx(0.5),
+        "compile_rate": pytest.approx(1.0),
+    }
+
+
+async def test_a_full_run_after_a_partial_one_replays_its_answers() -> None:
+    await Models().score(first_topics(_topic_2_first(), 1))
+
+    full = Models()
+    score = await full.score(_topic_2_first())
+
+    # Only topic 1's own work is new: NCT03's compile, topic 1's parse, NCT03's judge call.
+    assert full.calls == (1, 1, 1)
+    # Same score as the cold full run in test_matcher_scores_the_sample_by_hand.
+    assert score.metrics == {
+        "ndcg@10": pytest.approx(0.75),
+        "p@10": pytest.approx(0.15),
+        "accuracy": pytest.approx(0.8),
+        "compile_rate": pytest.approx(0.75),
+    }
