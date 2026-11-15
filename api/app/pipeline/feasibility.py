@@ -32,7 +32,7 @@ from app.pipeline.predicate_fields import (
     NUMERIC_OPS,
     VITAL_UNITS,
     InvalidPredicate,
-    normalize_unit,
+    units_match,
     validate_predicate,
 )
 from app.schemas import (
@@ -85,7 +85,7 @@ def _row(facts: PatientFacts) -> dict[str, Any]:
             value = fact.value
             if canonical is None or isinstance(value, bool) or not isinstance(value, int | float):
                 continue
-            if fact.unit is not None and normalize_unit(fact.unit) != normalize_unit(canonical):
+            if fact.unit is not None and not units_match(fact.unit, canonical):
                 continue  # a reading in another unit is missing data, not a wrong number
             row[f"{section}.{key}"] = float(value)
     return row

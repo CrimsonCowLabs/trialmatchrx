@@ -134,6 +134,54 @@ async def test_a_lab_in_a_missing_or_non_canonical_unit_is_dropped(unit: str | N
     assert [e.name for e in events(rec) if e.kind == "guardrail"] == ["unit:labs.hba1c"]
 
 
+async def test_pulmonary_and_als_measures_parse_into_canonical_keys_and_units() -> None:
+    facts, rec = await parse("pulm_note")
+
+    got = {k: (f.value, f.unit) for k, f in facts.labs.items()}
+    assert got == {
+        "alsfrs_r": (41, "points"),
+        "fvc_pct": (82, "% predicted"),
+        "fev1_fvc": (0.66, "ratio"),  # written bare
+        "svc_pct": (79, "% predicted"),  # "% pred"
+        "dlco_pct": (61, "% predicted"),  # "%"
+        "six_mwd": (380, "m"),
+        "pvr": (7, "WU"),
+        "pcwp": (12, "mmHg"),
+    }
+    assert [c.value for c in facts.conditions] == [
+        "amyotrophic lateral sclerosis",
+        "pulmonary arterial hypertension",
+    ]
+    assert not [e for e in events(rec) if e.kind == "guardrail"]
+
+
+@pytest.mark.parametrize(
+    ("name", "value", "unit"),
+    [("fev1_fvc", 66, "ratio"), ("alsfrs_r", 52, "points"), ("pvr", 560, "WU")],
+)
+async def test_a_measure_outside_its_plausible_range_is_dropped(
+    name: str, value: float, unit: str
+) -> None:
+    output = draft("pulm_note")
+    lab = next(lab for lab in output["labs"] if lab["name"] == name)
+    lab.update(value=value, unit=unit)
+
+    facts, rec = await parse("pulm_note", output)
+
+    assert name not in facts.labs
+    assert [e.name for e in events(rec) if e.kind == "guardrail"] == [f"range:labs.{name}"]
+
+
+async def test_a_percent_predicted_lab_without_a_unit_is_dropped() -> None:
+    output = draft("pulm_note")
+    output["labs"][1]["unit"] = None  # fvc_pct
+
+    facts, rec = await parse("pulm_note", output)
+
+    assert "fvc_pct" not in facts.labs
+    assert [e.name for e in events(rec) if e.kind == "guardrail"] == ["unit:labs.fvc_pct"]
+
+
 async def test_a_span_must_match_whole_words() -> None:
     output = draft("demo_short")
     output["sex"] = {"value": "female", "source_span": "F"}  # only inside "metformin"
@@ -169,7 +217,7 @@ async def test_the_parse_llm_call_is_in_the_trace_under_the_parse_step() -> None
     assert llm.output is not None
     (answer,) = llm.output["messages"]
     assert json.loads(answer["content"]) == draft("demo_short") and "tool_calls" not in answer
-    assert step.input is not None and step.input["prompt_version"] == "parse-patient-v3"
+    assert step.input is not None and step.input["prompt_version"] == "parse-patient-v4"
     assert step.output is not None and step.output["patient"]["labs"]["egfr"]["value"] == 48
 
 

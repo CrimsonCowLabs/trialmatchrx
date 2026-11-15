@@ -36,6 +36,16 @@ LAB_UNITS: dict[str, str] = {
     "albumin": "g/dL",
     "alt": "U/L",
     "hscrp": "mg/L",
+    # Pulmonary function, ALS and pulmonary-hypertension measures (the ALS / IPF / PAH demo).
+    "fvc_pct": "% predicted",
+    "fev1_pct": "% predicted",
+    "fev1_fvc": "ratio",  # FEV1/FVC as a fraction, 0-1 (70% -> 0.70)
+    "svc_pct": "% predicted",
+    "dlco_pct": "% predicted",
+    "alsfrs_r": "points",  # ALSFRS-R total, 0-48
+    "six_mwd": "m",  # 6-minute walk distance
+    "pvr": "WU",  # pulmonary vascular resistance, Wood units (80 dyn*s/cm5 = 1 WU)
+    "pcwp": "mmHg",  # pulmonary capillary wedge pressure
 }
 VITAL_UNITS: dict[str, str] = {
     "bmi": "kg/m2",
@@ -44,6 +54,31 @@ VITAL_UNITS: dict[str, str] = {
     "weight": "kg",
 }
 _KEYED: dict[str, Mapping[str, str]] = {"labs": LAB_UNITS, "vitals": VITAL_UNITS}
+
+# Other spellings accepted for a canonical unit (both sides through `normalize_unit`). "" is a
+# reading written with no unit, allowed only where the unit is a count or a ratio.
+UNIT_ALIASES: dict[str, frozenset[str]] = {
+    "%predicted": frozenset({"%", "%pred", "%ofpredicted", "percentpredicted", "%pp"}),
+    "ratio": frozenset({"", "fraction"}),
+    "points": frozenset({"", "point", "pts", "pt", "score"}),
+    "m": frozenset({"meter", "meters", "metre", "metres"}),
+    "wu": frozenset({"woodunit", "woodunits"}),
+}
+
+# Plausible bounds (inclusive, canonical unit) for the keys where a wrong unit is easy to miss:
+# a % where a fraction belongs, feet for metres, dyn*s/cm5 for Wood units. A reading outside is
+# dropped by the note parser's `range` guardrail.
+LAB_RANGES: dict[str, tuple[float, float]] = {
+    "fvc_pct": (5, 200),
+    "fev1_pct": (5, 200),
+    "fev1_fvc": (0.1, 1.0),
+    "svc_pct": (5, 200),
+    "dlco_pct": (5, 200),
+    "alsfrs_r": (0, 48),
+    "six_mwd": (0, 1000),
+    "pvr": (0, 40),
+    "pcwp": (0, 60),
+}
 
 NUMERIC_OPS = (">=", "<=", ">", "<", "==")
 
@@ -55,6 +90,14 @@ class InvalidPredicate(ValueError):
 def normalize_unit(unit: str) -> str:
     """`mL/min/1.73 m²` and `ml/min/1.73m2` compare equal."""
     return unit.replace("²", "2").replace(" ", "").lower()
+
+
+def units_match(unit: str | None, canonical: str) -> bool:
+    """True when `unit` is `canonical` or an accepted alias of it. No unit matches only a
+    canonical unit that may be written bare (a ratio, a score)."""
+    want = normalize_unit(canonical)
+    got = normalize_unit(unit or "")
+    return got == want or got in UNIT_ALIASES.get(want, frozenset())
 
 
 def _number(value: Any) -> float:
@@ -73,7 +116,7 @@ def _numeric(field: str, op: str, value: Any, unit: str | None, canonical: str) 
     if op not in NUMERIC_OPS:
         raise InvalidPredicate(f"op {op!r} not allowed on {field}; use one of {NUMERIC_OPS}")
     number = _number(value)
-    if unit is not None and normalize_unit(unit) != normalize_unit(canonical):
+    if unit is not None and not units_match(unit, canonical):
         raise InvalidPredicate(f"unit {unit!r} on {field} must be {canonical!r}")
     return Predicate(field=field, op=op, value=number, unit=canonical)
 
