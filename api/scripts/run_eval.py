@@ -8,9 +8,10 @@ The matcher runs the full pipeline (parse -> compile -> evaluate -> judge -> ver
 each topic as a traced match run, so it needs ANTHROPIC_API_KEY. The first run is slow and
 costs tokens; criteria land in the compile cache and every parse / judge answer in `llm_cache`,
 so a re-run on the same sample replays them and scores the same. Without a key the matcher is
-skipped (BM25 still runs). An incomplete matcher run (a trial failed to compile, or a judge call
-errored) is printed but not recorded and exits 1: failures aren't cached, so it wouldn't
-reproduce. Re-run to retry just those; the history only holds complete, replayable scores.
+skipped (BM25 still runs). An incomplete matcher run (a topic's match run failed, a trial
+failed to compile, or a judge call errored) is printed but not recorded and exits 1: failures
+aren't cached, so it wouldn't reproduce. Re-run to retry just those; the history only holds
+complete, replayable scores.
 
 The first run builds the sample (network): downloads the TREC 2021 topics + qrels into
 data/trec/, draws 15 topics x 20 judged trials, fetches each trial from ClinicalTrials.gov and
@@ -108,10 +109,14 @@ def _score_matcher(sample: trec.TrecSample, git_sha: str | None) -> MatcherScore
         print(f"matcher: eval_runs {row.id[:8]}, git {row.git_sha}")
     else:
         print(
-            f"matcher: incomplete, NOT recorded: {len(score.uncompiled)} trials could not be "
-            f"compiled ({', '.join(score.uncompiled) or 'none'}), {score.judge_errors} judge "
-            "calls failed. Re-run to retry them (everything else replays from the cache)."
+            f"matcher: incomplete, NOT recorded: {len(score.failed)} topics failed, "
+            f"{len(score.uncompiled)} trials could not be compiled "
+            f"({', '.join(score.uncompiled) or 'none'}), {score.judge_errors} judge calls "
+            "failed. Re-run to retry them (everything else replays from the cache)."
         )
+        for f in score.failed:  # the first line of the error; the run's trace has the rest
+            error = f.error.splitlines()[0]
+            print(f"  topic {f.topic_id} failed at {f.step}: {error} (run {f.run_id})")
     return score
 
 

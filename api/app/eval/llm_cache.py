@@ -9,7 +9,8 @@ the model's settings (model id, bound tools, temperature, ...) and replays it on
 A changed prompt file, criterion, note or model id is a different key, so it asks the model
 again. The LangChain callbacks still fire on a hit, so the trace shows the replayed call.
 
-Only the eval installs the cache; live match runs always ask the model.
+Only the eval installs the cache; live match runs always ask the model. The eval writes a
+topic's answers only once its match run succeeds (`PendingCache`).
 """
 
 import hashlib
@@ -57,6 +58,32 @@ class SqliteLlmCache(BaseCache):
     def clear(self, **kwargs: Any) -> None:
         with session_scope() as s:
             s.exec(delete(LlmCacheRow))
+
+
+class PendingCache(BaseCache):
+    """Holds new answers back from `base` until `commit()`, so a topic whose match run fails
+    leaves nothing behind (its parse answer may be the malformed one) and a re-run asks again.
+    Lookups see the held answers first, then `base`."""
+
+    def __init__(self, base: BaseCache) -> None:
+        self.base = base
+        self._pending: dict[tuple[str, str], RETURN_VAL_TYPE] = {}
+
+    def lookup(self, prompt: str, llm_string: str) -> RETURN_VAL_TYPE | None:
+        held = self._pending.get((prompt, llm_string))
+        return held if held is not None else self.base.lookup(prompt, llm_string)
+
+    def update(self, prompt: str, llm_string: str, return_val: RETURN_VAL_TYPE) -> None:
+        self._pending[(prompt, llm_string)] = return_val
+
+    def commit(self) -> None:
+        for (prompt, llm_string), return_val in self._pending.items():
+            self.base.update(prompt, llm_string, return_val)
+        self._pending.clear()
+
+    def clear(self, **kwargs: Any) -> None:
+        self._pending.clear()
+        self.base.clear(**kwargs)
 
 
 def with_cache[M: BaseChatModel](factory: Callable[[], M], cache: BaseCache) -> Callable[[], M]:
