@@ -24,6 +24,7 @@ import {
 import { CloserResult } from "@/components/CloserResult";
 import { MatchResults } from "@/components/MatchResults";
 import { PageHeader, type Crumb } from "@/components/PageHeader";
+import { PatientFactsPanel } from "@/components/PatientFactsPanel";
 import { StatusPill, type RunStatus } from "@/components/StatusPill";
 import { TracePanel, type TracePanelProps } from "@/components/TracePanel";
 import type { CloserOutput, RunSummary, Schemas, TraceEvent } from "@/lib/api";
@@ -38,6 +39,7 @@ import {
   type RunTab,
   type RunTabsAction,
 } from "@/lib/match-results";
+import { parseProvenance } from "@/lib/patient-facts";
 import { verdictEventFor } from "@/lib/trace";
 import { useTraceSelection } from "@/lib/use-trace-selection";
 
@@ -157,6 +159,7 @@ export function RunWithTrace({
       ),
     [matches],
   );
+  const provenance = useMemo(() => parseProvenance(events), [events]);
   const highlighted = verdictEventFor(
     events,
     selection.selectedId,
@@ -256,6 +259,12 @@ export function RunWithTrace({
             </p>
           )}
           {closer && <CloserResult key={closer.nct_id} output={closer} />}
+          {matches && summary?.patient && (
+            <PatientFactsPanel
+              patient={summary.patient}
+              provenance={provenance}
+            />
+          )}
           {matches && summary && (
             <MatchResults
               matches={matches}
