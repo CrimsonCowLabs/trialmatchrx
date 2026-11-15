@@ -636,6 +636,10 @@ export interface components {
             patient_label?: string | null;
             /** Condition */
             condition?: string | null;
+            /** Source Run Id */
+            source_run_id?: string | null;
+            /** Trial Title */
+            trial_title?: string | null;
             /** Max Unknowns For Likely */
             max_unknowns_for_likely: number;
         };

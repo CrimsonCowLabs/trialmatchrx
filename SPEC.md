@@ -278,7 +278,7 @@ class RunStats(BaseModel):             # the match form's duration / cost hint
 | GET | `/api/runs` | `?kind: RunKind = match`, `?limit: int = 50` (max 200) | `list[RunListItem]`, newest first; read-only, not traced |
 | GET | `/api/runs/stats` | `?limit: int = 20` (max 200) | `RunStats` over the newest `limit` finished match runs: wall-time range and median cost from stored runs; read-only, not traced |
 | GET | `/api/runs/{run_id}/events` | SSE | `TraceEvent` stream, then `done` |
-| GET | `/api/runs/{run_id}` |  | `RunSummary`: `{status, patient: PatientFacts, matches: list[TrialMatch], totals, closer, patient_label, condition, max_unknowns_for_likely}`; `patient_label` is as on `RunListItem`, `condition` is the match request's (None for a closer run), `max_unknowns_for_likely` the tier rule's threshold |
+| GET | `/api/runs/{run_id}` |  | `RunSummary`: `{status, patient: PatientFacts, matches: list[TrialMatch], totals, closer, patient_label, condition, max_unknowns_for_likely, source_run_id, trial_title}`; `patient_label` is as on `RunListItem` (a closer run's is its match run's patient), `condition` is the match request's (None for a closer run), `max_unknowns_for_likely` the tier rule's threshold; `source_run_id` and `trial_title` are a closer run's match run and the trial's title in it (None for a match run) |
 | GET | `/api/runs/{run_id}/trace` |  | `list[TraceEvent]` (export / replay) |
 | GET | `/api/trials` | `?q: str` (substring of NCT ID or title) | `list[TrialListItem]` from the trials cache, by NCT ID; no network, not traced |
 | GET | `/api/trials/{nct}` |  | trial summary + compiled `list[Criterion]` |

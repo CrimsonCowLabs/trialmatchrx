@@ -116,11 +116,31 @@ async def stream_run_events(
     return EventSourceResponse(run_event_stream(run_id, bus, after_seq=last_event_id or 0))
 
 
+def _closer_source(run: RunRow) -> tuple[str | None, PatientFacts | None, str | None]:
+    """A closer run's (match run id, that run's patient, the trial's title there). The match
+    run's id and the NCT ID are in the closer request, so this works for a failed closer run
+    too; the patient and title are None when the match run is gone."""
+    source_id = run.request.get("run_id")
+    source = store.get_run(source_id) if source_id else None
+    if source is None:
+        return source_id, None, None
+    result: dict[str, Any] = source.result or {}
+    nct = run.request.get("nct_id")
+    matches = result.get("matches", [])
+    title = next((m.get("title") for m in matches if m.get("nct_id") == nct), None)
+    return source_id, _patient(result), title
+
+
 @router.get("/{run_id}", response_model=RunSummary)
 async def get_run(run_id: str) -> RunSummary:
     run = _require_run(run_id)
     result: dict[str, Any] = run.result or {}
     patient = _patient(result)
+    source_run_id: str | None = None
+    trial_title: str | None = None
+    label_patient = patient  # a closer run stores no patient: label it with its match run's
+    if run.kind == "closer":
+        source_run_id, label_patient, trial_title = _closer_source(run)
     return RunSummary(
         run_id=run.id,
         kind=cast(RunKind, run.kind),
@@ -129,9 +149,11 @@ async def get_run(run_id: str) -> RunSummary:
         matches=result.get("matches", []),
         totals=compute_totals(run, store.latest_events(run_id)),
         closer=result.get("closer"),
-        patient_label=patient_label(patient),
+        patient_label=patient_label(label_patient),
         condition=run.request.get("condition") if run.kind == "match" else None,
         max_unknowns_for_likely=MAX_UNKNOWNS_FOR_LIKELY,
+        source_run_id=source_run_id,
+        trial_title=trial_title,
     )
 
 

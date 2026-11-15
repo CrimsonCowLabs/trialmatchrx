@@ -4,9 +4,12 @@
 // link; the patient and their facts), then results on the left and the trace on the right,
 // linked both ways. "Why?" on a verdict focuses its trace event; selecting a trace event
 // highlights the verdict it produced. The trace column stays in view while the results scroll.
-// Used by the live match and closer pages and the replay page.
+// Used by the live match and closer pages and the replay page. A closer run's header is its
+// own: "Next steps for a 61 M patient", the trial's title, its NCT ID on the breadcrumb line.
+// With `collapsibleTrace` (the live closer page) a Show / Hide trace toggle folds the trace
+// column away once the agent's answer is there (`traceShown`).
 import Link from "next/link";
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 import { CloserResult } from "@/components/CloserResult";
 import { MatchResults } from "@/components/MatchResults";
@@ -14,6 +17,7 @@ import { PageHeader, type Crumb } from "@/components/PageHeader";
 import { StatusPill, type RunStatus } from "@/components/StatusPill";
 import { TracePanel, type TracePanelProps } from "@/components/TracePanel";
 import type { CloserOutput, RunSummary, Schemas, TraceEvent } from "@/lib/api";
+import { closerTitle, traceShown } from "@/lib/closer";
 import { formatRunDuration, patientFactChips, patientTitle } from "@/lib/match-results";
 import { verdictEventFor } from "@/lib/trace";
 import { useTraceSelection } from "@/lib/use-trace-selection";
@@ -49,6 +53,7 @@ export function RunWithTrace({
   link,
   title,
   breadcrumb,
+  collapsibleTrace = false,
   children,
 }: {
   runId: string;
@@ -72,6 +77,8 @@ export function RunWithTrace({
   /** The page title when the summary names no patient or condition. */
   title: string;
   breadcrumb: Crumb[];
+  /** A Show / Hide trace toggle; the trace starts open and folds away once `closer` shows. */
+  collapsibleTrace?: boolean;
   /** Shown above the results (controls, notices). */
   children?: ReactNode;
 }) {
@@ -82,6 +89,15 @@ export function RunWithTrace({
   );
   const highlighted = verdictEventFor(events, selection.selectedId, verdictEventIds);
   const wallTime = runStatus === "running" ? null : (summary?.totals.wall_time_s ?? null);
+  const [traceChoice, setTraceChoice] = useState<boolean | null>(null);
+  const showTrace = !collapsibleTrace || traceShown(traceChoice, closer !== null);
+  const header =
+    summary?.kind === "closer"
+      ? { title: closerTitle(summary), description: summary.trial_title }
+      : {
+          title: patientTitle(summary) ?? title,
+          description: summary && <FactsStrip patient={summary.patient} />,
+        };
 
   return (
     <>
@@ -89,28 +105,44 @@ export function RunWithTrace({
         breadcrumb={breadcrumb}
         trail={
           <>
-            <span className="font-mono break-all text-foreground">{runId}</span>
+            <span className="font-mono break-all text-foreground">{closer?.nct_id ?? runId}</span>
             <StatusPill
               status={runStatus}
               detail={wallTime === null ? null : formatRunDuration(wallTime)}
             />
-            {link && (
-              <Link href={link.href} className="font-medium link sm:ml-auto">
-                {link.label}
-              </Link>
-            )}
+            <span className="flex gap-4 sm:ml-auto">
+              {link && (
+                <Link href={link.href} className="font-medium link">
+                  {link.label}
+                </Link>
+              )}
+              {collapsibleTrace && (
+                <button
+                  type="button"
+                  className="font-medium link"
+                  aria-expanded={showTrace}
+                  aria-controls="run-trace-column"
+                  onClick={() => setTraceChoice(!showTrace)}
+                  data-testid="trace-toggle"
+                >
+                  {showTrace ? "Hide trace" : "Show trace"}
+                </button>
+              )}
+            </span>
           </>
         }
-        title={patientTitle(summary) ?? title}
-        description={summary && <FactsStrip patient={summary.patient} />}
+        title={header.title}
+        description={header.description}
       />
-      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)]">
+      <div
+        className={`grid grid-cols-[minmax(0,1fr)] items-start gap-6 ${showTrace ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)]" : ""}`}
+      >
         <div className="flex min-w-0 flex-col gap-4">
           {children}
           {runStatus === "failed" && (
             <p className="text-sm text-destructive">Run failed; the error event is in the trace.</p>
           )}
-          {closer && <CloserResult output={closer} />}
+          {closer && <CloserResult key={closer.nct_id} output={closer} />}
           {matches && summary && (
             <MatchResults
               matches={matches}
@@ -122,7 +154,11 @@ export function RunWithTrace({
           )}
         </div>
         {/* Sticky wrapper: the trace stays in view while the results column scrolls. */}
-        <div className="min-w-0 lg:sticky lg:top-4" data-testid="trace-column">
+        <div
+          id="run-trace-column"
+          className={`min-w-0 lg:sticky lg:top-4 ${showTrace ? "" : "hidden"}`}
+          data-testid="trace-column"
+        >
           <TracePanel
             runId={runId}
             events={events}
