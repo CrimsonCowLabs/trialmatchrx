@@ -3,35 +3,22 @@
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { MatchResults } from "@/components/MatchResults";
 import { TracePanel } from "@/components/TracePanel";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api, type RunSummary } from "@/lib/api";
 import { useRunEvents } from "@/lib/sse";
 
 function Results({ runId }: { runId: string }) {
   const [summary, setSummary] = useState<RunSummary | null>(null);
+  const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    api.getRun(runId).then(setSummary, () => setSummary(null));
+    api.getRun(runId).then(setSummary, (err: unknown) =>
+      setError(err instanceof Error ? err.message : String(err)),
+    );
   }, [runId]);
-  if (!summary) return null;
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{summary.matches.length} trial(s)</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="flex flex-col gap-1 text-sm">
-          {summary.matches.map((m) => (
-            <li key={m.nct_id}>
-              <span className="font-mono">{m.nct_id}</span> · {m.title} · <b>{m.tier}</b> (
-              {m.counts.pass ?? 0} pass / {m.counts.fail ?? 0} fail / {m.counts.unknown ?? 0}{" "}
-              unknown)
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
-  );
+  if (error) return <p className="text-sm text-destructive">{error}</p>;
+  if (!summary) return <p className="text-sm text-muted-foreground">Loading results…</p>;
+  return <MatchResults matches={summary.matches} />;
 }
 
 function MatchRun({ runId }: { runId: string }) {

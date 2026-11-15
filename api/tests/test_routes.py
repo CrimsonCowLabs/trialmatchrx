@@ -9,7 +9,6 @@ from app.config import get_settings
 from app.main import app
 from app.pipeline.fixture_model import FixtureChatModel, load_llm_fixture
 from app.pipeline.study_source import load_fixture_study
-from app.routers.match import parse_model_factory
 from app.routers.trials import compile_model_factory
 from app.schemas import (
     Criterion,
@@ -36,19 +35,6 @@ def no_stub_delay() -> Iterator[None]:
     settings.stub_event_delay_s = 0
     yield
     settings.stub_event_delay_s = original
-
-
-@pytest.fixture(autouse=True)
-def fixture_parse_model() -> Iterator[FixtureChatModel]:
-    """Match runs parse the note with the saved demo-patient output, not Haiku."""
-    model = FixtureChatModel(
-        output=load_llm_fixture("demo_short", root=PARSE_FIXTURES),
-        tool_name="DraftPatient",
-        model_name=get_settings().model_parse,
-    )
-    app.dependency_overrides[parse_model_factory] = lambda: lambda: model
-    yield model
-    app.dependency_overrides.pop(parse_model_factory)
 
 
 async def test_match_streams_trace_events_in_seq_order_then_done() -> None:
@@ -83,24 +69,6 @@ async def test_match_parses_the_note_into_the_run_result_and_trace(
     (step,) = [e for e in trace if e.name == "parse_patient"]
     assert step.status == "ok" and step.kind == "step"
     assert any(e.kind == "llm" and e.parent_id == step.id for e in trace)
-
-
-async def test_run_summary_and_trace_after_a_stub_match() -> None:
-    async with client() as c:
-        run_id = (await c.post("/api/match", json=MATCH_BODY)).json()["run_id"]
-        await c.get(f"/api/runs/{run_id}/events")  # returns once the run is done
-
-        summary = RunSummary.model_validate((await c.get(f"/api/runs/{run_id}")).json())
-        trace = [
-            TraceEvent.model_validate(e) for e in (await c.get(f"/api/runs/{run_id}/trace")).json()
-        ]
-
-    assert summary.status == "done"
-    assert summary.patient is not None and summary.patient.labs["egfr"].value == 48
-    # one real (fixture) parse call + the stub compile event
-    assert summary.totals.llm_calls == 2 and summary.totals.cache_hits == 1
-    trace_ids = {e.id for e in trace}
-    assert all(v.trace_event_id in trace_ids for m in summary.matches for v in m.verdicts)
 
 
 async def test_match_needs_a_note_or_bundle() -> None:

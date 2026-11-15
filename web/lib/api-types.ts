@@ -13,7 +13,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Start Match */
+        /**
+         * Start Match
+         * @description Start a match run in the background; poll `GET /api/runs/{run_id}` or stream its
+         *     events. The compile model is only built on a compile-cache miss.
+         */
         post: operations["start_match"];
         delete?: never;
         options?: never;
@@ -103,7 +107,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Trial */
+        /**
+         * Get Trial
+         * @description Cached trial summary (fetched once on a cache miss). Traced as a `trial` run whose id
+         *     comes back in the `X-Run-Id` header, on errors too.
+         */
         get: operations["get_trial"];
         put?: never;
         post?: never;
