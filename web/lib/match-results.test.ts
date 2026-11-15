@@ -180,6 +180,14 @@ test("View verdict switches back to Results and asks to reveal that verdict, eve
   assert.notEqual(again.reveal?.nonce, first.reveal?.nonce);
 });
 
+test("a reveal is done once the verdict has been shown, and the next one still lands", () => {
+  const asked = runTabsReducer(INITIAL_RUN_TABS, { type: "view-verdict", eventId: "judge" });
+  const done = runTabsReducer(asked, { type: "revealed" });
+  assert.deepEqual(done, { tab: "results", reveal: null });
+  const again = runTabsReducer(done, { type: "view-verdict", eventId: "judge" });
+  assert.equal(again.reveal?.eventId, "judge");
+});
+
 test("picking a tab shows it and keeps the last reveal", () => {
   const state = runTabsReducer(INITIAL_RUN_TABS, { type: "view-verdict", eventId: "judge" });
   const next = runTabsReducer(state, { type: "show", tab: "trace" });

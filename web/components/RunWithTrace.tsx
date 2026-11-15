@@ -13,6 +13,7 @@
 import Link from "next/link";
 import {
   useCallback,
+  useEffect,
   useMemo,
   useReducer,
   useState,
@@ -185,6 +186,11 @@ export function RunWithTrace({
     (eventId: string) => dispatchTabs({ type: "view-verdict", eventId }),
     [],
   );
+  // Child effects run first, so the criterion row has scrolled by the time this clears the
+  // request; a later remount of that row won't scroll again.
+  useEffect(() => {
+    if (tabs.reveal) dispatchTabs({ type: "revealed" });
+  }, [tabs.reveal]);
   // Below `lg` only the chosen tab's column shows; from `lg` both sit side by side. With the
   // trace folded away there are no tabs and the results always show.
   const shownBelowLg = (tab: RunTab) =>

@@ -113,7 +113,10 @@ export type RunTabsAction =
   /** "Why?" on a verdict: its trace event is focused on the Trace tab. */
   | { type: "why" }
   /** "View verdict" in the trace sheet: back to Results, revealing the verdict `eventId`. */
-  | { type: "view-verdict"; eventId: string };
+  | { type: "view-verdict"; eventId: string }
+  /** The revealed row has scrolled into view: drop the request, so a later remount of that
+   *  row (tier switch, card reopened) doesn't scroll again. */
+  | { type: "revealed" };
 
 export const INITIAL_RUN_TABS: RunTabs = { tab: "results", reveal: null };
 
@@ -128,6 +131,8 @@ export function runTabsReducer(state: RunTabs, action: RunTabsAction): RunTabs {
         tab: "results",
         reveal: { eventId: action.eventId, nonce: (state.reveal?.nonce ?? 0) + 1 },
       };
+    case "revealed":
+      return state.reveal ? { ...state, reveal: null } : state;
   }
 }
 

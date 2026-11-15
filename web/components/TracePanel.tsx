@@ -208,7 +208,9 @@ function DetailSheet({
   onClose: () => void;
 }) {
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    // The sheet is only hidden by CSS from `lg`, so Escape must not close inline details there.
+    const belowLg = window.matchMedia("(width < 64rem)");
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && belowLg.matches && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
@@ -218,7 +220,7 @@ function DetailSheet({
       role="dialog"
       aria-label={`Trace event ${event.name}`}
       data-testid="trace-sheet"
-      className="fixed inset-x-0 bottom-0 z-50 flex max-h-[60dvh] flex-col gap-2 overflow-y-auto rounded-t-2xl border-t border-line bg-surface px-4 pt-2 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgb(20_23_26/0.08)] lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 flex max-h-[60dvh] flex-col gap-2 overflow-y-auto rounded-t-2xl border-t border-line bg-surface px-4 pt-2 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-[0_-8px_24px_color-mix(in_srgb,var(--ink)_8%,transparent)] lg:hidden"
     >
       <span aria-hidden className="h-1 w-9 shrink-0 self-center rounded-full bg-line" />
       <div className="flex items-baseline gap-3">

@@ -27,10 +27,10 @@ const SHORT_CRITERIA_LIMIT = 3;
 
 type TrialMatch = Schemas["TrialMatch"];
 
-const TIER_TABS: { tier: Tier; label: string; short: string; count: string }[] = [
-  { tier: "likely", label: "Likely eligible", short: "Likely", count: "text-tier-likely" },
-  { tier: "needs_info", label: "Needs info", short: "Needs info", count: "text-tier-needs-info" },
-  { tier: "ineligible", label: "Ineligible", short: "Ineligible", count: "text-tier-ineligible" },
+const TIER_TABS: { tier: Tier; label: string; shortLabel: string; count: string }[] = [
+  { tier: "likely", label: "Likely eligible", shortLabel: "Likely", count: "text-tier-likely" },
+  { tier: "needs_info", label: "Needs info", shortLabel: "Needs info", count: "text-tier-needs-info" },
+  { tier: "ineligible", label: "Ineligible", shortLabel: "Ineligible", count: "text-tier-ineligible" },
 ];
 
 interface Linking {
@@ -82,7 +82,7 @@ function TrialCard({
   const nextSteps = match.tier !== "ineligible" ? onNextSteps : undefined;
   // Below `lg` an open card lists a few criteria, then "Show all N criteria".
   const [showAll, setShowAll] = useState(false);
-  const short = new Set(
+  const shortList = new Set(
     shortCriteria(match.verdicts, highlightedEventId ?? null, SHORT_CRITERIA_LIMIT),
   );
   return (
@@ -124,11 +124,11 @@ function TrialCard({
                   highlighted={!!highlightedEventId && v.trace_event_id === highlightedEventId}
                   revealNonce={reveal?.eventId === v.trace_event_id ? reveal.nonce : undefined}
                   onWhy={onWhy}
-                  collapsedOnMobile={!showAll && !short.has(v)}
+                  collapsedOnMobile={!showAll && !shortList.has(v)}
                 />
               ))}
             </ul>
-            {short.size < match.verdicts.length && (
+            {shortList.size < match.verdicts.length && (
               // -mt-px: sits on the last shown row's bottom border instead of doubling it.
               <button
                 type="button"
@@ -231,7 +231,7 @@ export function MatchResults({
           aria-label="Match tier"
           className="flex flex-wrap gap-0.5 rounded-lg bg-surface-sunken p-0.5 text-sm font-medium"
         >
-          {TIER_TABS.map(({ tier, label, short, count }) => {
+          {TIER_TABS.map(({ tier, label, shortLabel, count }) => {
             const selected = tier === view.tier;
             return (
               <button
@@ -244,7 +244,7 @@ export function MatchResults({
                 className={`rounded-md px-3.5 py-1.5 ${selected ? "bg-surface shadow-xs" : "text-ink-3 hover:text-foreground"}`}
               >
                 {/* The short label keeps all three tabs on one line at 390px. */}
-                <span className="sm:hidden">{short}</span>
+                <span className="sm:hidden">{shortLabel}</span>
                 <span className="hidden sm:inline">{label}</span>{" "}
                 <span className={`font-mono tabular-nums ${selected ? count : ""}`}>
                   {counts[tier]}
