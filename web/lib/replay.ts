@@ -50,15 +50,22 @@ export function replayReducer(state: ReplayState, action: ReplayAction): ReplayS
   }
 }
 
+/** Whether every emission is shown, and whether the timer should be ticking. */
+export function replayPlayback(
+  state: ReplayState,
+  emissions: TraceEvent[],
+): { finished: boolean; running: boolean } {
+  const finished = state.index >= emissions.length;
+  return { finished, running: state.playing && !finished };
+}
+
 /** "seq N / M": the last shown emission's seq out of the last one's, and how far along the
- *  bar is (shown emissions over all of them). */
+ *  bar is in the same unit (N over M). */
 export function replayPosition(
   emissions: TraceEvent[],
   index: number,
 ): { seq: number; lastSeq: number; fraction: number } {
-  return {
-    seq: emissions[index - 1]?.seq ?? 0,
-    lastSeq: emissions.at(-1)?.seq ?? 0,
-    fraction: emissions.length === 0 ? 0 : index / emissions.length,
-  };
+  const seq = emissions[index - 1]?.seq ?? 0;
+  const lastSeq = emissions.at(-1)?.seq ?? 0;
+  return { seq, lastSeq, fraction: lastSeq === 0 ? 0 : seq / lastSeq };
 }

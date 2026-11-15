@@ -64,24 +64,24 @@ function RowAction({
   }
   const compiling = state?.status === "compiling";
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={onCompile}
-      disabled={compiling}
-      className="link -mx-2.5 text-sm"
-      data-testid="trial-compile"
-    >
-      {compiling ? (
-        <>
-          <Loader2 className="animate-spin" /> Compiling…
-        </>
-      ) : state?.status === "failed" ? (
-        "Retry compile"
-      ) : (
-        "Compile"
-      )}
-    </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onCompile}
+          disabled={compiling}
+          className="link -mx-2.5 text-sm"
+          data-testid="trial-compile"
+        >
+          {compiling ? (
+            <>
+              <Loader2 className="animate-spin" /> Compiling…
+            </>
+          ) : state?.status === "failed" ? (
+            "Retry compile"
+          ) : (
+            "Compile"
+          )}
+        </Button>
   );
 }
 
@@ -113,119 +113,119 @@ function FilterChips({
       {trialFilterChips(trials).map((chip) => {
         const selected = chip.filter === filter;
         return (
-          <button
-            key={chip.filter}
-            type="button"
-            aria-pressed={selected}
-            onClick={() => onFilter(chip.filter)}
-            className={`rounded-md px-3.5 py-1.5 whitespace-nowrap ${selected ? "bg-surface shadow-xs" : "text-ink-3 hover:text-foreground"}`}
-          >
-            {chip.label} <span className="tabular-nums">{chip.count}</span>
-          </button>
+              <button
+                key={chip.filter}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => onFilter(chip.filter)}
+                className={`rounded-md px-3.5 py-1.5 whitespace-nowrap ${selected ? "bg-surface shadow-xs" : "text-ink-3 hover:text-foreground"}`}
+              >
+                {chip.label} <span className="tabular-nums">{chip.count}</span>
+              </button>
         );
       })}
     </div>
   );
 }
 
-function TrialsTable({
-  trials,
-  compiles,
-  onCompile,
-}: {
+/** The shown trials and their compile state, as both layouts take them. */
+type TrialRows = {
   trials: TrialListItem[];
   compiles: Record<string, CompileState>;
   onCompile: (nct: string) => void;
-}) {
+};
+
+function TrialsTable({ trials, compiles, onCompile }: TrialRows) {
   return (
     <Card className="hidden py-0 md:flex">
-      <table className="w-full text-sm" data-testid="trials-table">
-        <thead className="border-b border-line-soft text-left text-xs tracking-wide text-ink-4 uppercase">
-          <tr>
-            <th className="py-3 pr-5 pl-5 font-medium">NCT ID</th>
-            <th className="py-3 pr-5 font-medium">Title</th>
-            <th className="py-3 pr-5 font-medium">Phase</th>
-            <th className="py-3 pr-5 font-medium">Status</th>
-            <th className="py-3 pr-5 font-medium">Criteria</th>
-            <th className="py-3 pr-5 font-medium">
-              <span className="sr-only">Action</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {trials.map((trial) => (
-            <tr
-              key={trial.nct_id}
-              className="border-t border-line-soft first:border-t-0"
-              data-testid="trial-row"
-            >
-              <td className="py-3.5 pr-5 pl-5 font-mono text-xs font-medium whitespace-nowrap text-teal">
-                {trial.nct_id}
-              </td>
-              <td className="py-3.5 pr-5 text-[0.9375rem] leading-snug font-medium text-pretty">
-                {trial.title}
-                <CompileError state={compiles[trial.nct_id]} />
-              </td>
-              <td className="py-3.5 pr-5 whitespace-nowrap text-ink-2">{trial.phase ?? "–"}</td>
-              <td className="py-3.5 pr-5 text-ink-2">
-                <TrialStatus status={trial.overall_status} />
-              </td>
-              <td className="py-3.5 pr-5">
-                <CriteriaBadge trial={trial} />
-              </td>
-              <td className="py-3.5 pr-5 text-right">
-                <RowAction
-                  trial={trial}
-                  state={compiles[trial.nct_id]}
-                  onCompile={() => onCompile(trial.nct_id)}
-                />
-              </td>
+      {/* The table scrolls inside its card when the column is too narrow (SPEC "UI design"). */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm" data-testid="trials-table">
+          <thead className="border-b border-line-soft text-left text-xs tracking-wide text-ink-4 uppercase">
+            <tr>
+              <th className="py-3 pr-5 pl-5 font-medium">NCT ID</th>
+              <th className="py-3 pr-5 font-medium">Title</th>
+              <th className="py-3 pr-5 font-medium">Phase</th>
+              <th className="py-3 pr-5 font-medium">Status</th>
+              <th className="py-3 pr-5 font-medium">Criteria</th>
+              <th className="py-3 pr-5 font-medium">
+                <span className="sr-only">Action</span>
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {trials.map((trial) => {
+              const state = compiles[trial.nct_id];
+              return (
+                <tr
+                  key={trial.nct_id}
+                  className="border-t border-line-soft first:border-t-0"
+                  data-testid="trial-row"
+                >
+                  <td className="py-3.5 pr-5 pl-5 font-mono text-xs font-medium whitespace-nowrap text-teal">
+                    {trial.nct_id}
+                  </td>
+                  <td className="py-3.5 pr-5 text-[0.9375rem] leading-snug font-medium text-pretty">
+                    {trial.title}
+                    <CompileError state={state} />
+                  </td>
+                  <td className="py-3.5 pr-5 whitespace-nowrap text-ink-2">{trial.phase ?? "–"}</td>
+                  <td className="py-3.5 pr-5 text-ink-2">
+                    <TrialStatus status={trial.overall_status} />
+                  </td>
+                  <td className="py-3.5 pr-5">
+                    <CriteriaBadge trial={trial} />
+                  </td>
+                  <td className="py-3.5 pr-5 text-right">
+                    <RowAction
+                      trial={trial}
+                      state={state}
+                      onCompile={() => onCompile(trial.nct_id)}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </Card>
   );
 }
 
-function TrialCards({
-  trials,
-  compiles,
-  onCompile,
-}: {
-  trials: TrialListItem[];
-  compiles: Record<string, CompileState>;
-  onCompile: (nct: string) => void;
-}) {
+function TrialCards({ trials, compiles, onCompile }: TrialRows) {
   return (
     <ul className="flex flex-col gap-3 md:hidden" data-testid="trials-list">
-      {trials.map((trial) => (
-        <li key={trial.nct_id}>
-          <Card size="sm" className="gap-1.5 px-4">
-            <div className="flex items-center justify-between gap-3">
-              <span className="font-mono text-xs font-medium text-teal">{trial.nct_id}</span>
-              <CriteriaBadge trial={trial} />
-            </div>
-            <p className="text-[0.9375rem] leading-snug font-medium">{trial.title}</p>
-            <p className="flex flex-wrap items-center gap-x-1.5 text-[0.8125rem] text-ink-4">
-              {trial.phase && (
-                <>
-                  {trial.phase} <span aria-hidden>·</span>
-                </>
-              )}
-              <TrialStatus status={trial.overall_status} />
-            </p>
-            <CompileError state={compiles[trial.nct_id]} />
-            <div>
-              <RowAction
-                trial={trial}
-                state={compiles[trial.nct_id]}
-                onCompile={() => onCompile(trial.nct_id)}
-              />
-            </div>
-          </Card>
-        </li>
-      ))}
+      {trials.map((trial) => {
+        const state = compiles[trial.nct_id];
+        return (
+          <li key={trial.nct_id}>
+            <Card size="sm" className="gap-1.5 px-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-mono text-xs font-medium text-teal">{trial.nct_id}</span>
+                <CriteriaBadge trial={trial} />
+              </div>
+              <p className="text-[0.9375rem] leading-snug font-medium">{trial.title}</p>
+              <p className="flex flex-wrap items-center gap-x-1.5 text-[0.8125rem] text-ink-4">
+                {trial.phase && (
+                  <>
+                    {trial.phase} <span aria-hidden>·</span>
+                  </>
+                )}
+                <TrialStatus status={trial.overall_status} />
+              </p>
+              <CompileError state={state} />
+              <div>
+                <RowAction
+                  trial={trial}
+                  state={state}
+                  onCompile={() => onCompile(trial.nct_id)}
+                />
+              </div>
+            </Card>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -310,9 +310,7 @@ export function TrialsView() {
           </div>
           {shown.length === 0 ? (
             <p className="text-sm text-muted-foreground" data-testid="trials-empty">
-              No trials match{query.trim() ? ` “${query.trim()}”` : ""}
-              {filter === "all" ? "" : ` among the ${filter === "compiled" ? "compiled" : "not compiled"} ones`}
-              .
+              No trials match this filter.
             </p>
           ) : (
             <>

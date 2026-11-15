@@ -12,6 +12,7 @@ import { api, type RunSummary, type TraceEvent } from "@/lib/api";
 import {
   INITIAL_REPLAY,
   REPLAY_SPEEDS,
+  replayPlayback,
   replayPosition,
   replayReducer,
   type ReplayAction,
@@ -41,19 +42,18 @@ function ReplayBar({
   emissions: TraceEvent[];
   dispatch: Dispatch<ReplayAction>;
 }) {
-  const finished = state.index >= emissions.length;
-  const running = state.playing && !finished;
+  const { finished, running } = replayPlayback(state, emissions);
   const { seq, lastSeq, fraction } = replayPosition(emissions, state.index);
   return (
     <div
-      className="flex flex-wrap items-center gap-x-3.5 gap-y-3 rounded-card bg-replay px-4 py-3.5 text-white"
+      className="flex flex-wrap items-center gap-x-3.5 gap-y-3 rounded-card bg-replay px-4 py-3.5 text-replay-fg"
       data-testid="replay-controls"
     >
       <button
         type="button"
         onClick={() => dispatch({ type: "toggle" })}
         disabled={finished}
-        className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-white px-3.5 text-sm font-medium text-ink hover:bg-white/90 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4"
+        className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-replay-fg px-3.5 text-sm font-medium text-ink hover:bg-replay-fg/90 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4"
       >
         {running ? <Pause /> : <Play />} {running ? "Pause" : "Play"}
       </button>
@@ -92,7 +92,7 @@ function ReplayBar({
             type="button"
             aria-pressed={s === state.speed}
             onClick={() => dispatch({ type: "speed", speed: s })}
-            className={`rounded-md px-2.5 py-1 ${s === state.speed ? "bg-replay-line" : "text-replay-muted hover:text-white"}`}
+            className={`rounded-md px-2.5 py-1 ${s === state.speed ? "bg-replay-line" : "text-replay-muted hover:text-replay-fg"}`}
           >
             {s}x
           </button>
@@ -112,8 +112,7 @@ function Replay({ runId, trace, summary }: { runId: string } & Loaded) {
   const emissions = useMemo(() => replayEmissions(trace), [trace]);
   const delays = useMemo(() => replayDelays(emissions, GAP_CAP_MS), [emissions]);
   const [state, dispatch] = useReducer(replayReducer, INITIAL_REPLAY);
-  const finished = state.index >= emissions.length;
-  const running = state.playing && !finished;
+  const { finished, running } = replayPlayback(state, emissions);
 
   useEffect(() => {
     if (!running) return;
@@ -132,7 +131,8 @@ function Replay({ runId, trace, summary }: { runId: string } & Loaded) {
       events={state.events}
       live={false}
       status={{
-        label: finished ? "replayed" : `replay ${state.index}/${emissions.length}`,
+        // The position lives on the replay bar ("seq N / M"); one readout, one unit.
+        label: finished ? "replayed" : "replaying",
         variant: finished ? "secondary" : "outline",
       }}
       summary={summary}

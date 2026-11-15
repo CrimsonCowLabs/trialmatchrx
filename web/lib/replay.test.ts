@@ -3,7 +3,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import type { TraceEvent } from "./api.ts";
-import { INITIAL_REPLAY, replayPosition, replayReducer, type ReplayState } from "./replay.ts";
+import {
+  INITIAL_REPLAY,
+  replayPlayback,
+  replayPosition,
+  replayReducer,
+  type ReplayState,
+} from "./replay.ts";
 
 function ev(id: string, seq: number, status: TraceEvent["status"] = "ok"): TraceEvent {
   return {
@@ -104,6 +110,23 @@ test("the position is the last shown emission's seq out of the run's last seq", 
 
 test("an empty trace sits at seq 0 / 0 with an empty progress bar", () => {
   assert.deepEqual(replayPosition([], 0), { seq: 0, lastSeq: 0, fraction: 0 });
+});
+
+test("the progress bar fills by seq, so it agrees with seq N / M when seqs have gaps", () => {
+  const gappy = [ev("a", 2), ev("b", 8)];
+  assert.deepEqual(replayPosition(gappy, 1), { seq: 2, lastSeq: 8, fraction: 0.25 });
+});
+
+test("a replay is running while playing with emissions left, and finished past the last", () => {
+  assert.deepEqual(replayPlayback(INITIAL_REPLAY, EMISSIONS), { finished: false, running: true });
+  assert.deepEqual(replayPlayback(play([{ type: "toggle" }]), EMISSIONS), {
+    finished: false,
+    running: false,
+  });
+  assert.deepEqual(replayPlayback(play([tick, tick, tick]), EMISSIONS), {
+    finished: true,
+    running: false,
+  });
 });
 
 test("speed changes keep the position", () => {

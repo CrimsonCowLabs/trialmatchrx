@@ -59,6 +59,7 @@
   --color-replay: var(--replay);
   --color-replay-line: var(--replay-line);
   --color-replay-sunken: var(--replay-sunken);
+  --color-replay-fg: var(--replay-fg);
   --color-replay-muted: var(--replay-muted);
   --color-replay-progress: var(--replay-progress);
   --color-foreground: var(--foreground);
@@ -181,7 +182,8 @@
   --replay: var(--ink);
   --replay-line: #3a4046;
   --replay-sunken: #23272b;
-  --replay-muted: var(--trial-other);
+  --replay-fg: #ffffff;
+  --replay-muted: #9aa3ab;
   --replay-progress: #5fc4cc;
 
   /* shadcn slots, mapped onto the palette */
