@@ -1,5 +1,5 @@
 .PHONY: install dev api web check check-api check-web check-scripts types seed cohort eval eval-offline \
-	eval-smoke compile-fixtures record-demo
+	eval-smoke compile-fixtures record-demo guide-pin
 
 API_PORT ?= 8045
 WEB_PORT ?= 3045
@@ -101,3 +101,11 @@ compile-fixtures:
 # from app.db instead (offline, e.g. a rehearsal done in the UI).
 record-demo:
 	cd api && uv run python -m scripts.record_demo $(ARGS)
+
+# Pin the first-time guide's steps to recorded runs (guide_pins; GET /api/guide only reads it).
+# `ARGS="als RUN_ID"` (als / ipf / ipf_flip: a done match run, `--trial NCT` one of its matches),
+# `ARGS="pah RUN_ID"` (a done closer run; its trial comes from the run), `ARGS="feasibility
+# --trial NCT"` (a cached trial, no run), `ARGS="--remove STEP"`. No ARGS lists every step and
+# exits 1 unless all are pinned to runs that still exist. In prod there's no make: see README.
+guide-pin:
+	cd api && uv run python -m scripts.guide_pin $(ARGS)

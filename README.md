@@ -52,3 +52,13 @@ First time:
    ```
 
 Later deploys are step 2 alone. Each successful one is a line in `/app/trialmatchrx/deploys.log`; the registry keeps the newest 3 tags. The registry is shared with KeyIDPro, so the delete + garbage-collect that prunes it runs under `flock -n /app/registry/.gc.lock`; a deploy that finds the lock held skips the prune and says so. KeyIDPro's deploy doesn't take that lock yet, so until it does, don't run the two deploys at the same time.
+
+### Pinning the first-time guide's runs
+
+The guide's links come from the `guide_pins` table in the prod database (SPEC.md, "First-time user guide", Pins). Record the runs live in the prod UI, take each run id from the Runs page, then pin them in the running API container (it has no `make`; `python -m scripts.guide_pin` from its workdir `/app/api` is what `make guide-pin` runs):
+
+```bash
+ssh aaron@ccl-vps 'cd /app/trialmatchrx && docker compose -f compose.yaml exec -T api python -m scripts.guide_pin als RUN_ID'
+```
+
+The arguments are `make guide-pin`'s `ARGS`: `als|ipf|ipf_flip RUN_ID [--trial NCT]` (a done match run; `--trial` must be one of its matches), `pah RUN_ID` (a done closer run; the trial is the one it ran on), `feasibility --trial NCT` (a cached trial, no run), `--remove STEP`. With no arguments it lists every step as `pinned` / `MISSING` / `RUN GONE` and exits 1 unless all five are pinned to runs that still exist, so run it bare as the last check before judging.
