@@ -6,7 +6,7 @@
 // order, so filtering by tier keeps that order.
 import { Accessibility, MapPin, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CriterionRow } from "@/components/CriterionRow";
 import { Badge } from "@/components/ui/badge";
@@ -113,7 +113,22 @@ function TrialCard({
   reveal,
   onWhy,
   onNextSteps,
-}: { match: TrialMatch; open: boolean; onToggle: () => void } & Linking) {
+  scrollOnMount = false,
+  onScrolled,
+}: {
+  match: TrialMatch;
+  open: boolean;
+  onToggle: () => void;
+  /** Scroll this card to the top of the screen once mounted (the `?trial=` deep link). */
+  scrollOnMount?: boolean;
+  onScrolled?: () => void;
+} & Linking) {
+  const ref = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    if (!scrollOnMount) return;
+    ref.current?.scrollIntoView({ block: "start" });
+    onScrolled?.();
+  }, [scrollOnMount, onScrolled]);
   const nextSteps = match.tier !== "ineligible" ? onNextSteps : undefined;
   // Below `lg` an open card lists a few criteria, then "Show all N criteria".
   const [showAll, setShowAll] = useState(false);
@@ -121,7 +136,7 @@ function TrialCard({
     shortCriteria(match.verdicts, highlightedEventId ?? null, SHORT_CRITERIA_LIMIT),
   );
   return (
-    <li data-testid="trial-match" data-nct={match.nct_id}>
+    <li ref={ref} data-testid="trial-match" data-nct={match.nct_id}>
       <Card className="gap-0 py-0">
         <button
           type="button"
@@ -216,15 +231,27 @@ export function MatchResults({
   reveal,
   onWhy,
   onNextSteps,
+  linkedTrial = null,
 }: {
   matches: TrialMatch[];
   /** The run's tier rule threshold (`RunSummary.max_unknowns_for_likely`). */
   maxUnknownsForLikely: number;
+  /** `?trial=<NCT>`: open on this trial's tier with its card expanded and scrolled to; the
+   *  default view when the run has no such trial. Read once, at mount: this component mounts
+   *  only once the results are in, whether they arrived live or were there on load. */
+  linkedTrial?: string | null;
 } & Linking) {
   const [view, setView] = useState(() => {
-    const { tier, expanded } = initialView(matches);
-    return { tier, expanded: new Set(expanded ? [expanded] : []) };
+    const { tier, expanded } = initialView(matches, linkedTrial);
+    return {
+      tier,
+      expanded: new Set(expanded ? [expanded] : []),
+      // The deep-linked card, until it has scrolled into view once (switching tiers and back
+      // remounts the card; it shouldn't scroll again).
+      scrollTo: linkedTrial && expanded === linkedTrial ? linkedTrial : null,
+    };
   });
+  const clearScrollTo = useCallback(() => setView((v) => ({ ...v, scrollTo: null })), []);
   // When a selected trace event points at a verdict, show its tier and open its card (once per
   // selection, and again on each View verdict; the user can still switch away or collapse).
   // State adjusted during render, React's pattern for reacting to a prop change.
@@ -232,11 +259,19 @@ export function MatchResults({
   const locatedKey = located
     ? `${located.tier}/${located.nctId}/${highlightedEventId}/${reveal?.nonce ?? 0}`
     : null;
-  const [shownKey, setShownKey] = useState<string | null>(null);
+  // A deep-linked trial wins the first render: a trace event selected before the results came
+  // in counts as already shown, so it doesn't switch away from the linked card's tier.
+  const [shownKey, setShownKey] = useState<string | null>(() =>
+    view.scrollTo ? locatedKey : null,
+  );
   if (locatedKey !== shownKey) {
     setShownKey(locatedKey);
     if (located) {
-      setView((v) => ({ tier: located.tier, expanded: new Set([...v.expanded, located.nctId]) }));
+      setView((v) => ({
+        ...v,
+        tier: located.tier,
+        expanded: new Set([...v.expanded, located.nctId]),
+      }));
     }
   }
 
@@ -309,6 +344,8 @@ export function MatchResults({
               reveal={reveal}
               onWhy={onWhy}
               onNextSteps={onNextSteps}
+              scrollOnMount={m.nct_id === view.scrollTo}
+              onScrolled={clearScrollTo}
             />
           ))}
         </ul>

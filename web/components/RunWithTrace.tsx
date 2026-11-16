@@ -117,6 +117,7 @@ export function RunWithTrace({
   closer = null,
   totals,
   onNextSteps,
+  linkedTrial = null,
   runStatus,
   link,
   title,
@@ -138,6 +139,8 @@ export function RunWithTrace({
   totals?: TracePanelProps["totals"];
   /** "Next steps" on a trial: start the closer agent for it (live match page only). */
   onNextSteps?: (nctId: string) => void;
+  /** `?trial=<NCT>`: the results open on this trial's card (match page only). */
+  linkedTrial?: string | null;
   /** The run's own status. */
   runStatus: RunStatus;
   /** The other view of this run (live <-> replay). */
@@ -273,6 +276,7 @@ export function RunWithTrace({
               reveal={tabs.reveal}
               onWhy={onWhy}
               onNextSteps={onNextSteps}
+              linkedTrial={linkedTrial}
             />
           )}
         </div>
