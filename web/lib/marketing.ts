@@ -85,7 +85,7 @@ export const MARKETING_COPY = {
       heading: "Screen in minutes, not hours.",
       screenshot: {
         src: "/moments/match.webp",
-        alt: "A match run for a synthetic patient with pulmonary fibrosis: trials sorted into likely eligible, needs info and ineligible, with one trial open showing each criterion's verdict and the patient's quoted evidence.",
+        alt: "A match run for a synthetic patient with pulmonary fibrosis: trials sorted into likely eligible, needs info and ineligible, with one trial open showing each criterion's verdict, the patient's quoted evidence, and the unknowns still to check.",
         width: 1558,
         height: 1264,
         mobile: { src: "/moments/match-mobile.webp", width: 780, height: 1200 },

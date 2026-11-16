@@ -209,3 +209,19 @@ test("robots.txt allows `/` and disallows the app, /login, the token pages and t
   // No sitemap: there's one public page.
   assert.equal(robotsRules().sitemap, undefined);
 });
+
+/** Every file under public/, as the URL path it's served at. */
+function publicPaths(dir: string, prefix = ""): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    const url = `${prefix}/${name}`;
+    return statSync(path).isDirectory() ? publicPaths(path, url) : [url];
+  });
+}
+
+test("robots.txt rules are prefixes: no public file starts with a disallowed one", () => {
+  // e.g. a future /apple-touch-icon.png would be blocked by "Disallow: /app".
+  for (const url of publicPaths(join(import.meta.dirname, "..", "public"))) {
+    for (const rule of ROBOTS_DISALLOW) assert.ok(!url.startsWith(rule), `${url} vs ${rule}`);
+  }
+});
