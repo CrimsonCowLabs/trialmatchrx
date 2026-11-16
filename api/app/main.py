@@ -9,10 +9,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.routing import APIRoute
 
+from app.auth.csrf import RequireXRequestedWith
 from app.config import get_settings
 from app.db import init_db
+from app.routers import auth, feasibility, guide, match, runs, trials
 from app.routers import eval as eval_routes
-from app.routers import feasibility, guide, match, runs, trials
 from app.schemas import Health, RunDone
 from app.sources.cohort import get_cohort
 from app.trace.replay import recorded_patients
@@ -39,15 +40,21 @@ app = FastAPI(
     separate_input_output_schemas=False,
 )
 
+# Added first, so it runs inside CORS: a refused POST still gets CORS headers and the page can
+# read the 403.
+app.add_middleware(RequireXRequestedWith)
+# Explicit origins (never "*") because requests carry the session cookie. In dev the web app on
+# :3045 calls the API on :8045: cross-origin, but the same site, so the Lax cookie still flows.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_settings().cors_origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["X-Run-Id"],
 )
 
-for module in (match, runs, trials, feasibility, eval_routes, guide):
+for module in (match, runs, trials, feasibility, eval_routes, guide, auth):
     app.include_router(module.router)
 
 

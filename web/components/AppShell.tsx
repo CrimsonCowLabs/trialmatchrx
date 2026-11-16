@@ -1,5 +1,6 @@
 // The app shell, for the app pages only (app/(shell)/layout.tsx): a sidebar at md and up, a
-// bottom tab bar below md (never both), the first-time user guide (GuidePanel: docked right, a
+// bottom tab bar below md (never both), the signed-in account (AccountStatus: in the sidebar,
+// or a row above the page below md), the first-time user guide (GuidePanel: docked right, a
 // drawer, or a bottom sheet), and the page frame every route renders in. The frame owns the
 // 16px mobile gutters and padding; a page picks its width with <Page width=...>. The route-aware
 // nav suspends under cacheComponents on dynamic routes, so each nav has a static fallback (same
@@ -10,6 +11,7 @@ import { Suspense, type ReactNode } from "react";
 
 import { HOME_HREF } from "@/lib/nav";
 
+import { AccountStatus } from "./AccountStatus";
 import { GuidePanel } from "./GuidePanel";
 import { SidebarNav, SidebarNavFallback, TabBarNav, TabBarNavFallback } from "./ShellNav";
 
@@ -30,11 +32,20 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Suspense fallback={<SidebarNavFallback />}>
           <SidebarNav />
         </Suspense>
+        <Suspense>
+          <AccountStatus variant="sidebar" />
+        </Suspense>
         <p className="text-xs text-ink-4">Synthetic data only</p>
       </aside>
       {/* Bottom padding below md clears the fixed tab bar (h-16 plus the safe-area inset) and
           the collapsed guide handle above it (h-11). */}
       <main className="flex min-w-0 flex-1 flex-col px-4 pt-6 pb-[calc(8.25rem+env(safe-area-inset-bottom))] sm:px-8 sm:pt-8 md:pb-8">
+        {/* Below md the tab bar has no room for the account, so it sits above the page. */}
+        <div className="-mt-3 mb-3 md:hidden">
+          <Suspense>
+            <AccountStatus variant="bar" />
+          </Suspense>
+        </div>
         {children}
       </main>
       <GuidePanel />

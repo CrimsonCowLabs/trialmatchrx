@@ -4,7 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 API_DIR = Path(__file__).resolve().parent.parent
@@ -46,7 +46,16 @@ class Settings(BaseSettings):
     # /eval page shows the measured compile rate against it.
     eval_compile_rate_target: float = Field(default=0.6, ge=0, le=1)
 
+    # Explicit origins only: requests carry the session cookie (allow_credentials).
     cors_origins: list[str] = ["http://localhost:3045", "http://127.0.0.1:3045"]
+
+    # The session cookie's Secure flag. On unless turned off: `make dev` / `make api` set
+    # SESSION_COOKIE_SECURE=false, since the dev API is plain http://localhost.
+    session_cookie_secure: bool = True
+    # Proxies (CIDR) whose X-Forwarded-For the sign-in throttle believes (app/auth/client_ip.py).
+    # compose.yaml adds the Docker bridge ranges: Caddy's requests reach the container from the
+    # bridge gateway, not from 127.0.0.1.
+    trusted_proxies: list[str] = ["127.0.0.0/8", "::1/128"]
 
     # USD per million tokens, (input, output). Anthropic first-party list prices; a model id
     # matches an entry exactly or by prefix (dated ids like `claude-sonnet-4-5-20250929`).
@@ -59,6 +68,15 @@ class Settings(BaseSettings):
         "claude-haiku-5-5": (0.10, 0.50),
         "claude-opus-5-5": (4.0, 20.0),
     }
+
+    @field_validator("cors_origins")
+    @classmethod
+    def _explicit_origins(cls, origins: list[str]) -> list[str]:
+        if "*" in origins:
+            raise ValueError(
+                "CORS_ORIGINS must list explicit origins, not *: requests carry the session cookie"
+            )
+        return origins
 
     def cost_usd(self, model: str | None, tokens_in: int, tokens_out: int) -> float | None:
         """Cost of one call, or None when the model isn't in the price table."""

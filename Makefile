@@ -1,5 +1,5 @@
 .PHONY: install dev api web check check-api check-web check-scripts types seed cohort eval eval-offline \
-	eval-smoke compile-fixtures record-demo guide-pin
+	eval-smoke compile-fixtures record-demo guide-pin dev-user
 
 API_PORT ?= 8045
 WEB_PORT ?= 3045
@@ -8,15 +8,18 @@ install:
 	cd api && uv sync
 	cd web && pnpm install
 
+# The dev API is plain http://localhost, so its session cookie can't be Secure (on by default).
+DEV_API_ENV := SESSION_COOKIE_SECURE=false
+
 # api on :8045 (uvicorn --reload) + web on :3045; Ctrl-C stops both.
 dev:
 	@trap 'kill 0' INT TERM EXIT; \
-	(cd api && uv run uvicorn app.main:app --reload --port $(API_PORT)) & \
+	(cd api && $(DEV_API_ENV) uv run uvicorn app.main:app --reload --port $(API_PORT)) & \
 	(cd web && pnpm dev --port $(WEB_PORT)) & \
 	wait
 
 api:
-	cd api && uv run uvicorn app.main:app --reload --port $(API_PORT)
+	cd api && $(DEV_API_ENV) uv run uvicorn app.main:app --reload --port $(API_PORT)
 
 web:
 	cd web && pnpm dev --port $(WEB_PORT)
@@ -109,3 +112,8 @@ record-demo:
 # exits 1 unless all are pinned to runs that still exist. In prod there's no make: see README.
 guide-pin:
 	cd api && uv run python -m scripts.guide_pin $(ARGS)
+
+# Create (or reset) the local sign-in account dev@localhost and print its password. Refuses
+# unless DATABASE_URL is a SQLite file inside api/ (the default api/app.db), so never in prod.
+dev-user:
+	cd api && uv run python -m scripts.dev_user

@@ -41,3 +41,68 @@
   - The placeholder's line is "Match patients to recruiting clinical trials, and see why." (adapted from Home's title) and its button reads "Open the app".
   - The guide's fallback copy still says "on Home"; Home is still the page's name, only its URL changed.
   - compose.yaml's web healthcheck still fetches `/`, which still returns 200 (the placeholder, and later the public marketing page).
+
+## 2026-11-16 11:41 marketing-and-accounts/password-signin
+- Sign in with email and password (#2). Login isn't required anywhere yet (#10).
+- Tables (db.py, from `create_all`):
+  - `users`: id, email (unique, normalized), password_hash (null = passkey-only), created_at, last_login_at, disabled_at.
+  - `sessions`: token_hash (pk, SHA-256 of the cookie token), user_id, created_at, last_used_at.
+  - `login_failures`: id, email, ip, failed_at.
+- `app/auth/`:
+  - `passwords.py`: `password_problem(password) -> str | None` is the one rule function for #3, #5 and #6 (12+ characters, no composition rules, not on the bundled list). Also `hash_password`, `verify_password` (returns an upgraded hash when `check_needs_rehash` says so) and `burn_verify` (the dummy verify for unknown emails).
+  - `common_passwords.txt`: SecLists `10k-most-common.txt`, unmodified, compared case-insensitively. Source, commit, sha256 and the MIT license are in `common_passwords.NOTICE`.
+  - `sessions.py`: create / resolve / delete. The token is 32 random bytes; only its hash is stored. A session lasts 30 days from last use, and `last_used_at` moves at most once a minute. Creating a session prunes expired ones.
+  - `throttle.py`: 5 failures in 15 minutes for the email OR the IP. Rolling window, no lockout.
+  - `client_ip.py`: the IP the throttle counts.
+  - `csrf.py`: pure ASGI middleware; a non-GET/HEAD/OPTIONS request without `X-Requested-With` gets a 403.
+  - `deps.py`: `current_user` (optional) and `require_user` (401), the session dependencies #10 applies. Both re-send the cookie when the session rolls.
+- Routes (`routers/auth.py`):
+  - `POST /api/auth/login` returns `Me`. Every failure is a 401 "Email or password is incorrect"; a throttled attempt is a 429 "Try again in a few minutes".
+  - `POST /api/auth/logout` returns 204: it deletes the row and clears the cookie.
+  - `GET /api/auth/me` returns `Me` or 401.
+  - Schemas `LoginRequest`, `Me` and the two messages are in schemas.py; `make types` was run.
+- CORS: `allow_credentials=True` with the existing explicit origins, and a validator now rejects `*`.
+- Cookie `tmrx_session`: HttpOnly, SameSite=Lax, Path=/, Max-Age 30 days, Secure from `SESSION_COOKIE_SECURE` (default true). `make dev` / `make api` pass false.
+- `make dev-user` (`scripts/dev_user.py`, HACK(demo)): creates or resets `dev@localhost` / `trialmatch-local-dev` and prints them. It's idempotent: a re-run restores the password and re-enables the account. It refuses (exit 2) unless the database is the local one.
+- Web:
+  - `/login` in `(bare)` (noindex): email + password, "Forgot password?" (shows "Contact the team to reset your password."), "Request access" to `/#request-access`. HACK(demo) marks the slot above the form for #4's passkey button.
+  - After sign-in it goes to `safeNextPath(?next=)` (lib/auth.ts), else `/app`. Already signed in, `/login` goes to `/app`.
+  - `AccountStatus` shows the email + "Sign out" in the sidebar, and in a slim row above the page below md. Signed out, it shows "Sign in" (`/login?next=<this page>`), tagged HACK(demo) until #10.
+  - lib/api.ts sends `credentials: "include"` and `X-Requested-With: fetch` on every request, and parses FastAPI's `detail` into `ApiError.detail`. The SSE EventSource uses `withCredentials`.
+- Code review (standards + spec, against origin/main). Fixed:
+  - Open redirect: `/.//evil.example` normalized to `//evil.example`. The normalized path is now re-checked; tests added.
+  - Parallel guesses could all pass the throttle check before any failure was written. Check, verify and record now run under one process lock (one uvicorn worker); test added.
+  - CORS `*` rejected.
+  - The dummy hash is built at import, so the first unknown-email sign-in isn't two Argon2 runs.
+  - Expired sessions are pruned.
+  - `as_utc` moved to db.py; HACK(demo) tags on the two deferred bits; a failed sign-out no longer leaves an unhandled rejection.
+- Tests:
+  - pytest: test_auth_passwords, test_auth_sessions, test_auth_throttle, test_auth_client_ip, test_auth_routes (success, cookie flags, each failure gives the same body, hash work for unknown emails, 429 by email and by IP, parallel burst, rehash, me/logout cycle, CSRF on a non-auth POST) and test_dev_user. Plus a CORS config test.
+  - node: lib/auth.test.ts.
+  - `make check` green.
+- Visual check: `make dev API_PORT=8245 WEB_PORT=3245` with `CORS_ORIGINS='["http://localhost:3245"]'` and `NEXT_PUBLIC_API_URL`. In headless Chromium at 1440px and 390px:
+  - `/login` has no horizontal scroll.
+  - A wrong password shows "Email or password is incorrect".
+  - Sign-in follows `?next=/runs`, and the sidebar (desktop) / top row (mobile) show dev@localhost.
+  - `/login` when signed in goes to `/app`.
+  - Sign out goes to `/login`, and `me` is then 401.
+  - The 6th failure from one IP shows "Try again in a few minutes".
+  - A cross-origin POST with the header reaches the route; without it, 403.
+- Decisions:
+  - Dependency: `argon2-cffi`, for Argon2id password hashing (SPEC.md names it). It pulls in `argon2-cffi-bindings`, `cffi` and `pycparser`.
+  - Data: SecLists 10k-most-common list committed as `api/app/auth/common_passwords.txt` (MIT, note beside it), not a dependency; never fetched at runtime.
+  - Sign-in isn't traced with TraceRecorder: a trace needs a run row and belongs to agent runs in the trace UI, and auth attempts there would be noise and would show who tried which email. Throttle and login decisions go to the `app.auth` logger instead (outcome, reason, IP; never the password).
+  - The failures table is `login_failures`, not `login_attempts`: only failures are recorded. Throttled attempts aren't recorded, so hammering doesn't extend the wait, and a success doesn't clear earlier failures.
+  - The CSRF guard covers every method but GET/HEAD/OPTIONS, not only POST (there are no PUT/PATCH/DELETE routes yet). It needs any non-empty `X-Requested-With`.
+  - The cookie's Secure defaults to on, and `make dev` / `make api` turn it off, so a deploy that forgets the setting stays secure.
+  - Client IP: `X-Forwarded-For` is believed only when the TCP peer is in `TRUSTED_PROXIES` (default loopback), and then only its last entry, the one Caddy sets.
+  - In prod the host Caddy reaches the container through the loopback-published port, so the peer is the Docker bridge gateway, not 127.0.0.1. compose.yaml trusts Docker's default pools (172.16.0.0/12, 192.168.0.0/16). Only processes and containers on the box can reach that port, and the per-email limit holds regardless. Not checked on the box (no prod access in this task). After the deploy, confirm the `login failed ... ip=` log lines show real client IPs, and narrow it to the gateway if wanted.
+  - Uvicorn's proxy headers are left at their defaults (trust 127.0.0.1); see client_ip.py for how they interact.
+  - "Local" for `make dev-user`: the engine's database is a SQLite file whose resolved path is inside the repo's `api/` directory (the default `api/app.db`). Anything else refuses: `/data/app.db` (the prod volume), in-memory, another backend.
+  - Dev credential `dev@localhost` / `trialmatch-local-dev` (it passes the rules). A re-run resets the password and clears `disabled_at`.
+  - Signing in again from the same browser deletes that browser's previous session.
+  - `Me` is `{id, email, has_password, created_at}`; #4 and #5 add to it. `me` answers 401 when signed out, not 200 with null, so it can just be `require_user`.
+  - A malformed login body (a missing field, or too long) is FastAPI's 422, not the shared 401. The form's `required` prevents the empty case.
+  - `/login` sends a signed-in visitor to `/app` (as the ticket says), not to `?next=`.
+  - Both AccountStatus instances (sidebar and mobile row) mount, one hidden by CSS, so `/api/auth/me` is read twice per shell mount. Kept simple; a shared context can come with #10.
+  - In dev, use `localhost` for both the web app and the API. 127.0.0.1 vs localhost is cross-site, so the Lax cookie wouldn't flow.
