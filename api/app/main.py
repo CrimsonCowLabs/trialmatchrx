@@ -4,12 +4,13 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.routing import APIRoute
 
 from app.auth.csrf import RequireXRequestedWith
+from app.auth.deps import require_session
 from app.config import get_settings
 from app.db import init_db
 from app.routers import auth, feasibility, guide, invites, match, runs, trials
@@ -38,6 +39,8 @@ app = FastAPI(
     lifespan=lifespan,
     generate_unique_id_function=_operation_id,
     separate_input_output_schemas=False,
+    # Every route needs a session unless `deps.is_public` names it (SPEC.md "Enforcement").
+    dependencies=[Depends(require_session)],
 )
 
 # Added first, so it runs inside CORS: a refused POST still gets CORS headers and the page can

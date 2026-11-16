@@ -6,7 +6,11 @@ from typing import Any
 
 import httpx
 
+from app.auth import sessions, users
+from app.auth.deps import SESSION_COOKIE
 from app.main import app
+
+TEST_EMAIL = "tester@example.com"
 
 
 @dataclass
@@ -34,11 +38,20 @@ def parse_sse(body: str) -> list[SSEMessage]:
     return messages
 
 
-def client() -> httpx.AsyncClient:
+def signed_in_user_id() -> str:
+    """The account `client()` signs in as (created in this test's database on first use)."""
+    user = users.find_by_email(TEST_EMAIL) or users.create_user(TEST_EMAIL, password_hash=None)
+    return user.id
+
+
+def client(*, signed_in: bool = True) -> httpx.AsyncClient:
     """The app's client: sends X-Requested-With like web/lib/api.ts, so POSTs pass the CSRF
-    guard."""
+    guard, and (unless `signed_in=False`) a session cookie for `TEST_EMAIL`, since every route
+    but the public ones needs one (SPEC.md "Enforcement")."""
+    cookies = {SESSION_COOKIE: sessions.create(signed_in_user_id())} if signed_in else None
     return httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app),
         base_url="http://test",
         headers={"X-Requested-With": "fetch"},
+        cookies=cookies,
     )
