@@ -12,7 +12,7 @@ import {
   type PublicKeyCredentialRequestOptionsJSON,
 } from "@simplewebauthn/browser";
 
-import { api, type Me, type PasskeyInfo } from "./api";
+import { api, type Me, type PasskeyInfo, type PasskeyRegisterRequest } from "./api";
 import { addPasskey, signInWithPasskey } from "./passkeys";
 
 export { browserSupportsWebAuthn, browserSupportsWebAuthnAutofill, WebAuthnAbortService };
@@ -39,18 +39,31 @@ export function passkeySignIn({ autofill }: { autofill: boolean }): Promise<Me |
   return signInWithPasskey(steps, { autofill });
 }
 
-/** Add a passkey to the signed-in account (the account page; the invite page later). */
+const createPasskey = (options: Record<string, unknown>) =>
+  startRegistration({ optionsJSON: options as unknown as PublicKeyCredentialCreationOptionsJSON });
+
+/** Add a passkey to the signed-in account (the account page). */
 export function passkeyAdd(): Promise<PasskeyInfo> {
   return addPasskey({
     options: api.passkeyRegisterOptions,
-    prompt: (options) =>
-      startRegistration({
-        optionsJSON: options as unknown as PublicKeyCredentialCreationOptionsJSON,
-      }),
+    prompt: createPasskey,
     verify: ({ challenge_id, credential }) =>
       api.passkeyRegisterVerify({
         challenge_id,
         credential: credential as unknown as Record<string, unknown>,
       }),
+  });
+}
+
+/** Create a passkey for the account an invite will create. Nothing is stored yet: the result
+ *  goes to `acceptInvite` as `passkey`, which verifies it and creates the account with it. */
+export function passkeyForInvite(token: string): Promise<PasskeyRegisterRequest> {
+  return addPasskey({
+    options: () => api.invitePasskeyOptions(token),
+    prompt: createPasskey,
+    verify: async ({ challenge_id, credential }) => ({
+      challenge_id,
+      credential: credential as unknown as Record<string, unknown>,
+    }),
   });
 }

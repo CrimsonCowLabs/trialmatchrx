@@ -452,8 +452,13 @@ class InviteInfo(BaseModel):
     expires_at: dt.datetime
 
 
-class AcceptInviteRequest(BaseModel):
-    """Accept an invite by setting a password. Passkeys (#4) will add the other way in (the
-    spec allows a passkey, a password, or both)."""
+INVITE_NEEDS_SIGN_IN = "Add a passkey or set a password to finish."
 
-    password: str = Field(max_length=1024)
+
+class AcceptInviteRequest(BaseModel):
+    """Accept an invite with a passkey, a password, or both (SPEC.md); at least one, so the
+    account can always sign in. `passkey` is the registration started with
+    `POST /api/auth/invites/{token}/passkey/options`."""
+
+    password: str | None = Field(default=None, max_length=1024)
+    passkey: PasskeyRegisterRequest | None = None

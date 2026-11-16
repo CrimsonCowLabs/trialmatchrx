@@ -14,10 +14,19 @@ test("a refused link shows the API's message and offers sign-in", () => {
 });
 
 test("a password that breaks the rules stays on the form with the rule", () => {
-  assert.deepEqual(inviteProblem({ status: 400, detail: "Use at least 12 characters." }), {
+  assert.deepEqual(inviteProblem({ status: 422, detail: "Use at least 12 characters." }), {
     kind: "password",
     message: "Use at least 12 characters.",
   });
+});
+
+test("a passkey that didn't take, or neither way in, stays on the form as a passkey problem", () => {
+  for (const detail of [
+    "Couldn't add the passkey. Try again.",
+    "Add a passkey or set a password to finish.",
+  ]) {
+    assert.deepEqual(inviteProblem({ status: 400, detail }), { kind: "passkey", message: detail });
+  }
 });
 
 test("anything else is a connection problem, not a dead link", () => {

@@ -37,7 +37,7 @@ export function LoginView() {
   const [error, setError] = useState<string | null>(null);
   const [showForgot, setShowForgot] = useState(false);
   // False on the server and in browsers without WebAuthn: then only the password form shows.
-  const hasPasskeys = useSyncExternalStore(noChange, browserSupportsWebAuthn, () => false);
+  const canUsePasskeys = useSyncExternalStore(noChange, browserSupportsWebAuthn, () => false);
 
   // Already signed in: there's nothing to do here.
   useEffect(() => {
@@ -116,7 +116,7 @@ export function LoginView() {
       <Card>
         <CardContent className="flex flex-col gap-5">
           <h1 className="text-xl font-semibold tracking-tight text-ink">Sign in</h1>
-          {hasPasskeys && (
+          {canUsePasskeys && (
             <>
               <Button type="button" size="lg" className="h-10" onClick={onPasskey} disabled={busy}>
                 <KeyRound aria-hidden />
@@ -185,7 +185,7 @@ export function LoginView() {
             <Button
               type="submit"
               size="lg"
-              variant={hasPasskeys ? "outline" : "default"}
+              variant={canUsePasskeys ? "outline" : "default"}
               className="h-10"
               disabled={busy || !email || !password}
             >

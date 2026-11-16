@@ -506,6 +506,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/invites/{token}/passkey/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invite Passkey Options
+         * @description Start adding a passkey for the account this invite creates: options for
+         *     `startRegistration()`. Finish by posting the result to `accept` as `passkey`.
+         */
+        post: operations["invite_passkey_options"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/invites/{token}/accept": {
         parameters: {
             query?: never;
@@ -517,8 +538,9 @@ export interface paths {
         put?: never;
         /**
          * Accept Invite
-         * @description Set a password, create the account and sign in. A refused link, or a password that
-         *     breaks the rules (400, with why), creates nothing and leaves the link as it was.
+         * @description Create the account with a passkey, a password, or both, and sign in. A refused link, a
+         *     password that breaks the rules (400, with why), a passkey that doesn't verify or neither
+         *     (400) creates nothing and leaves the link as it was.
          */
         post: operations["accept_invite"];
         delete?: never;
@@ -555,12 +577,14 @@ export interface components {
     schemas: {
         /**
          * AcceptInviteRequest
-         * @description Accept an invite by setting a password. Passkeys (#4) will add the other way in (the
-         *     spec allows a passkey, a password, or both).
+         * @description Accept an invite with a passkey, a password, or both (SPEC.md); at least one, so the
+         *     account can always sign in. `passkey` is the registration started with
+         *     `POST /api/auth/invites/{token}/passkey/options`.
          */
         AcceptInviteRequest: {
             /** Password */
-            password: string;
+            password?: string | null;
+            passkey?: components["schemas"]["PasskeyRegisterRequest"] | null;
         };
         /**
          * CloserOutput
@@ -2117,6 +2141,58 @@ export interface operations {
             };
         };
     };
+    invite_passkey_options: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyOptions"];
+                };
+            };
+            /** @description This invite link isn't valid. Check that you copied all of it. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description There's already an account for this email. Sign in instead. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description This invite link has expired. Ask the team for a new one. / This invite link has already been used. Sign in instead. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     accept_invite: {
         parameters: {
             query?: never;
@@ -2141,7 +2217,7 @@ export interface operations {
                     "application/json": components["schemas"]["Me"];
                 };
             };
-            /** @description The password breaks the rules */
+            /** @description The password breaks the rules / Couldn't add the passkey. Try again. / Add a passkey or set a password to finish. */
             400: {
                 headers: {
                     [name: string]: unknown;

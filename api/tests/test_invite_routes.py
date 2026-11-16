@@ -125,9 +125,9 @@ async def test_a_password_that_breaks_the_rules_keeps_the_link_usable() -> None:
     async with https_client() as c:
         short = await accept(c, issued.token, "too short")
         common = await accept(c, issued.token, "unbelievable")
-        assert short.status_code == 400
+        assert short.status_code == 422
         assert short.json()["detail"] == passwords.password_problem("too short")
-        assert common.status_code == 400
+        assert common.status_code == 422
         assert common.json()["detail"] == passwords.password_problem("unbelievable")
         assert users.find_by_email("ana@example.com") is None
         assert (await accept(c, issued.token)).status_code == 200

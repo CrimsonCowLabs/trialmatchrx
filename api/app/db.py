@@ -275,14 +275,17 @@ class WebAuthnChallengeRow(SQLModel, table=True):
     """A passkey ceremony in progress: the random challenge the browser must sign. Kept here
     rather than in a cookie so it's single-use (deleted when the ceremony is verified) and
     expires (`passkeys.CHALLENGE_TTL`). `user_id` is set when adding a passkey (only that user
-    may finish it) and null when signing in, where nobody is known yet."""
+    may finish it) and null when signing in, where nobody is known yet. On the invite page the
+    account doesn't exist yet: `user_id` is the id it will get (hence no foreign key) and
+    `invite_hash` the invite it belongs to, so only accepting that invite can finish it."""
 
     __tablename__ = "webauthn_challenges"
 
     id: str = Field(primary_key=True)  # random, handed to the browser beside the options
     kind: str  # passkeys.Kind: "register" | "login"
     challenge: bytes
-    user_id: str | None = Field(default=None, foreign_key="users.id")
+    user_id: str | None = None
+    invite_hash: str | None = None  # InviteRow.token_hash, for an invite-page registration
     created_at: dt.datetime = Field(default_factory=utcnow, index=True)
 
 

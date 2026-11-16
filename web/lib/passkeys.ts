@@ -50,8 +50,9 @@ export type AddSteps<Credential, Result> = {
 /** Shown when the browser's prompt to create a passkey was cancelled or failed. */
 export const PASSKEY_PROMPT_FAILED = "No passkey was added.";
 
-/** Add a passkey to the signed-in account. A cancelled prompt rejects with
- *  PASSKEY_PROMPT_FAILED and never reaches the API (adding isn't a sign-in, so there's
+/** Create a passkey: on the account page `verify` stores it on the signed-in account; on the
+ *  invite page it hands the credential on to accepting the invite. A cancelled prompt rejects
+ *  with PASSKEY_PROMPT_FAILED and never reaches `verify` (adding isn't a sign-in, so there's
  *  nothing to throttle); the API's 400 rejects with its own message. */
 export async function addPasskey<Credential, Result>(
   steps: AddSteps<Credential, Result>,

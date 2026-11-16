@@ -4,9 +4,16 @@
 /** Why the invite page can't go on:
  *  - `link`: the link is unknown, expired or used, or the email has an account by now (the
  *    API's 404 / 410 / 409). Shown as the page's error, with a way to sign in instead.
- *  - `password`: the password breaks a rule (400). Shown under the form; the link still works.
+ *  - `password`: the password breaks a rule (422, as on the reset page). Shown under the
+ *    form; the link still works, and so does a passkey made for it (the password is checked
+ *    before the passkey).
+ *  - `passkey`: the passkey didn't take, or neither a passkey nor a password was given (400).
+ *    Shown under the form; the passkey has to be made again.
  *  - `retry`: the API didn't answer as expected. Shown under the form or with a retry. */
-export type InviteProblem = { kind: "link" | "password" | "retry"; message: string };
+export type InviteProblem = {
+  kind: "link" | "password" | "passkey" | "retry";
+  message: string;
+};
 
 export const RETRY_MESSAGE = "Couldn't reach the server. Try again.";
 
@@ -20,7 +27,8 @@ export function inviteProblem(err: unknown): InviteProblem {
       if (typeof status === "number" && LINK_STATUSES.has(status)) {
         return { kind: "link", message: detail };
       }
-      if (status === 400) return { kind: "password", message: detail };
+      if (status === 422) return { kind: "password", message: detail };
+      if (status === 400) return { kind: "passkey", message: detail };
     }
   }
   return { kind: "retry", message: RETRY_MESSAGE };

@@ -127,7 +127,12 @@ export const api = {
   /** Who a usable invite is for; 404 / 410 / 409 when the link can't be used. */
   getInvite: (token: string) =>
     request<InviteInfo>(`/api/auth/invites/${encodeURIComponent(token)}`),
-  /** Set a password, create the account and sign in. */
+  /** Start adding a passkey for the account this invite creates; finish through acceptInvite. */
+  invitePasskeyOptions: (token: string) =>
+    request<PasskeyOptions>(`/api/auth/invites/${encodeURIComponent(token)}/passkey/options`, {
+      method: "POST",
+    }),
+  /** Create the account with a passkey and/or a password, and sign in. */
   acceptInvite: (token: string, body: AcceptInviteRequest) =>
     request<Me>(`/api/auth/invites/${encodeURIComponent(token)}/accept`, {
       method: "POST",
