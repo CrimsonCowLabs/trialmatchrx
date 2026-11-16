@@ -102,6 +102,8 @@ export const api = {
   login: (body: LoginRequest) =>
     request<Me>("/api/auth/login", { method: "POST", body: JSON.stringify(body) }),
   logout: () => request<void>("/api/auth/logout", { method: "POST" }),
+  /** End every session of your account, this browser's too. */
+  logoutEverywhere: () => request<void>("/api/auth/logout-everywhere", { method: "POST" }),
   /** Whether a reset link can still be used; rejects with the API's reason when not. */
   checkResetLink: (token: string) =>
     request<ResetLinkInfo>("/api/auth/reset/check", {

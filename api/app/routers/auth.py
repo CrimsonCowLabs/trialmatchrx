@@ -1,5 +1,6 @@
-"""Sign in with email and password or a passkey, add and list passkeys, see who's signed in,
-sign out, and set a new password with a reset link (SPEC.md "Marketing and accounts").
+"""Sign in with email and password or a passkey, add, list and remove passkeys, see who's
+signed in, sign out (here or everywhere), set or change your password, and set a new password
+with a reset link (SPEC.md "Marketing and accounts").
 
 Sign-in isn't an agent run, so its decisions (throttled, which failure, success) go to the
 `app.auth` logger rather than a TraceRecorder: a trace needs a run row and belongs in the trace
@@ -223,6 +224,17 @@ def logout(request: Request, response: Response) -> None:
     if token:
         sessions.delete(token)
     clear_session_cookie(response)
+
+
+@router.post(
+    "/logout-everywhere", status_code=204, responses={401: {"description": "Not signed in"}}
+)
+def logout_everywhere(response: Response, user: Annotated[UserRow, Depends(require_user)]) -> None:
+    """Sign out everywhere: end every session of the signed-in account, this one included,
+    and clear this browser's cookie."""
+    ended = account.end_all_sessions(user.id)
+    clear_session_cookie(response)
+    log.info("signed out everywhere user=%s sessions=%d", user.id, ended)
 
 
 @router.get("/me", response_model=Me, responses={401: {"description": "Not signed in"}})

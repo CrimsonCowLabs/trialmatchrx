@@ -30,6 +30,12 @@ def set_password(user_id: str, new_hash: str, *, keep_session: str | None) -> Us
     return user
 
 
+def end_all_sessions(user_id: str) -> int:
+    """Sign out everywhere: delete every session of the user, the caller's too; how many."""
+    with session_scope() as s:
+        return sessions.end_user_sessions(s, user_id)
+
+
 class PasskeyNotFound(Exception):
     """No such passkey on this account (it may be someone else's: the same answer)."""
 

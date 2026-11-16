@@ -1,9 +1,9 @@
 "use client";
 
 // /app/account (SPEC.md "Marketing and accounts"): your passkeys, when each was added and
-// last used, add or remove them; set or change your password. You can't remove your last way
-// to sign in: the Remove button is off and says why (the API refuses it too).
-// HACK(demo): "Sign out everywhere" is still to come in #5.
+// last used, add or remove them; set or change your password; "Sign out everywhere". You can't
+// remove your last way to sign in: the Remove button is off and says why (the API refuses it
+// too).
 import { KeyRound } from "lucide-react";
 import { useCallback, useState } from "react";
 
@@ -17,6 +17,7 @@ import { HOME_HREF } from "@/lib/nav";
 import { useLoad } from "@/lib/use-load";
 
 import { PasswordCard } from "./password-card";
+import { SessionsCard } from "./sessions-card";
 
 const when = (iso: string) =>
   new Date(iso).toLocaleString(undefined, {
@@ -168,6 +169,7 @@ export function AccountView() {
         </CardContent>
       </Card>
       {me && <PasswordCard me={me} onChanged={setChangedMe} />}
+      <SessionsCard />
     </>
   );
 }
