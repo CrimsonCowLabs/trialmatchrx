@@ -614,6 +614,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/access-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Access Request
+         * @description Send a request for access. A filled honeypot gets the same 204 and stores nothing; a
+         *     4th stored request within an hour from one IP is a 429.
+         */
+        post: operations["create_access_request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -650,6 +671,31 @@ export interface components {
             /** Password */
             password?: string | null;
             passkey?: components["schemas"]["PasskeyRegisterRequest"] | null;
+        };
+        /**
+         * AccessRequestCreate
+         * @description `POST /api/access-requests`, public. `website` is the honeypot: the form hides it, so a
+         *     person leaves it empty; a filled one gets the same 204 and nothing is stored.
+         */
+        AccessRequestCreate: {
+            /** Name */
+            name: string;
+            /** Email */
+            email: string;
+            /** Organization */
+            organization: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "sponsor" | "cro" | "site" | "other";
+            /** Message */
+            message?: string | null;
+            /**
+             * Website
+             * @default
+             */
+            website: string;
         };
         /**
          * ChangePasswordRequest
@@ -2450,6 +2496,42 @@ export interface operations {
             };
             /** @description The password breaks the rules (as on the reset page) */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    create_access_request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessRequestCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A field is missing, too long, or not valid */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description You've already sent a few requests. Try again in an hour. */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

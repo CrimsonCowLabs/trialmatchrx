@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { loginHref, safeNextPath } from "./auth.ts";
+import { loginHref, needsSignIn, safeNextPath, signInRedirect } from "./auth.ts";
 
 test("no next goes to the app's Home", () => {
   assert.equal(safeNextPath(null), "/app");
@@ -52,4 +52,31 @@ test("the sign-in link remembers where you were", () => {
   assert.equal(loginHref("/match/run-1"), "/login?next=%2Fmatch%2Frun-1");
   assert.equal(loginHref("/app"), "/login");
   assert.equal(loginHref(null), "/login");
+});
+
+test("a signed-out visitor to an app page is sent to sign in, then back", () => {
+  assert.equal(signInRedirect("/match/run-1", "", false), "/login?next=%2Fmatch%2Frun-1");
+  assert.equal(signInRedirect("/trials", "?q=ckd", false), "/login?next=%2Ftrials%3Fq%3Dckd");
+  assert.equal(signInRedirect("/app", "", false), "/login");
+  assert.equal(signInRedirect("/app/account", "", false), "/login?next=%2Fapp%2Faccount");
+  for (const page of ["/runs", "/eval", "/feasibility/NCT1", "/closer/run-2", "/match"]) {
+    assert.ok(signInRedirect(page, "", false)?.startsWith("/login?next="), page);
+  }
+});
+
+test("a visitor with a session cookie, or on a public page, is let through", () => {
+  assert.equal(signInRedirect("/match/run-1", "", true), null);
+  const publicPages = ["/", "/login", "/invite/tok", "/reset/tok", "/apple", "/_next/x", "/brand/a.svg"];
+  for (const page of publicPages) {
+    assert.equal(signInRedirect(page, "", false), null, page);
+  }
+});
+
+test("a 401 from a gated API route means sign in; the auth routes' own 401s don't", () => {
+  assert.equal(needsSignIn(401, "/api/runs"), true);
+  assert.equal(needsSignIn(401, "/api/match"), true);
+  assert.equal(needsSignIn(401, "/api/auth/me"), false);
+  assert.equal(needsSignIn(401, "/api/auth/login"), false);
+  assert.equal(needsSignIn(403, "/api/runs"), false);
+  assert.equal(needsSignIn(404, "/api/runs/x"), false);
 });

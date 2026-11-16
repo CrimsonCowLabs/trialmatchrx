@@ -14,10 +14,11 @@ from app.db import GuidePinRow, RunRow, TraceEventRow, session_scope, utcnow
 from app.schemas import GuidePin, GuideStep, RunKind, RunStatus, TraceEvent
 
 
-def create_run(kind: RunKind, request: dict[str, Any]) -> str:
+def create_run(kind: RunKind, request: dict[str, Any], *, created_by: str | None = None) -> str:
+    """A new `running` run; `created_by` is the signed-in user who started it, if any."""
     run_id = str(uuid.uuid4())
     with session_scope() as s:
-        s.add(RunRow(id=run_id, kind=kind, request=request))
+        s.add(RunRow(id=run_id, kind=kind, request=request, created_by=created_by))
     return run_id
 
 

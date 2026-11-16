@@ -1,5 +1,6 @@
 // Typed client for the FastAPI backend. Types come from lib/api-types.ts (`make types`).
 import type { components, paths } from "./api-types";
+import { loginHref, needsSignIn } from "./auth";
 
 export type Schemas = components["schemas"];
 export type TraceEvent = Schemas["TraceEvent"];
@@ -33,6 +34,8 @@ export type PasskeyRegisterRequest = Schemas["PasskeyRegisterRequest"];
 export type InviteInfo = Schemas["InviteInfo"];
 export type AcceptInviteRequest = Schemas["AcceptInviteRequest"];
 export type ChangePasswordRequest = Schemas["ChangePasswordRequest"];
+export type AccessRequestCreate = Schemas["AccessRequestCreate"];
+export type AccessRole = AccessRequestCreate["role"];
 
 // Called directly (not through a Next rewrite) so the SSE stream is never buffered. Inlined at
 // build time: the Docker image is built with "" so every call is a same-origin `/api/...` path.
@@ -90,6 +93,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
   if (!res.ok) {
+    // Signed out or the session ended (expired, signed out elsewhere, account disabled) while
+    // the page was open, or a stale cookie got past the proxy: go sign in, then come back. The
+    // call still rejects, so the page stops what it was doing.
+    if (needsSignIn(res.status, path) && typeof window !== "undefined") {
+      window.location.assign(loginHref(`${window.location.pathname}${window.location.search}`));
+    }
     const body = await res.text();
     const message = `${init?.method ?? "GET"} ${path} -> ${res.status}: ${body}`;
     throw new ApiError(message, res.status, detailOf(body));
@@ -147,6 +156,9 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  /** The request-access form; public. 204 (also for a filled honeypot), or 429 / 422. */
+  requestAccess: (body: AccessRequestCreate) =>
+    request<void>("/api/access-requests", { method: "POST", body: JSON.stringify(body) }),
   startMatch: (body: JsonBody<"/api/match", "post">) =>
     request<RunStarted>("/api/match", { method: "POST", body: JSON.stringify(body) }),
   startCloser: (body: CloserRequest) =>

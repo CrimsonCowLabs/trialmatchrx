@@ -6,7 +6,7 @@ Needs uv, Python 3.12, Node 22 and pnpm.
 
 1. `make install` installs api (uv) and web (pnpm) dependencies.
 2. `cp .env.example .env` and set `ANTHROPIC_API_KEY` (not needed for the M0 stubs).
-3. `make dev` starts the api on :8045 and the web app on :3045; open http://localhost:3045/match.
+3. `make dev-user` creates the local account and prints its email and password; `make dev` starts the api on :8045 and the web app on :3045. Open http://localhost:3045/match (use `localhost`, not `127.0.0.1`: the session cookie is set for the API's host) and sign in. Every page but `/`, `/login` and the invite and reset links needs a session, and so does every `/api` route but `GET /api/health`, `/api/auth/*` and `POST /api/access-requests`.
 4. `make check` runs ruff, mypy, pytest and the web typecheck + lint; `make types` regenerates `web/lib/api-types.ts`.
 5. Offline demo: `make seed`, then `make record-demo` (needs `ANTHROPIC_API_KEY`) records a match run and a closer run for each demo patient (`als`, `ipf`, `pah`, `t2d`) into `data/fixtures/runs/` (`match-<id>.json`, `closer-<id>.json`) and prints each run's LLM cost. Record or re-record one patient at a time with `make record-demo ARGS="--patient als"` (repeatable). Start with `DEMO_MODE=replay` in `.env` and `/api/match` and `/api/closer` replay them with their original timing (gaps capped at 0.2 s), no network or key needed. Replay picks the patient from the note it is sent (whitespace and case are ignored); a note with no recording gets a 503 that says so. `GET /api/health` shows `demo_mode`, lists the recorded `demo_patients`, and is `ok: false` in replay mode until at least one patient is recorded and every recorded match has its closer run.
 
@@ -73,6 +73,14 @@ ssh aaron@ccl-vps 'cd /app/trialmatchrx && docker compose -f compose.yaml exec -
 ```
 
 `users` lists every account, oldest first, with its created date, last sign-in, number of passkeys, whether a password is set, and its disabled date (times in UTC). `disable_user` ends all of that account's sessions and blocks sign-in; the row stays, so a run's `created_by` still resolves. An unknown email exits 2 and changes nothing; an already-disabled account says so and keeps its first disabled date.
+
+Request-access submissions from the form on `/` live in the `access_requests` table. `make access-requests` (`python -m scripts.access_requests`) lists them newest first: when each was received (UTC), name, work email, organization and role, with the message, if any, on the line below. Nothing is emailed; reply yourself and send an invite.
+
+```bash
+ssh aaron@ccl-vps 'cd /app/trialmatchrx && docker compose -f compose.yaml exec -T api python -m scripts.access_requests'
+```
+
+The form drops a submission with its hidden honeypot field filled (it still says thanks) and takes at most 3 per hour from one IP; the 4th reads "You've already sent a few requests. Try again in an hour."
 
 ### Inviting someone
 
