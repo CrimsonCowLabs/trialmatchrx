@@ -36,6 +36,37 @@ export function safeNextPath(next: string | null | undefined): string {
   return isPlainPath(path) ? path : HOME_HREF;
 }
 
+/** The API's session cookie (api/app/auth/deps.py SESSION_COOKIE). HttpOnly, so only the
+ *  proxy (server side) sees it. In dev the API on :8045 sets it for host `localhost`, and
+ *  cookies don't separate ports, so the web app on :3045 gets it too. */
+export const SESSION_COOKIE = "tmrx_session";
+
+/** First path segments of the pages behind login (SPEC.md "Routes"). web/proxy.ts's matcher
+ *  must list the same ones (it has to be a literal). */
+export const APP_SECTIONS = ["app", "match", "runs", "trials", "eval", "feasibility", "closer"];
+
+/** Where the proxy sends a request for `pathname` + `search` (e.g. "?q=ckd"): the sign-in page,
+ *  coming back here afterwards, when it's an app page and there's no session cookie; null to
+ *  let it through. Only the cookie's presence is checked: the API decides whether the session
+ *  is valid (SPEC.md "Enforcement"), and a stale cookie gets a 401 there (`needsSignIn`). */
+export function signInRedirect(
+  pathname: string,
+  search: string,
+  hasSessionCookie: boolean,
+): string | null {
+  if (hasSessionCookie) return null;
+  const section = pathname.split("/")[1];
+  if (!APP_SECTIONS.includes(section)) return null;
+  return loginHref(`${pathname}${search}`);
+}
+
+/** Whether an API answer means "you're signed out, go sign in": a 401 from a gated route. The
+ *  `/api/auth/*` routes answer 401 as part of their job (`/me` while signed out, a wrong
+ *  password), and the pages that call them handle it. */
+export function needsSignIn(status: number, apiPath: string): boolean {
+  return status === 401 && !apiPath.startsWith("/api/auth/");
+}
+
 /** The sign-in link from `pathname`, coming back to it afterwards (Home needs no `next`). */
 export function loginHref(pathname: string | null): string {
   if (!pathname || pathname === HOME_HREF || safeNextPath(pathname) !== pathname) {

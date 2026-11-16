@@ -1,5 +1,6 @@
 // Typed client for the FastAPI backend. Types come from lib/api-types.ts (`make types`).
 import type { components, paths } from "./api-types";
+import { loginHref, needsSignIn } from "./auth";
 
 export type Schemas = components["schemas"];
 export type TraceEvent = Schemas["TraceEvent"];
@@ -89,6 +90,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
   if (!res.ok) {
+    // Signed out or the session ended (expired, signed out elsewhere, account disabled) while
+    // the page was open, or a stale cookie got past the proxy: go sign in, then come back. The
+    // call still rejects, so the page stops what it was doing.
+    if (needsSignIn(res.status, path) && typeof window !== "undefined") {
+      window.location.assign(loginHref(`${window.location.pathname}${window.location.search}`));
+    }
     const body = await res.text();
     const message = `${init?.method ?? "GET"} ${path} -> ${res.status}: ${body}`;
     throw new ApiError(message, res.status, detailOf(body));
