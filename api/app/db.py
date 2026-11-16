@@ -237,3 +237,17 @@ class LoginFailureRow(SQLModel, table=True):
     email: str = Field(index=True)  # normalized, whether or not an account has it
     ip: str = Field(index=True)
     failed_at: dt.datetime = Field(default_factory=utcnow, index=True)
+
+
+class PasswordResetRow(SQLModel, table=True):
+    """One password-reset link, printed by `make reset-link` (`app/auth/resets.py`). Like a
+    session, only the token's SHA-256 is stored. The link works once (`used_at`), until
+    `expires_at` (1 hour after it was made), and never for a disabled account."""
+
+    __tablename__ = "password_resets"
+
+    token_hash: str = Field(primary_key=True)  # sha256 hex of the link's token
+    user_id: str = Field(foreign_key="users.id", index=True)
+    created_at: dt.datetime = Field(default_factory=utcnow)
+    expires_at: dt.datetime
+    used_at: dt.datetime | None = None

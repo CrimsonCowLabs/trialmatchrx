@@ -90,3 +90,13 @@ def test_starting_a_session_clears_out_expired_ones() -> None:
     sessions.create(user_id, now=T0 + dt.timedelta(days=31))
     with session_scope() as s:
         assert s.get(SessionRow, sessions.token_hash(stale)) is None
+
+
+def test_ending_a_users_sessions_ends_all_of_theirs_and_no_one_elses() -> None:
+    ana, ben = make_user(), make_user("ben@example.com")
+    ana_tokens = [sessions.create(ana, now=T0) for _ in range(2)]
+    ben_token = sessions.create(ben, now=T0)
+    assert sessions.end_user_sessions(ana) == 2
+    assert all(sessions.resolve(t, now=T0) is None for t in ana_tokens)
+    assert sessions.resolve(ben_token, now=T0) is not None
+    assert sessions.end_user_sessions(ana) == 0

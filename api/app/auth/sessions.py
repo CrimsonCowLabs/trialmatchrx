@@ -68,6 +68,13 @@ def resolve(token: str, *, now: dt.datetime | None = None) -> Resolved | None:
         return Resolved(user, rolled)
 
 
+def end_user_sessions(user_id: str) -> int:
+    """End every session `user_id` has, in every browser; returns how many."""
+    with session_scope() as s:
+        result = s.exec(sql_delete(SessionRow).where(col(SessionRow.user_id) == user_id))
+        return int(result.rowcount)
+
+
 def delete(token: str) -> None:
     """End the session (sign-out). Unknown tokens are ignored."""
     with session_scope() as s:
