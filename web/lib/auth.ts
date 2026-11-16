@@ -4,7 +4,7 @@ import { HOME_HREF } from "./nav.ts";
 
 export const LOGIN_HREF = "/login";
 
-/** What "Forgot password?" says: there's no self-service reset yet (SPEC.md). */
+/** What "Forgot password?" says (SPEC.md): the team prints a reset link (`make reset-link`). */
 export const FORGOT_PASSWORD_MESSAGE = "Contact the team to reset your password.";
 
 // Parsed against a throwaway origin: a `next` that keeps this origin is a path on this site.

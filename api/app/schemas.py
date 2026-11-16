@@ -369,6 +369,31 @@ class LoginRequest(BaseModel):
     password: str = Field(max_length=1024)
 
 
+# What `/reset/[token]` shows when the link can't be used (`app/auth/resets.py`).
+RESET_UNKNOWN = "This reset link isn't valid. Ask the team for a new one."
+RESET_EXPIRED = "This reset link has expired. Ask the team for a new one."
+RESET_USED = "This reset link has already been used. Ask the team for a new one."
+RESET_DISABLED = "This account is disabled. Contact the team."
+
+
+class ResetLinkCheck(BaseModel):
+    """`POST /api/auth/reset/check`: is this link still usable? A POST, so the token stays out
+    of access logs."""
+
+    token: str = Field(max_length=128)
+
+
+class ResetLinkInfo(BaseModel):
+    email: str  # the account the link resets, so the page can say whose password it sets
+
+
+class ResetPasswordRequest(BaseModel):
+    """`POST /api/auth/reset`: set a new password with a reset link."""
+
+    token: str = Field(max_length=128)
+    password: str = Field(max_length=1024)
+
+
 class Me(BaseModel):
     """The signed-in account: `GET /api/auth/me` and a successful sign-in. Later tickets add
     fields (passkeys, the account page) rather than reshaping it."""

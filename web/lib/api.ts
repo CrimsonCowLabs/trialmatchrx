@@ -24,6 +24,8 @@ export type Health = Schemas["Health"];
 export type GuidePin = Schemas["GuidePin"];
 export type Me = Schemas["Me"];
 export type LoginRequest = Schemas["LoginRequest"];
+export type ResetLinkInfo = Schemas["ResetLinkInfo"];
+export type ResetPasswordRequest = Schemas["ResetPasswordRequest"];
 
 // Called directly (not through a Next rewrite) so the SSE stream is never buffered. Inlined at
 // build time: the Docker image is built with "" so every call is a same-origin `/api/...` path.
@@ -87,6 +89,15 @@ export const api = {
   login: (body: LoginRequest) =>
     request<Me>("/api/auth/login", { method: "POST", body: JSON.stringify(body) }),
   logout: () => request<void>("/api/auth/logout", { method: "POST" }),
+  /** Whether a reset link can still be used; rejects with the API's reason when not. */
+  checkResetLink: (token: string) =>
+    request<ResetLinkInfo>("/api/auth/reset/check", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    }),
+  /** Set a new password with a reset link; signs this browser in. */
+  resetPassword: (body: ResetPasswordRequest) =>
+    request<Me>("/api/auth/reset", { method: "POST", body: JSON.stringify(body) }),
   /** The signed-in account; rejects with an ApiError of status 401 when signed out. */
   me: () => request<Me>("/api/auth/me"),
   startMatch: (body: JsonBody<"/api/match", "post">) =>

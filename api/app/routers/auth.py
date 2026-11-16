@@ -1,5 +1,5 @@
-"""Sign in with email and password, see who's signed in, sign out (SPEC.md "Marketing and
-accounts").
+"""Sign in with email and password, see who's signed in, sign out, and set a new password
+with a reset link (SPEC.md "Marketing and accounts").
 
 Sign-in isn't an agent run, so its decisions (throttled, which failure, success) go to the
 `app.auth` logger rather than a TraceRecorder: a trace needs a run row and belongs in the trace
@@ -12,7 +12,7 @@ from typing import Annotated, NamedTuple
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
-from app.auth import passwords, sessions, throttle, users
+from app.auth import passwords, resets, sessions, throttle, users
 from app.auth.client_ip import request_ip
 from app.auth.deps import (
     SESSION_COOKIE,
@@ -21,7 +21,19 @@ from app.auth.deps import (
     set_session_cookie,
 )
 from app.db import UserRow
-from app.schemas import LOGIN_FAILED, LOGIN_THROTTLED, LoginRequest, Me
+from app.schemas import (
+    LOGIN_FAILED,
+    LOGIN_THROTTLED,
+    RESET_DISABLED,
+    RESET_EXPIRED,
+    RESET_UNKNOWN,
+    RESET_USED,
+    LoginRequest,
+    Me,
+    ResetLinkCheck,
+    ResetLinkInfo,
+    ResetPasswordRequest,
+)
 
 log = logging.getLogger("app.auth")
 
@@ -106,4 +118,63 @@ def logout(request: Request, response: Response) -> None:
 @router.get("/me", response_model=Me, responses={401: {"description": "Not signed in"}})
 def me(user: Annotated[UserRow, Depends(require_user)]) -> Me:
     """The signed-in account, or 401."""
+    return to_me(user)
+
+
+# Why a reset link can't be used, as the status the page gets with that message.
+_RESET_STATUS: dict[resets.RefusalReason, int] = {
+    "unknown": 404,
+    "expired": 410,
+    "used": 410,
+    "disabled": 403,
+}
+_RESET_RESPONSES: dict[int | str, dict[str, str]] = {
+    404: {"description": RESET_UNKNOWN},
+    410: {"description": f"{RESET_EXPIRED} / {RESET_USED}"},
+    403: {"description": RESET_DISABLED},
+}
+
+
+def _refused(exc: resets.ResetRefused) -> HTTPException:
+    return HTTPException(status_code=_RESET_STATUS[exc.reason], detail=str(exc))
+
+
+@router.post("/reset/check", response_model=ResetLinkInfo, responses=_RESET_RESPONSES)
+def check_reset_link(body: ResetLinkCheck) -> ResetLinkInfo:
+    """Whether a reset link can still be used, and for which account. Changes nothing."""
+    try:
+        user = resets.check(body.token)
+    except resets.ResetRefused as exc:
+        log.info("reset link check refused (%s)", exc)
+        raise _refused(exc) from None
+    return ResetLinkInfo(email=user.email)
+
+
+# Sync for the same reason as login: Argon2 hashing runs in the threadpool.
+@router.post(
+    "/reset",
+    response_model=Me,
+    responses={**_RESET_RESPONSES, 422: {"description": "The password breaks the rules"}},
+)
+def reset_password(body: ResetPasswordRequest, request: Request, response: Response) -> Me:
+    """Set a new password with a reset link (once, within an hour, not for a disabled
+    account). Ends every session the user had, this browser's included, then signs this
+    browser in with a new one. A password that breaks the rules is a 422 with the reason, and
+    the link stays usable."""
+    try:
+        user = resets.redeem(body.token, body.password)
+    except resets.ResetRefused as exc:
+        log.info("password reset refused (%s)", exc)
+        raise _refused(exc) from None
+    except resets.PasswordRejected as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from None
+    # Refuse here too, before making a session: the account may have been disabled since the
+    # link was redeemed. The password is set either way; a disabled account can't use it.
+    current = users.find_by_email(user.email)
+    if current is None or current.disabled_at is not None:
+        log.info("password reset user=%s: disabled before sign-in", user.id)
+        raise HTTPException(status_code=403, detail=RESET_DISABLED)
+    user = users.record_login(user.id, new_hash=None)
+    set_session_cookie(response, sessions.create(user.id))
+    log.info("password reset user=%s ip=%s", user.id, request_ip(request))
     return to_me(user)

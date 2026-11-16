@@ -29,6 +29,8 @@ services:
       # sign-in throttle believes X-Forwarded-For only from these (app/auth/client_ip.py).
       # Docker's default address pools; nothing outside the box can reach the port.
       TRUSTED_PROXIES: '["127.0.0.0/8", "::1/128", "172.16.0.0/12", "192.168.0.0/16"]'
+      # The public origin for the links the admin CLI prints (api/app/config.py app_url).
+      APP_URL: https://tmrx.crimsoncowlabs.com
     volumes:
       - db:/data
     # Loopback only. Docker on ccl-vps writes no iptables rules, so a port published on every
