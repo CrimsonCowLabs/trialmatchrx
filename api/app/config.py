@@ -52,6 +52,9 @@ class Settings(BaseSettings):
     # The session cookie's Secure flag. On unless turned off: `make dev` / `make api` set
     # SESSION_COOKIE_SECURE=false, since the dev API is plain http://localhost.
     session_cookie_secure: bool = True
+    # The site's public origin, for the links the admin CLI prints (`make invite`, `make
+    # reset-link`). compose.yaml sets the prod one.
+    app_url: str = "http://localhost:3045"
     # Proxies (CIDR) whose X-Forwarded-For the sign-in throttle believes (app/auth/client_ip.py).
     # compose.yaml adds the Docker bridge ranges: Caddy's requests reach the container from the
     # bridge gateway, not from 127.0.0.1.

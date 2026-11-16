@@ -20,3 +20,8 @@ services:
         condition: service_healthy
     mem_limit: 128m
     memswap_limit: 128m
+
+  api:
+    environment:
+      # Links printed by the admin CLI open through the local proxy, not prod.
+      APP_URL: http://localhost:8080

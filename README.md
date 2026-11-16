@@ -62,3 +62,13 @@ ssh aaron@ccl-vps 'cd /app/trialmatchrx && docker compose -f compose.yaml exec -
 ```
 
 The arguments are `make guide-pin`'s `ARGS`: `als|ipf|ipf_flip RUN_ID [--trial NCT]` (a done match run; `--trial` must be one of its matches), `pah RUN_ID` (a done closer run; the trial is the one it ran on), `feasibility --trial NCT` (a cached trial, no run), `--remove STEP`. With no arguments it lists every step as `pinned` / `MISSING` / `RUN GONE` and exits 1 unless all five are pinned to runs that still exist, so run it bare as the last check before judging.
+
+### Inviting someone
+
+Accounts are invite-only and nothing sends email (SPEC.md, "Marketing and accounts"). Locally, `make invite EMAIL=someone@example.com` prints the link. In prod, run what it runs inside the API container:
+
+```bash
+ssh aaron@ccl-vps 'cd /app/trialmatchrx && docker compose -f compose.yaml exec -T api python -m scripts.invite someone@example.com'
+```
+
+It prints a `https://tmrx.crimsoncowlabs.com/invite/<token>` link (the origin is `APP_URL`, set in `compose.yaml`; `--base-url URL` overrides it). Send it yourself. The link works once and expires after 7 days; on it the person sets a password and is signed in. An email that already has an account is refused and nothing is created. Inviting the same email again prints a new link; the older ones keep working until one is used.
