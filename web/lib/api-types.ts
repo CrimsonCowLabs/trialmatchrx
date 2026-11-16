@@ -486,6 +486,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change Password
+         * @description Set a password (an account without one) or change it (the current one is required).
+         *     A new password that breaks the rules is a 422 with the reason. A wrong current password
+         *     is a 403 and counts toward the sign-in throttle for the account's email and the IP; once
+         *     throttled it's a 429 without checking. Ends every other session; this one stays.
+         */
+        post: operations["change_password"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/invites/{token}": {
         parameters: {
             query?: never;
@@ -585,6 +608,17 @@ export interface components {
             /** Password */
             password?: string | null;
             passkey?: components["schemas"]["PasskeyRegisterRequest"] | null;
+        };
+        /**
+         * ChangePasswordRequest
+         * @description `POST /api/auth/password`: set a password (an account with none leaves
+         *     `current_password` out) or change it (`current_password` is required).
+         */
+        ChangePasswordRequest: {
+            /** Current Password */
+            current_password?: string | null;
+            /** New Password */
+            new_password: string;
         };
         /**
          * CloserOutput
@@ -2082,6 +2116,58 @@ export interface operations {
             };
             /** @description The password breaks the rules */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    change_password: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Your current password is incorrect. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The new password breaks the rules */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Try again in a few minutes */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

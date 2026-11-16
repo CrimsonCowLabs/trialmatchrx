@@ -76,7 +76,10 @@ def delete(token: str) -> None:
             s.delete(row)
 
 
-def end_user_sessions(session: Session, user_id: str) -> int:
-    """Delete every session of `user_id` inside the caller's transaction; returns how many."""
+def end_user_sessions(session: Session, user_id: str, *, keep: str | None = None) -> int:
+    """Delete every session of `user_id` inside the caller's transaction, except the one whose
+    cookie token is `keep` (this browser's, when it stays signed in); returns how many."""
     stmt = sql_delete(SessionRow).where(col(SessionRow.user_id) == user_id)
+    if keep is not None:
+        stmt = stmt.where(col(SessionRow.token_hash) != token_hash(keep))
     return session.connection().execute(stmt).rowcount

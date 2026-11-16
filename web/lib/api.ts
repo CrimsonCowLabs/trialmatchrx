@@ -32,6 +32,7 @@ export type PasskeyLoginRequest = Schemas["PasskeyLoginRequest"];
 export type PasskeyRegisterRequest = Schemas["PasskeyRegisterRequest"];
 export type InviteInfo = Schemas["InviteInfo"];
 export type AcceptInviteRequest = Schemas["AcceptInviteRequest"];
+export type ChangePasswordRequest = Schemas["ChangePasswordRequest"];
 
 // Called directly (not through a Next rewrite) so the SSE stream is never buffered. Inlined at
 // build time: the Docker image is built with "" so every call is a same-origin `/api/...` path.
@@ -117,6 +118,9 @@ export const api = {
   passkeyLoginVerify: (body: PasskeyLoginRequest) =>
     request<Me>("/api/auth/passkey/login/verify", { method: "POST", body: JSON.stringify(body) }),
   listPasskeys: () => request<PasskeyInfo[]>("/api/auth/passkeys"),
+  /** Set a password, or change it with the current one; ends your other sessions. */
+  changePassword: (body: ChangePasswordRequest) =>
+    request<Me>("/api/auth/password", { method: "POST", body: JSON.stringify(body) }),
   passkeyRegisterOptions: () =>
     request<PasskeyOptions>("/api/auth/passkey/register/options", { method: "POST" }),
   passkeyRegisterVerify: (body: PasskeyRegisterRequest) =>

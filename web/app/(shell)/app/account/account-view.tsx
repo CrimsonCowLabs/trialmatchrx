@@ -1,18 +1,20 @@
 "use client";
 
 // /app/account (SPEC.md "Marketing and accounts"): your passkeys, when each was added and
-// last used, and "Add a passkey".
-// HACK(demo): minimal for #4. Removing a passkey, setting or changing the password and "Sign out
-// everywhere" (with the can't-remove-your-last-sign-in-method rule) come with #5.
+// last used, and "Add a passkey"; set or change your password.
+// HACK(demo): removing a passkey (with the can't-remove-your-last-sign-in-method rule) and "Sign
+// out everywhere" are still to come in #5.
 import { KeyRound } from "lucide-react";
 import { useCallback, useState } from "react";
 
 import { AddPasskeyButton } from "@/components/AddPasskeyButton";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { api, type PasskeyInfo } from "@/lib/api";
+import { api, type Me, type PasskeyInfo } from "@/lib/api";
 import { HOME_HREF } from "@/lib/nav";
 import { useLoad } from "@/lib/use-load";
+
+import { PasswordCard } from "./password-card";
 
 const when = (iso: string) =>
   new Date(iso).toLocaleString(undefined, {
@@ -39,7 +41,9 @@ function PasskeyRow({ passkey, n }: { passkey: PasskeyInfo; n: number }) {
 }
 
 export function AccountView() {
-  const me = useLoad(api.me);
+  const loaded = useLoad(api.me);
+  const [changed, setChanged] = useState<Me | null>(null);
+  const me = changed ?? loaded.data;
   const loadPasskeys = useCallback(() => api.listPasskeys(), []);
   const listed = useLoad(loadPasskeys);
   const [added, setAdded] = useState<PasskeyInfo[]>([]);
@@ -50,7 +54,7 @@ export function AccountView() {
       <PageHeader
         breadcrumb={[{ label: "Home", href: HOME_HREF }]}
         title="Account"
-        description={me.data ? <p>Signed in as {me.data.email}</p> : null}
+        description={me ? <p>Signed in as {me.email}</p> : null}
       />
       <Card>
         <CardHeader>
@@ -78,6 +82,7 @@ export function AccountView() {
           <AddPasskeyButton onAdded={(p) => setAdded((a) => [...a, p])} />
         </CardContent>
       </Card>
+      {me && <PasswordCard me={me} onChanged={setChanged} />}
     </>
   );
 }

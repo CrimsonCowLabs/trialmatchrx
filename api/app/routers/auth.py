@@ -12,7 +12,7 @@ from typing import Annotated, NamedTuple
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
-from app.auth import passkeys, passwords, resets, sessions, throttle, users
+from app.auth import account, passkeys, passwords, resets, sessions, throttle, users
 from app.auth.client_ip import request_ip
 from app.auth.deps import (
     SESSION_COOKIE,
@@ -25,10 +25,12 @@ from app.schemas import (
     LOGIN_FAILED,
     LOGIN_THROTTLED,
     PASSKEY_NOT_ADDED,
+    PASSWORD_WRONG,
     RESET_DISABLED,
     RESET_EXPIRED,
     RESET_UNKNOWN,
     RESET_USED,
+    ChangePasswordRequest,
     LoginRequest,
     Me,
     PasskeyInfo,
@@ -262,3 +264,49 @@ def reset_password(body: ResetPasswordRequest, request: Request, response: Respo
     set_session_cookie(response, sessions.create(user.id))
     log.info("password reset user=%s ip=%s", user.id, request_ip(request))
     return to_me(user)
+
+
+# ---- The account page (/app/account) ------------------------------------------------------
+
+
+# Sync for the same reason as login: Argon2 runs in the threadpool.
+@router.post(
+    "/password",
+    response_model=Me,
+    responses={
+        401: {"description": "Not signed in"},
+        403: {"description": PASSWORD_WRONG},
+        422: {"description": "The new password breaks the rules"},
+        429: {"description": LOGIN_THROTTLED},
+    },
+)
+def change_password(
+    body: ChangePasswordRequest,
+    request: Request,
+    user: Annotated[UserRow, Depends(require_user)],
+) -> Me:
+    """Set a password (an account without one) or change it (the current one is required).
+    A new password that breaks the rules is a 422 with the reason. A wrong current password
+    is a 403 and counts toward the sign-in throttle for the account's email and the IP; once
+    throttled it's a 429 without checking. Ends every other session; this one stays."""
+    problem = passwords.password_problem(body.new_password)
+    if problem is not None:
+        raise HTTPException(status_code=422, detail=problem)
+    ip = request_ip(request)
+    if user.password_hash is not None:
+        with _attempt_lock:
+            if throttle.is_throttled(user.email, ip):
+                log.info("password change throttled user=%s ip=%s", user.id, ip)
+                raise HTTPException(status_code=429, detail=LOGIN_THROTTLED)
+            ok, _ = passwords.verify_password(user.password_hash, body.current_password or "")
+            if not ok:
+                throttle.record_failure(user.email, ip)
+                log.info("password change: wrong current password user=%s ip=%s", user.id, ip)
+                raise HTTPException(status_code=403, detail=PASSWORD_WRONG)
+    updated = account.set_password(
+        user.id,
+        passwords.hash_password(body.new_password),
+        keep_session=request.cookies.get(SESSION_COOKIE),
+    )
+    log.info("password %s user=%s", "changed" if user.password_hash else "set", user.id)
+    return to_me(updated)
