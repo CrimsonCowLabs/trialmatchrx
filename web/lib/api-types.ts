@@ -362,6 +362,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/passkeys/{passkey_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Passkey
+         * @description Remove one of your passkeys. Someone else's, or an unknown id, is 404. Your last way
+         *     to sign in (no password and no other passkey) is 409, and nothing is removed.
+         */
+        delete: operations["remove_passkey"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/passkey/register/options": {
         parameters: {
             query?: never;
@@ -417,6 +438,27 @@ export interface paths {
          * @description Sign out: delete this browser's session and clear the cookie. Fine when signed out.
          */
         post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/logout-everywhere": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Logout Everywhere
+         * @description Sign out everywhere: end every session of the signed-in account, this one included,
+         *     and clear this browser's cookie.
+         */
+        post: operations["logout_everywhere"];
         delete?: never;
         options?: never;
         head?: never;
@@ -480,6 +522,29 @@ export interface paths {
          *     the link stays usable.
          */
         post: operations["reset_password"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change Password
+         * @description Set a password (an account without one) or change it (the current one is required).
+         *     A new password that breaks the rules is a 422 with the reason. A wrong current password
+         *     is a 403 and counts toward the sign-in throttle for the account's email and the IP; once
+         *     throttled it's a 429 without checking. Ends every other session; this one stays.
+         */
+        post: operations["change_password"];
         delete?: never;
         options?: never;
         head?: never;
@@ -631,6 +696,17 @@ export interface components {
              * @default
              */
             website: string;
+        };
+        /**
+         * ChangePasswordRequest
+         * @description `POST /api/auth/password`: set a password (an account with none leaves
+         *     `current_password` out) or change it (`current_password` is required).
+         */
+        ChangePasswordRequest: {
+            /** Current Password */
+            current_password?: string | null;
+            /** New Password */
+            new_password: string;
         };
         /**
          * CloserOutput
@@ -1910,6 +1986,56 @@ export interface operations {
             };
         };
     };
+    remove_passkey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description That passkey isn't on your account. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description You can't remove your last way to sign in. Set a password or add another passkey first. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     passkey_register_options: {
         parameters: {
             query?: never;
@@ -1995,6 +2121,31 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    logout_everywhere: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2128,6 +2279,58 @@ export interface operations {
             };
             /** @description The password breaks the rules */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    change_password: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Your current password is incorrect. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The new password breaks the rules */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Try again in a few minutes */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

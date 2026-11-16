@@ -1,5 +1,6 @@
-"""Sign in with email and password or a passkey, add and list passkeys, see who's signed in,
-sign out, and set a new password with a reset link (SPEC.md "Marketing and accounts").
+"""Sign in with email and password or a passkey, add, list and remove passkeys, see who's
+signed in, sign out (here or everywhere), set or change your password, and set a new password
+with a reset link (SPEC.md "Marketing and accounts").
 
 Sign-in isn't an agent run, so its decisions (throttled, which failure, success) go to the
 `app.auth` logger rather than a TraceRecorder: a trace needs a run row and belongs in the trace
@@ -12,7 +13,7 @@ from typing import Annotated, NamedTuple
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
-from app.auth import passkeys, passwords, resets, sessions, throttle, users
+from app.auth import account, passkeys, passwords, resets, sessions, throttle, users
 from app.auth.client_ip import request_ip
 from app.auth.deps import (
     SESSION_COOKIE,
@@ -22,13 +23,17 @@ from app.auth.deps import (
 )
 from app.db import PasskeyRow, UserRow
 from app.schemas import (
+    LAST_SIGN_IN_METHOD,
     LOGIN_FAILED,
     LOGIN_THROTTLED,
     PASSKEY_NOT_ADDED,
+    PASSKEY_NOT_FOUND,
+    PASSWORD_WRONG,
     RESET_DISABLED,
     RESET_EXPIRED,
     RESET_UNKNOWN,
     RESET_USED,
+    ChangePasswordRequest,
     LoginRequest,
     Me,
     PasskeyInfo,
@@ -161,6 +166,28 @@ def list_passkeys(user: Annotated[UserRow, Depends(require_user)]) -> list[Passk
     return [to_passkey_info(p) for p in passkeys.list_for_user(user.id)]
 
 
+@router.delete(
+    "/passkeys/{passkey_id}",
+    status_code=204,
+    responses={
+        401: {"description": "Not signed in"},
+        404: {"description": PASSKEY_NOT_FOUND},
+        409: {"description": LAST_SIGN_IN_METHOD},
+    },
+)
+def remove_passkey(passkey_id: str, user: Annotated[UserRow, Depends(require_user)]) -> None:
+    """Remove one of your passkeys. Someone else's, or an unknown id, is 404. Your last way
+    to sign in (no password and no other passkey) is 409, and nothing is removed."""
+    try:
+        account.remove_passkey(user.id, passkey_id)
+    except account.PasskeyNotFound:
+        raise HTTPException(status_code=404, detail=PASSKEY_NOT_FOUND) from None
+    except account.LastSignInMethod:
+        log.info("passkey not removed (last sign-in method) user=%s", user.id)
+        raise HTTPException(status_code=409, detail=LAST_SIGN_IN_METHOD) from None
+    log.info("passkey removed user=%s", user.id)
+
+
 @router.post(
     "/passkey/register/options",
     response_model=PasskeyOptions,
@@ -197,6 +224,17 @@ def logout(request: Request, response: Response) -> None:
     if token:
         sessions.delete(token)
     clear_session_cookie(response)
+
+
+@router.post(
+    "/logout-everywhere", status_code=204, responses={401: {"description": "Not signed in"}}
+)
+def logout_everywhere(response: Response, user: Annotated[UserRow, Depends(require_user)]) -> None:
+    """Sign out everywhere: end every session of the signed-in account, this one included,
+    and clear this browser's cookie."""
+    ended = account.end_all_sessions(user.id)
+    clear_session_cookie(response)
+    log.info("signed out everywhere user=%s sessions=%d", user.id, ended)
 
 
 @router.get("/me", response_model=Me, responses={401: {"description": "Not signed in"}})
@@ -262,3 +300,56 @@ def reset_password(body: ResetPasswordRequest, request: Request, response: Respo
     set_session_cookie(response, sessions.create(user.id))
     log.info("password reset user=%s ip=%s", user.id, request_ip(request))
     return to_me(user)
+
+
+# ---- The account page (/app/account) ------------------------------------------------------
+
+
+# Sync for the same reason as login: Argon2 runs in the threadpool.
+@router.post(
+    "/password",
+    response_model=Me,
+    responses={
+        401: {"description": "Not signed in"},
+        403: {"description": PASSWORD_WRONG},
+        422: {"description": "The new password breaks the rules"},
+        429: {"description": LOGIN_THROTTLED},
+    },
+)
+def change_password(
+    body: ChangePasswordRequest,
+    request: Request,
+    user: Annotated[UserRow, Depends(require_user)],
+) -> Me:
+    """Set a password (an account without one) or change it (the current one is required).
+    A new password that breaks the rules is a 422 with the reason. A wrong current password
+    is a 403 and counts toward the sign-in throttle for the account's email and the IP; once
+    throttled it's a 429 without checking. Ends every other session; this one stays."""
+    problem = passwords.password_problem(body.new_password)
+    if problem is not None:
+        raise HTTPException(status_code=422, detail=problem)
+    ip = request_ip(request)
+    if user.password_hash is not None:
+        with _attempt_lock:
+            if throttle.is_throttled(user.email, ip):
+                log.info("password change throttled user=%s ip=%s", user.id, ip)
+                raise HTTPException(status_code=429, detail=LOGIN_THROTTLED)
+            ok, _ = passwords.verify_password(user.password_hash, body.current_password or "")
+            if not ok:
+                throttle.record_failure(user.email, ip)
+                log.info("password change: wrong current password user=%s ip=%s", user.id, ip)
+                raise HTTPException(status_code=403, detail=PASSWORD_WRONG)
+    try:
+        updated = account.set_password(
+            user.id,
+            passwords.hash_password(body.new_password),
+            expected=user.password_hash,
+            keep_session=request.cookies.get(SESSION_COOKIE),
+        )
+    except account.PasswordChangedMeanwhile:
+        # Set or changed by another request since this one checked: the current password
+        # given here (or its absence) wasn't checked against it. Not a guess, so no strike.
+        log.info("password change: changed meanwhile user=%s", user.id)
+        raise HTTPException(status_code=403, detail=PASSWORD_WRONG) from None
+    log.info("password %s user=%s", "changed" if user.password_hash else "set", user.id)
+    return to_me(updated)

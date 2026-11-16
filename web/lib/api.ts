@@ -33,6 +33,7 @@ export type PasskeyLoginRequest = Schemas["PasskeyLoginRequest"];
 export type PasskeyRegisterRequest = Schemas["PasskeyRegisterRequest"];
 export type InviteInfo = Schemas["InviteInfo"];
 export type AcceptInviteRequest = Schemas["AcceptInviteRequest"];
+export type ChangePasswordRequest = Schemas["ChangePasswordRequest"];
 export type AccessRequestCreate = Schemas["AccessRequestCreate"];
 export type AccessRole = AccessRequestCreate["role"];
 
@@ -110,6 +111,8 @@ export const api = {
   login: (body: LoginRequest) =>
     request<Me>("/api/auth/login", { method: "POST", body: JSON.stringify(body) }),
   logout: () => request<void>("/api/auth/logout", { method: "POST" }),
+  /** End every session of your account, this browser's too. */
+  logoutEverywhere: () => request<void>("/api/auth/logout-everywhere", { method: "POST" }),
   /** Whether a reset link can still be used; rejects with the API's reason when not. */
   checkResetLink: (token: string) =>
     request<ResetLinkInfo>("/api/auth/reset/check", {
@@ -126,6 +129,12 @@ export const api = {
   passkeyLoginVerify: (body: PasskeyLoginRequest) =>
     request<Me>("/api/auth/passkey/login/verify", { method: "POST", body: JSON.stringify(body) }),
   listPasskeys: () => request<PasskeyInfo[]>("/api/auth/passkeys"),
+  /** Remove one of your passkeys; 409 when it's your last way to sign in. */
+  removePasskey: (id: string) =>
+    request<void>(`/api/auth/passkeys/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  /** Set a password, or change it with the current one; ends your other sessions. */
+  changePassword: (body: ChangePasswordRequest) =>
+    request<Me>("/api/auth/password", { method: "POST", body: JSON.stringify(body) }),
   passkeyRegisterOptions: () =>
     request<PasskeyOptions>("/api/auth/passkey/register/options", { method: "POST" }),
   passkeyRegisterVerify: (body: PasskeyRegisterRequest) =>

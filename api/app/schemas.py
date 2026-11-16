@@ -437,6 +437,22 @@ class PasskeyInfo(BaseModel):
     last_used_at: dt.datetime | None
 
 
+# The account page (`/app/account`, `app/auth/account.py`).
+PASSWORD_WRONG = "Your current password is incorrect."
+PASSKEY_NOT_FOUND = "That passkey isn't on your account."
+LAST_SIGN_IN_METHOD = (
+    "You can't remove your last way to sign in. Set a password or add another passkey first."
+)
+
+
+class ChangePasswordRequest(BaseModel):
+    """`POST /api/auth/password`: set a password (an account with none leaves
+    `current_password` out) or change it (`current_password` is required)."""
+
+    current_password: str | None = Field(default=None, max_length=1024)
+    new_password: str = Field(max_length=1024)
+
+
 # Invites (SPEC.md "Marketing and accounts", Accounts): why an invite link can't be used, as
 # the invite page shows it.
 INVITE_UNKNOWN = "This invite link isn't valid. Check that you copied all of it."
