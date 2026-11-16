@@ -435,3 +435,25 @@ class PasskeyInfo(BaseModel):
     id: str  # the credential id, base64url
     created_at: dt.datetime
     last_used_at: dt.datetime | None
+
+
+# Invites (SPEC.md "Marketing and accounts", Accounts): why an invite link can't be used, as
+# the invite page shows it.
+INVITE_UNKNOWN = "This invite link isn't valid. Check that you copied all of it."
+INVITE_EXPIRED = "This invite link has expired. Ask the team for a new one."
+INVITE_USED = "This invite link has already been used. Sign in instead."
+INVITE_ACCOUNT_EXISTS = "There's already an account for this email. Sign in instead."
+
+
+class InviteInfo(BaseModel):
+    """A usable invite: `GET /api/auth/invites/{token}`, for the invite page."""
+
+    email: str
+    expires_at: dt.datetime
+
+
+class AcceptInviteRequest(BaseModel):
+    """Accept an invite by setting a password. Passkeys (#4) will add the other way in (the
+    spec allows a passkey, a password, or both)."""
+
+    password: str = Field(max_length=1024)

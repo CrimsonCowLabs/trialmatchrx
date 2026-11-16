@@ -1,5 +1,5 @@
 .PHONY: install dev api web check check-api check-web check-scripts types seed cohort eval eval-offline \
-	eval-smoke compile-fixtures record-demo guide-pin dev-user reset-link users disable-user
+	eval-smoke compile-fixtures record-demo guide-pin dev-user reset-link users disable-user invite
 
 API_PORT ?= 8045
 WEB_PORT ?= 3045
@@ -134,3 +134,11 @@ users:
 disable-user:
 	@test -n "$(EMAIL)" || { echo "usage: make disable-user EMAIL=..." >&2; exit 2; }
 	cd api && uv run python -m scripts.disable_user "$(EMAIL)"
+
+# Print a one-time invite link for EMAIL (7 days; SPEC.md "Marketing and accounts"). Refuses an
+# email that already has an account. The link's origin is APP_URL (default
+# http://localhost:3045). No email is sent: send the link yourself. In prod there's no make:
+# see README.
+invite:
+	@test -n "$(EMAIL)" || { echo "usage: make invite EMAIL=someone@example.com" >&2; exit 2; }
+	cd api && uv run python -m scripts.invite "$(EMAIL)"

@@ -284,3 +284,18 @@ class WebAuthnChallengeRow(SQLModel, table=True):
     challenge: bytes
     user_id: str | None = Field(default=None, foreign_key="users.id")
     created_at: dt.datetime = Field(default_factory=utcnow, index=True)
+
+
+class InviteRow(SQLModel, table=True):
+    """One invite link (SPEC.md "Marketing and accounts", Accounts). The link carries an opaque
+    random token; only its SHA-256 is stored, like a session. It works once, until
+    `expires_at` (7 days, `app/auth/invites.py`); accepting it creates the account and stamps
+    `used_at`. `email` is normalized; inviting an email again adds another row."""
+
+    __tablename__ = "invites"
+
+    token_hash: str = Field(primary_key=True)  # sha256 hex of the token in the link
+    email: str = Field(index=True)
+    created_at: dt.datetime = Field(default_factory=utcnow)
+    expires_at: dt.datetime
+    used_at: dt.datetime | None = None

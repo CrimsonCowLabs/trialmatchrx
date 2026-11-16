@@ -30,6 +30,8 @@ export type PasskeyInfo = Schemas["PasskeyInfo"];
 export type PasskeyOptions = Schemas["PasskeyOptions"];
 export type PasskeyLoginRequest = Schemas["PasskeyLoginRequest"];
 export type PasskeyRegisterRequest = Schemas["PasskeyRegisterRequest"];
+export type InviteInfo = Schemas["InviteInfo"];
+export type AcceptInviteRequest = Schemas["AcceptInviteRequest"];
 
 // Called directly (not through a Next rewrite) so the SSE stream is never buffered. Inlined at
 // build time: the Docker image is built with "" so every call is a same-origin `/api/...` path.
@@ -119,6 +121,15 @@ export const api = {
     request<PasskeyOptions>("/api/auth/passkey/register/options", { method: "POST" }),
   passkeyRegisterVerify: (body: PasskeyRegisterRequest) =>
     request<PasskeyInfo>("/api/auth/passkey/register/verify", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  /** Who a usable invite is for; 404 / 410 / 409 when the link can't be used. */
+  getInvite: (token: string) =>
+    request<InviteInfo>(`/api/auth/invites/${encodeURIComponent(token)}`),
+  /** Set a password, create the account and sign in. */
+  acceptInvite: (token: string, body: AcceptInviteRequest) =>
+    request<Me>(`/api/auth/invites/${encodeURIComponent(token)}/accept`, {
       method: "POST",
       body: JSON.stringify(body),
     }),
