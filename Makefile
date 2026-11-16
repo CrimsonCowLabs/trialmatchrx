@@ -1,5 +1,5 @@
 .PHONY: install dev api web check check-api check-web check-scripts types seed cohort eval eval-offline \
-	eval-smoke compile-fixtures record-demo guide-pin dev-user invite
+	eval-smoke compile-fixtures record-demo guide-pin dev-user reset-link users disable-user invite
 
 API_PORT ?= 8045
 WEB_PORT ?= 3045
@@ -117,6 +117,23 @@ guide-pin:
 # unless DATABASE_URL is a SQLite file inside api/ (the default api/app.db), so never in prod.
 dev-user:
 	cd api && uv run python -m scripts.dev_user
+
+# Print a one-time password-reset link (1 hour) for EMAIL; send it yourself, there's no email.
+# Using it sets a new password and ends all of that account's sessions. Refuses an unknown or
+# disabled account. In prod there's no make: see api/scripts/reset_link.py.
+reset-link:
+	@test -n "$(EMAIL)" || { echo "usage: make reset-link EMAIL=someone@example.com" >&2; exit 2; }
+	cd api && uv run python -m scripts.reset_link "$(EMAIL)"
+# List every account: email, created date, last sign-in, passkeys, password set, disabled.
+# In prod there's no make: see README.
+users:
+	cd api && uv run python -m scripts.users
+
+# End EMAIL's sessions and block sign-in; the row stays so `created_by` still resolves.
+# Unknown email exits 2; an already-disabled account says so. In prod: see README.
+disable-user:
+	@test -n "$(EMAIL)" || { echo "usage: make disable-user EMAIL=..." >&2; exit 2; }
+	cd api && uv run python -m scripts.disable_user "$(EMAIL)"
 
 # Print a one-time invite link for EMAIL (7 days; SPEC.md "Marketing and accounts"). Refuses an
 # email that already has an account. The link's origin is APP_URL (default

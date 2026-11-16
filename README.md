@@ -63,6 +63,17 @@ ssh aaron@ccl-vps 'cd /app/trialmatchrx && docker compose -f compose.yaml exec -
 
 The arguments are `make guide-pin`'s `ARGS`: `als|ipf|ipf_flip RUN_ID [--trial NCT]` (a done match run; `--trial` must be one of its matches), `pah RUN_ID` (a done closer run; the trial is the one it ran on), `feasibility --trial NCT` (a cached trial, no run), `--remove STEP`. With no arguments it lists every step as `pinned` / `MISSING` / `RUN GONE` and exits 1 unless all five are pinned to runs that still exist, so run it bare as the last check before judging.
 
+### Managing accounts
+
+Accounts live in the `users` table of the prod database (SPEC.md, "Marketing and accounts", Admin CLI). Run the commands in the API container the same way as `guide_pin` (`python -m scripts.users` is what `make users` runs, `python -m scripts.disable_user EMAIL` is `make disable-user EMAIL=...`):
+
+```bash
+ssh aaron@ccl-vps 'cd /app/trialmatchrx && docker compose -f compose.yaml exec -T api python -m scripts.users'
+ssh aaron@ccl-vps 'cd /app/trialmatchrx && docker compose -f compose.yaml exec -T api python -m scripts.disable_user ana@example.com'
+```
+
+`users` lists every account, oldest first, with its created date, last sign-in, number of passkeys, whether a password is set, and its disabled date (times in UTC). `disable_user` ends all of that account's sessions and blocks sign-in; the row stays, so a run's `created_by` still resolves. An unknown email exits 2 and changes nothing; an already-disabled account says so and keeps its first disabled date.
+
 ### Inviting someone
 
 Accounts are invite-only and nothing sends email (SPEC.md, "Marketing and accounts"). Locally, `make invite EMAIL=someone@example.com` prints the link. In prod, run what it runs inside the API container:

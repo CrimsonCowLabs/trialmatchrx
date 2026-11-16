@@ -340,6 +340,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/reset/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Reset Link
+         * @description Whether a reset link can still be used, and for which account. Changes nothing.
+         */
+        post: operations["check_reset_link"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset Password
+         * @description Set a new password with a reset link (once, within an hour, not for a disabled
+         *     account). Ends every session the user had, this browser's included, then signs this
+         *     browser in with a new one. A password that breaks the rules is a 422 with the reason, and
+         *     the link stays usable.
+         */
+        post: operations["reset_password"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/invites/{token}": {
         parameters: {
             query?: never;
@@ -746,6 +789,30 @@ export interface components {
             value: number | string | string[];
             /** Unit */
             unit?: string | null;
+        };
+        /**
+         * ResetLinkCheck
+         * @description `POST /api/auth/reset/check`: is this link still usable? A POST, so the token stays out
+         *     of access logs.
+         */
+        ResetLinkCheck: {
+            /** Token */
+            token: string;
+        };
+        /** ResetLinkInfo */
+        ResetLinkInfo: {
+            /** Email */
+            email: string;
+        };
+        /**
+         * ResetPasswordRequest
+         * @description `POST /api/auth/reset`: set a new password with a reset link.
+         */
+        ResetPasswordRequest: {
+            /** Token */
+            token: string;
+            /** Password */
+            password: string;
         };
         /**
          * ReviewCriterion
@@ -1572,6 +1639,112 @@ export interface operations {
             };
             /** @description Not signed in */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    check_reset_link: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetLinkCheck"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResetLinkInfo"];
+                };
+            };
+            /** @description This account is disabled. Contact the team. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description This reset link isn't valid. Ask the team for a new one. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description This reset link has expired. Ask the team for a new one. / This reset link has already been used. Ask the team for a new one. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_password: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description This account is disabled. Contact the team. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description This reset link isn't valid. Ask the team for a new one. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description This reset link has expired. Ask the team for a new one. / This reset link has already been used. Ask the team for a new one. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The password breaks the rules */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
