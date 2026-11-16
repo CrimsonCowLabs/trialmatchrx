@@ -6,7 +6,7 @@ import datetime as dt
 import pytest
 
 from app.auth import users
-from app.db import UserRow, session_scope
+from app.db import PasskeyRow, UserRow, session_scope
 from scripts.users import main
 
 T0 = dt.datetime(2026, 11, 16, 12, 30, tzinfo=dt.UTC)
@@ -60,6 +60,18 @@ def test_lists_each_account_with_its_columns(capsys: pytest.CaptureFixture[str])
         "no",
         "2026-11-19",
     ]
+
+
+def test_counts_each_accounts_passkeys(capsys: pytest.CaptureFixture[str]) -> None:
+    ana = users.create_user("ana@example.com", password_hash=None)
+    users.create_user("bo@example.com", password_hash=None)
+    with session_scope() as s:
+        for n in range(2):
+            s.add(PasskeyRow(id=f"cred-{n}", user_id=ana.id, public_key=b"key"))
+    main([])
+    rows = {line.split()[0]: line.split() for line in capsys.readouterr().out.splitlines()[1:]}
+    assert rows["ana@example.com"][3] == "2"
+    assert rows["bo@example.com"][3] == "0"
 
 
 def test_oldest_account_first(capsys: pytest.CaptureFixture[str]) -> None:

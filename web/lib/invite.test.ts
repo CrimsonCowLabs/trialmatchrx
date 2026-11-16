@@ -20,6 +20,15 @@ test("a password that breaks the rules stays on the form with the rule", () => {
   });
 });
 
+test("a passkey that didn't take, or neither way in, stays on the form as a passkey problem", () => {
+  for (const detail of [
+    "Couldn't add the passkey. Try again.",
+    "Add a passkey or set a password to finish.",
+  ]) {
+    assert.deepEqual(inviteProblem({ status: 400, detail }), { kind: "passkey", message: detail });
+  }
+});
+
 test("anything else is a connection problem, not a dead link", () => {
   const offline = { kind: "retry", message: "Couldn't reach the server. Try again." };
   assert.deepEqual(inviteProblem(new TypeError("fetch failed")), offline);

@@ -13,18 +13,18 @@ Oldest account first. Times are UTC. Read-only; always exits 0.
 import argparse
 import datetime as dt
 
-from sqlmodel import col, select
+from sqlalchemy import func
+from sqlmodel import Session, col, select
 
-from app.db import UserRow, as_utc, init_db, session_scope
+from app.db import PasskeyRow, UserRow, as_utc, init_db, session_scope
 
 HEADER = ("EMAIL", "CREATED", "LAST_SIGN_IN", "PASSKEYS", "PASSWORD", "DISABLED")
 
 
-def passkey_count(user_id: str) -> int:
-    """How many passkeys the account has."""
-    # HACK(demo): passkeys (#4) aren't built yet and there is no passkeys table, so every
-    # account has 0. #4 wires the real count here.
-    return 0
+def passkey_counts(s: Session) -> dict[str, int]:
+    """How many passkeys each account has, by user id (accounts with none are missing)."""
+    rows = s.exec(select(PasskeyRow.user_id, func.count()).group_by(col(PasskeyRow.user_id)))
+    return {user_id: count for user_id, count in rows}
 
 
 def _day(value: dt.datetime) -> str:
@@ -38,13 +38,14 @@ def _minute(value: dt.datetime) -> str:
 def display_rows() -> list[tuple[str, ...]]:
     """One display row per account, oldest first."""
     with session_scope() as s:
+        counts = passkey_counts(s)
         accounts = s.exec(select(UserRow).order_by(col(UserRow.created_at), col(UserRow.email)))
         return [
             (
                 u.email,
                 _day(u.created_at),
                 _minute(u.last_login_at) if u.last_login_at else "never",
-                str(passkey_count(u.id)),
+                str(counts.get(u.id, 0)),
                 "yes" if u.password_hash else "no",
                 _day(u.disabled_at) if u.disabled_at else "no",
             )

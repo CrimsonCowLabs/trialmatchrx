@@ -18,7 +18,7 @@ from sqlmodel import Session, col, select
 
 from app.auth.sessions import token_hash
 from app.auth.users import find_by_email, normalize_email
-from app.db import InviteRow, UserRow, as_utc, session_scope, utcnow
+from app.db import InviteRow, PasskeyRow, UserRow, as_utc, session_scope, utcnow
 
 INVITE_TTL = dt.timedelta(days=7)
 
@@ -95,9 +95,26 @@ def lookup(token: str, *, now: dt.datetime | None = None) -> InviteRow:
     return row
 
 
-def accept(token: str, *, password_hash: str, now: dt.datetime | None = None) -> UserRow:
-    """Spend the invite and create its account with this password. Raises like `lookup`; on
-    any refusal nothing is created and the invite is unchanged."""
+class PasskeyTaken(Exception):
+    """The passkey to add is already on an account (not a problem with the invite itself)."""
+
+
+def accept(
+    token: str,
+    *,
+    password_hash: str | None,
+    passkey: PasskeyRow | None = None,
+    now: dt.datetime | None = None,
+) -> UserRow:
+    """Spend the invite and create its account with this password and/or passkey (a verified,
+    unsaved row from `passkeys.verify_registration`, whose `user_id` is the new account's id).
+    Raises like `lookup`, ValueError with neither (an account must be able to sign in), or
+    PasskeyTaken; on any refusal nothing is created and the invite is unchanged.
+
+    If this refuses after the passkey was made, the person's device keeps a passkey for an
+    account that never existed; signing in with it fails like any unknown passkey."""
+    if password_hash is None and passkey is None:
+        raise ValueError("an account needs a password or a passkey")
     now = now or utcnow()
     with session_scope() as s:
         row = _usable(s, token, now)
@@ -112,7 +129,10 @@ def accept(token: str, *, password_hash: str, now: dt.datetime | None = None) ->
             raise InviteUnusable("used")
         email = row.email  # read now: after a failed flush the row can't be loaded
         user = UserRow(
-            id=uuid.uuid4().hex, email=email, password_hash=password_hash, created_at=now
+            id=passkey.user_id if passkey is not None else uuid.uuid4().hex,
+            email=email,
+            password_hash=password_hash,
+            created_at=now,
         )
         s.add(user)
         try:
@@ -122,6 +142,12 @@ def accept(token: str, *, password_hash: str, now: dt.datetime | None = None) ->
             # while this one was made): users.email is unique, so this one loses and rolls
             # back (its invite stays unspent).
             raise AlreadyHasAccount(email) from err
+        if passkey is not None:
+            s.add(passkey)
+            try:
+                s.flush()
+            except IntegrityError as err:
+                raise PasskeyTaken(passkey.id) from err
         s.refresh(user)
         s.expunge(user)
     return user

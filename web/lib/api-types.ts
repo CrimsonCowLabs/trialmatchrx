@@ -300,6 +300,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/passkey/login/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Passkey Login Options
+         * @description Start a passkey sign-in: the options for `startAuthentication()` (button or autofill).
+         */
+        post: operations["passkey_login_options"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/passkey/login/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Passkey Login Verify
+         * @description Finish a passkey sign-in; `credential: null` reports a cancel. Failures share the
+         *     password sign-in's 401 and throttle: each counts against the IP, and against the passkey
+         *     owner's email when the passkey is known.
+         */
+        post: operations["passkey_login_verify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/passkeys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Passkeys
+         * @description The signed-in account's passkeys, oldest first.
+         */
+        get: operations["list_passkeys"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/passkey/register/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Passkey Register Options
+         * @description Start adding a passkey to the signed-in account: options for `startRegistration()`.
+         */
+        post: operations["passkey_register_options"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/passkey/register/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Passkey Register Verify
+         * @description Finish adding a passkey. Any problem (expired challenge, bad response, wrong origin) is
+         *     the same 400, and nothing is stored.
+         */
+        post: operations["passkey_register_verify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/logout": {
         parameters: {
             query?: never;
@@ -403,6 +506,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/invites/{token}/passkey/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invite Passkey Options
+         * @description Start adding a passkey for the account this invite creates: options for
+         *     `startRegistration()`. Finish by posting the result to `accept` as `passkey`.
+         */
+        post: operations["invite_passkey_options"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/invites/{token}/accept": {
         parameters: {
             query?: never;
@@ -414,9 +538,9 @@ export interface paths {
         put?: never;
         /**
          * Accept Invite
-         * @description Set a password, create the account and sign in. A refused link, or a password that
-         *     breaks the rules (422 with why, as on a reset), creates nothing and leaves the link as it
-         *     was.
+         * @description Create the account with a passkey, a password, or both, and sign in. A refused link, a
+         *     password that breaks the rules (422, with why), a passkey that doesn't verify or neither
+         *     (400) creates nothing and leaves the link as it was.
          */
         post: operations["accept_invite"];
         delete?: never;
@@ -453,12 +577,14 @@ export interface components {
     schemas: {
         /**
          * AcceptInviteRequest
-         * @description Accept an invite by setting a password. Passkeys (#4) will add the other way in (the
-         *     spec allows a passkey, a password, or both).
+         * @description Accept an invite with a passkey, a password, or both (SPEC.md); at least one, so the
+         *     account can always sign in. `passkey` is the registration started with
+         *     `POST /api/auth/invites/{token}/passkey/options`.
          */
         AcceptInviteRequest: {
             /** Password */
-            password: string;
+            password?: string | null;
+            passkey?: components["schemas"]["PasskeyRegisterRequest"] | null;
         };
         /**
          * CloserOutput
@@ -734,6 +860,48 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /**
+         * PasskeyInfo
+         * @description One passkey on the account page: when it was added and last used for a sign-in.
+         */
+        PasskeyInfo: {
+            /** Id */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Last Used At */
+            last_used_at: string | null;
+        };
+        /** PasskeyLoginRequest */
+        PasskeyLoginRequest: {
+            /** Challenge Id */
+            challenge_id: string;
+            /** Credential */
+            credential: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** PasskeyOptions */
+        PasskeyOptions: {
+            /** Challenge Id */
+            challenge_id: string;
+            /** Options */
+            options: {
+                [key: string]: unknown;
+            };
+        };
+        /** PasskeyRegisterRequest */
+        PasskeyRegisterRequest: {
+            /** Challenge Id */
+            challenge_id: string;
+            /** Credential */
+            credential: {
+                [key: string]: unknown;
+            };
         };
         /** PatientFacts */
         PatientFacts: {
@@ -1602,6 +1770,174 @@ export interface operations {
             };
         };
     };
+    passkey_login_options: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyOptions"];
+                };
+            };
+        };
+    };
+    passkey_login_verify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasskeyLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Email or password is incorrect */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Try again in a few minutes */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_passkeys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyInfo"][];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    passkey_register_options: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyOptions"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    passkey_register_verify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasskeyRegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyInfo"];
+                };
+            };
+            /** @description Couldn't add the passkey. Try again. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     logout: {
         parameters: {
             query?: never;
@@ -1805,6 +2141,58 @@ export interface operations {
             };
         };
     };
+    invite_passkey_options: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyOptions"];
+                };
+            };
+            /** @description This invite link isn't valid. Check that you copied all of it. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description There's already an account for this email. Sign in instead. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description This invite link has expired. Ask the team for a new one. / This invite link has already been used. Sign in instead. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     accept_invite: {
         parameters: {
             query?: never;
@@ -1829,6 +2217,13 @@ export interface operations {
                     "application/json": components["schemas"]["Me"];
                 };
             };
+            /** @description Couldn't add the passkey. Try again. / Add a passkey or set a password to finish. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description This invite link isn't valid. Check that you copied all of it. */
             404: {
                 headers: {
@@ -1850,7 +2245,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The password breaks the rules */
+            /** @description The password breaks the rules (as on the reset page) */
             422: {
                 headers: {
                     [name: string]: unknown;

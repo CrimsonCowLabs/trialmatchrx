@@ -31,6 +31,11 @@ services:
       TRUSTED_PROXIES: '["127.0.0.0/8", "::1/128", "172.16.0.0/12", "192.168.0.0/16"]'
       # The public origin for the links the admin CLI prints (api/app/config.py app_url).
       APP_URL: https://tmrx.crimsoncowlabs.com
+      # Passkeys are bound to this domain (SPEC.md). The local proxy stack (compose.override.yaml)
+      # needs WEBAUTHN_RP_ID=localhost and WEBAUTHN_ORIGIN=http://localhost:8080 in the shell
+      # or .env for passkeys to work there.
+      WEBAUTHN_RP_ID: ${WEBAUTHN_RP_ID:-tmrx.crimsoncowlabs.com}
+      WEBAUTHN_ORIGIN: ${WEBAUTHN_ORIGIN:-https://tmrx.crimsoncowlabs.com}
     volumes:
       - db:/data
     # Loopback only. Docker on ccl-vps writes no iptables rules, so a port published on every

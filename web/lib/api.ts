@@ -26,6 +26,10 @@ export type Me = Schemas["Me"];
 export type LoginRequest = Schemas["LoginRequest"];
 export type ResetLinkInfo = Schemas["ResetLinkInfo"];
 export type ResetPasswordRequest = Schemas["ResetPasswordRequest"];
+export type PasskeyInfo = Schemas["PasskeyInfo"];
+export type PasskeyOptions = Schemas["PasskeyOptions"];
+export type PasskeyLoginRequest = Schemas["PasskeyLoginRequest"];
+export type PasskeyRegisterRequest = Schemas["PasskeyRegisterRequest"];
 export type InviteInfo = Schemas["InviteInfo"];
 export type AcceptInviteRequest = Schemas["AcceptInviteRequest"];
 
@@ -42,6 +46,12 @@ type JsonBody<P extends keyof paths, M extends "post"> = paths[P][M] extends {
 /** How a failed call reads on the page. */
 export function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+/** How a failed auth call reads on the page: the API's own message ("Email or password is
+ *  incorrect", ...), or that the server couldn't be reached. */
+export function apiFailureMessage(err: unknown): string {
+  return err instanceof ApiError && err.detail ? err.detail : "Couldn't reach the server. Try again.";
 }
 
 /** A non-2xx answer; `status` lets a page react to e.g. 404 (not compiled) vs 503, and
@@ -102,10 +112,27 @@ export const api = {
     request<Me>("/api/auth/reset", { method: "POST", body: JSON.stringify(body) }),
   /** The signed-in account; rejects with an ApiError of status 401 when signed out. */
   me: () => request<Me>("/api/auth/me"),
+  passkeyLoginOptions: () =>
+    request<PasskeyOptions>("/api/auth/passkey/login/options", { method: "POST" }),
+  passkeyLoginVerify: (body: PasskeyLoginRequest) =>
+    request<Me>("/api/auth/passkey/login/verify", { method: "POST", body: JSON.stringify(body) }),
+  listPasskeys: () => request<PasskeyInfo[]>("/api/auth/passkeys"),
+  passkeyRegisterOptions: () =>
+    request<PasskeyOptions>("/api/auth/passkey/register/options", { method: "POST" }),
+  passkeyRegisterVerify: (body: PasskeyRegisterRequest) =>
+    request<PasskeyInfo>("/api/auth/passkey/register/verify", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
   /** Who a usable invite is for; 404 / 410 / 409 when the link can't be used. */
   getInvite: (token: string) =>
     request<InviteInfo>(`/api/auth/invites/${encodeURIComponent(token)}`),
-  /** Set a password, create the account and sign in. */
+  /** Start adding a passkey for the account this invite creates; finish through acceptInvite. */
+  invitePasskeyOptions: (token: string) =>
+    request<PasskeyOptions>(`/api/auth/invites/${encodeURIComponent(token)}/passkey/options`, {
+      method: "POST",
+    }),
+  /** Create the account with a passkey and/or a password, and sign in. */
   acceptInvite: (token: string, body: AcceptInviteRequest) =>
     request<Me>(`/api/auth/invites/${encodeURIComponent(token)}/accept`, {
       method: "POST",

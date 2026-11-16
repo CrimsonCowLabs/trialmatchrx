@@ -253,6 +253,42 @@ class PasswordResetRow(SQLModel, table=True):
     used_at: dt.datetime | None = None
 
 
+class PasskeyRow(SQLModel, table=True):
+    """One WebAuthn credential (a passkey) on an account (`app/auth/passkeys.py`). Its public
+    key is what py_webauthn checks a sign-in's signature against; `sign_count` is the
+    authenticator's counter at its last use (0 for synced passkeys, which don't count)."""
+
+    __tablename__ = "passkeys"
+
+    id: str = Field(primary_key=True)  # credential id, base64url (as the browser sends it)
+    user_id: str = Field(foreign_key="users.id", index=True)
+    public_key: bytes  # COSE-encoded credential public key
+    sign_count: int = 0
+    # Where the authenticator said it can be reached ("internal", "hybrid", ...): a hint the
+    # browser gets back in excludeCredentials.
+    transports: list[str] = Field(default_factory=list, sa_column=Column(JSON, nullable=False))
+    created_at: dt.datetime = Field(default_factory=utcnow)
+    last_used_at: dt.datetime | None = None
+
+
+class WebAuthnChallengeRow(SQLModel, table=True):
+    """A passkey ceremony in progress: the random challenge the browser must sign. Kept here
+    rather than in a cookie so it's single-use (deleted when the ceremony is verified) and
+    expires (`passkeys.CHALLENGE_TTL`). `user_id` is set when adding a passkey (only that user
+    may finish it) and null when signing in, where nobody is known yet. On the invite page the
+    account doesn't exist yet: `user_id` is the id it will get (hence no foreign key) and
+    `invite_hash` the invite it belongs to, so only accepting that invite can finish it."""
+
+    __tablename__ = "webauthn_challenges"
+
+    id: str = Field(primary_key=True)  # random, handed to the browser beside the options
+    kind: str  # passkeys.Kind: "register" | "login"
+    challenge: bytes
+    user_id: str | None = None
+    invite_hash: str | None = None  # InviteRow.token_hash, for an invite-page registration
+    created_at: dt.datetime = Field(default_factory=utcnow, index=True)
+
+
 class InviteRow(SQLModel, table=True):
     """One invite link (SPEC.md "Marketing and accounts", Accounts). The link carries an opaque
     random token; only its SHA-256 is stored, like a session. It works once, until

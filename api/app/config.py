@@ -60,6 +60,12 @@ class Settings(BaseSettings):
     # bridge gateway, not from 127.0.0.1.
     trusted_proxies: list[str] = ["127.0.0.0/8", "::1/128"]
 
+    # Passkeys (SPEC.md): the WebAuthn relying-party ID (the domain a passkey is bound to) and
+    # the page origin a ceremony must come from. Dev defaults; compose.yaml sets prod's
+    # `tmrx.crimsoncowlabs.com`. Changing the RP ID orphans every registered passkey.
+    webauthn_rp_id: str = "localhost"
+    webauthn_origin: str = "http://localhost:3045"
+
     # USD per million tokens, (input, output). Anthropic first-party list prices; a model id
     # matches an entry exactly or by prefix (dated ids like `claude-sonnet-4-5-20250929`).
     model_prices: dict[str, tuple[float, float]] = {
