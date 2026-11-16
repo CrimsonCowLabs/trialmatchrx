@@ -82,6 +82,15 @@ ssh aaron@ccl-vps 'cd /app/trialmatchrx && docker compose -f compose.yaml exec -
 
 The form drops a submission with its hidden honeypot field filled (it still says thanks) and takes at most 3 per hour from one IP; the 4th reads "You've already sent a few requests. Try again in an hour."
 
+### Updating the marketing page
+
+The public page at `/` (SPEC.md, "Marketing and accounts") takes its copy and three config values from `web/lib/marketing.ts`; a change is an edit plus a deploy.
+
+- `DEMO_VIDEO_ID`: the YouTube video's 11-character ID. While it's `null` the poster reads "Demo video coming soon"; once set, `youtube-nocookie.com` loads only when someone clicks play.
+- `AWARD_RESULTS_URL` and `AWARD_PHOTOS`: the award section stays hidden until both are set. Photos are static files in `web/public/award/` (`{ src: "/award/stage.jpg", alt, width, height }`).
+
+The moment screenshots in `web/public/moments/` are real captures of the app with `DEMO_MODE=replay` (synthetic patients), at 1600px and 390px wide: Match is the IPF demo run with the first Needs info trial open, Feasibility is NCT07743450, and Proof is "Why?" on ifetroban's (NCT05571059) FEV1/FVC exclusion. `web/public/og.png` (1200x630) is the page's own hero. Recapture them after a visible UI change.
+
 ### Inviting someone
 
 Accounts are invite-only and nothing sends email (SPEC.md, "Marketing and accounts"). Locally, `make invite EMAIL=someone@example.com` prints the link. In prod, run what it runs inside the API container:
