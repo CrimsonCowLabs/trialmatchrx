@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 
 import { RunWithTrace } from "@/components/RunWithTrace";
@@ -11,7 +11,7 @@ import { useLoad } from "@/lib/use-load";
 
 const RUN_BREADCRUMB = [{ label: "Runs", href: "/runs" }];
 
-function MatchRun({ runId }: { runId: string }) {
+function MatchRun({ runId, linkedTrial }: { runId: string; linkedTrial: string | null }) {
   const router = useRouter();
   const { events, state, runStatus } = useRunEvents(runId);
   const finished = runStatus !== null;
@@ -43,6 +43,7 @@ function MatchRun({ runId }: { runId: string }) {
       matches={summary?.status === "done" ? summary.matches : null}
       totals={summary?.totals}
       onNextSteps={summary?.status === "done" ? startCloser : undefined}
+      linkedTrial={linkedTrial}
       runStatus={runStatus ?? "running"}
       link={finished ? { href: `/runs/${encodeURIComponent(runId)}`, label: "Replay" } : undefined}
       title="Match run"
@@ -66,5 +67,7 @@ function MatchRun({ runId }: { runId: string }) {
 
 export function RunView() {
   const { runId } = useParams<{ runId: string }>();
-  return <MatchRun key={runId} runId={runId} />;
+  // `?trial=<NCT>`: the guide's deep link to one trial card (SPEC.md "First-time user guide").
+  const linkedTrial = useSearchParams().get("trial");
+  return <MatchRun key={runId} runId={runId} linkedTrial={linkedTrial} />;
 }

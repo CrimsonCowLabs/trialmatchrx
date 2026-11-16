@@ -148,6 +148,31 @@ test("with no likely trial, the first tier that has trials opens with nothing ex
   assert.deepEqual(initialView([]), { tier: "likely", expanded: null });
 });
 
+test("?trial= opens that trial's tier with its card expanded, even off the default tier", () => {
+  const matches = [trial("A", "likely"), trial("B", "needs_info"), trial("C", "ineligible")];
+  assert.deepEqual(initialView(matches, "C"), { tier: "ineligible", expanded: "C" });
+});
+
+test("?trial= on a likely trial expands that card, not the top-ranked one", () => {
+  const matches = [trial("A", "likely"), trial("B", "likely"), trial("C", "ineligible")];
+  assert.deepEqual(initialView(matches, "B"), { tier: "likely", expanded: "B" });
+});
+
+test("?trial= naming a trial the run doesn't have falls back to the default view", () => {
+  const matches = [trial("A", "likely"), trial("C", "ineligible")];
+  assert.deepEqual(initialView(matches, "NCT99999999"), { tier: "likely", expanded: "A" });
+  assert.deepEqual(initialView([trial("C", "ineligible")], "NCT99999999"), {
+    tier: "ineligible",
+    expanded: null,
+  });
+});
+
+test("no ?trial= (null or empty) opens the default view", () => {
+  const matches = [trial("A", "likely"), trial("C", "ineligible")];
+  assert.deepEqual(initialView(matches, null), { tier: "likely", expanded: "A" });
+  assert.deepEqual(initialView(matches, ""), { tier: "likely", expanded: "A" });
+});
+
 test("each tier tab counts its trials, in tier order", () => {
   const matches = [trial("A", "likely"), trial("C", "ineligible"), trial("D", "ineligible")];
   assert.deepEqual(tierCounts(matches), { likely: 1, needs_info: 0, ineligible: 2 });

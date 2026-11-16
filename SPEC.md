@@ -391,6 +391,30 @@ Finish with: what works, what is stubbed (# HACK), test results, and the demo co
 - Have one session iterate on prompts against `make eval`: "Improve prompts/judge.md. Run make eval after each change, keep a table of version vs. nDCG@10, and stop after 5 iterations or no gain."
 - Keep sessions short and scoped. A fresh session per milestone beats one long one that loses the thread.
 
+## First-time user guide
+
+Added 2026-11-15. Judges open the prod URL (behind basic_auth) from the submission page and use the app alone for 3–5 minutes, so the app explains itself. The guide walks the same story as the pitch.
+
+**Form.** A checklist panel docked in the app shell. It has a two-sentence "what this is" header and five numbered steps. Each step has a title, one "why it matters" line, one "look for" line, its links, and a checkmark once visited. On narrow screens the panel is a bottom sheet that starts collapsed. It opens by itself on the first visit and can be collapsed, a "Guide" nav item reopens it, and "Reset" clears the checkmarks for the next judge. Open/collapsed state and checkmarks live in `localStorage`, every access wrapped in try/catch; without storage the guide still renders, just unchecked. No new dependencies.
+
+**Steps.**
+
+1. **ALS, live.** Click the ALS card on Home and watch the trace (about 90 s), or go on to step 2 and come back; the run is saved under Runs. The step is checked when the run starts. A "see a finished one" link opens the pinned ALS run.
+2. **IPF, the catch.** Opens the pinned IPF run with ifetroban expanded: the FEV1/FVC 0.66 < 0.7 exclusion.
+3. **IPF, the flip.** "Before (0.66)" and "After (0.75)" links to two pinned runs; look for ifetroban turning eligible and four more trials opening.
+4. **PAH, the closer.** Opens the pinned closer run: access-barrier tags, follow-up tests, the coordinator email and the Spanish summary.
+5. **Feasibility and Eval (optional).** The waterfall and slider on the pinned T2D/CKD trial, and the TREC eval page.
+
+The panel ends with one line per nav item (Home, Match, Runs, Trials, Eval).
+
+**Pins.** A step's links come from `guide_pins` (step key → `run_id`, optional `nct_id`). The step keys are `als`, `ipf`, `ipf_flip`, `pah` and `feasibility` (`nct_id` only). Pins are written by `make guide-pin ARGS="<step> <run_id> [--trial NCT...]"`, which you run in the prod container after recording the runs live. `make guide-pin` with no ARGS lists the pins and checks that each run still exists. Judges can't change pins: there is no write endpoint. When a step has no pin, or its run is gone, the step falls back to "run this card live" (feasibility falls back to the Trials page).
+
+**Deep link.** `/match/[runId]?trial=<NCT>` opens that trial's card, expanded, in its tier, reusing the logic that already does this for a selected trace event.
+
+| Method | Path | Body / params | Returns |
+| --- | --- | --- | --- |
+| GET | `/api/guide` |  | `list[GuidePin]`: `{step, run_id, nct_id, run_exists}` for every pinned step; read-only, not traced |
+
 ## Demo script, risks and fallbacks
 
 The pitch is 3 minutes. Open with the number, show the agent working, and end on the slider.
