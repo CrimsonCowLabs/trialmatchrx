@@ -122,7 +122,12 @@ def me(user: Annotated[UserRow, Depends(require_user)]) -> Me:
 
 
 # Why a reset link can't be used, as the status the page gets with that message.
-_RESET_STATUS = {RESET_UNKNOWN: 404, RESET_EXPIRED: 410, RESET_USED: 410, RESET_DISABLED: 403}
+_RESET_STATUS: dict[resets.RefusalReason, int] = {
+    "unknown": 404,
+    "expired": 410,
+    "used": 410,
+    "disabled": 403,
+}
 _RESET_RESPONSES: dict[int | str, dict[str, str]] = {
     404: {"description": RESET_UNKNOWN},
     410: {"description": f"{RESET_EXPIRED} / {RESET_USED}"},
@@ -131,7 +136,7 @@ _RESET_RESPONSES: dict[int | str, dict[str, str]] = {
 
 
 def _refused(exc: resets.ResetRefused) -> HTTPException:
-    return HTTPException(status_code=_RESET_STATUS.get(str(exc), 404), detail=str(exc))
+    return HTTPException(status_code=_RESET_STATUS[exc.reason], detail=str(exc))
 
 
 @router.post("/reset/check", response_model=ResetLinkInfo, responses=_RESET_RESPONSES)
@@ -163,6 +168,12 @@ def reset_password(body: ResetPasswordRequest, request: Request, response: Respo
         raise _refused(exc) from None
     except resets.PasswordRejected as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from None
+    # Refuse here too, before making a session: the account may have been disabled since the
+    # link was redeemed. The password is set either way; a disabled account can't use it.
+    current = users.find_by_email(user.email)
+    if current is None or current.disabled_at is not None:
+        log.info("password reset user=%s: disabled before sign-in", user.id)
+        raise HTTPException(status_code=403, detail=RESET_DISABLED)
     user = users.record_login(user.id, new_hash=None)
     set_session_cookie(response, sessions.create(user.id))
     log.info("password reset user=%s ip=%s", user.id, request_ip(request))

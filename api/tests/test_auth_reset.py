@@ -4,6 +4,7 @@ password once, within an hour, never for a disabled account, and ends the user's
 import datetime as dt
 
 import httpx
+import pytest
 
 from app.auth import passwords, resets, sessions
 from app.auth.deps import SESSION_COOKIE
@@ -135,6 +136,25 @@ async def test_a_disabled_user_cant_use_a_link() -> None:
     assert passwords.verify_password(stored_hash(user.id) or "", PASSWORD).ok
     with session_scope() as s:  # nothing was ended or claimed on the way to refusing
         assert s.get(SessionRow, sessions.token_hash(signed_in)) is not None
+
+
+async def test_no_session_for_an_account_disabled_mid_reset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    user = make_user()
+    real_redeem = resets.redeem
+
+    def redeem_then_disable(token: str, password: str) -> UserRow:
+        redeemed = real_redeem(token, password)
+        disable(user.id)  # `make disable-user` lands between the redeem and the sign-in
+        return redeemed
+
+    monkeypatch.setattr(resets, "redeem", redeem_then_disable)
+    async with https_client() as c:
+        r = await reset(c, resets.create(user.id))
+        assert r.status_code == 403
+        assert r.json()["detail"] == RESET_DISABLED
+        assert SESSION_COOKIE not in c.cookies
 
 
 async def test_a_passkey_only_account_can_set_its_first_password() -> None:

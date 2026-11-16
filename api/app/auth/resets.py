@@ -9,8 +9,9 @@ their sessions.
 
 import datetime as dt
 import secrets
+from typing import Literal
 
-from sqlmodel import col, select, update
+from sqlmodel import Session, col, select, update
 
 from app.auth import passwords, sessions
 from app.auth.sessions import token_hash
@@ -23,8 +24,22 @@ RESET_TTL = dt.timedelta(hours=1)
 KEEP_EXPIRED = dt.timedelta(days=7)
 
 
+RefusalReason = Literal["unknown", "expired", "used", "disabled"]
+MESSAGES: dict[RefusalReason, str] = {
+    "unknown": RESET_UNKNOWN,
+    "expired": RESET_EXPIRED,
+    "used": RESET_USED,
+    "disabled": RESET_DISABLED,
+}
+
+
 class ResetRefused(Exception):
-    """The link can't be used; `str(exc)` is the message for the person holding it."""
+    """The link can't be used: `reason` says why, `str(exc)` is the message for the person
+    holding it."""
+
+    def __init__(self, reason: RefusalReason) -> None:
+        super().__init__(MESSAGES[reason])
+        self.reason: RefusalReason = reason
 
 
 class PasswordRejected(Exception):
@@ -41,7 +56,7 @@ def create(user_id: str, *, now: dt.datetime | None = None) -> str:
         if user is None:
             raise LookupError(f"no user {user_id!r}")
         if user.disabled_at is not None:
-            raise ResetRefused(RESET_DISABLED)
+            raise ResetRefused("disabled")
         old = s.exec(
             select(PasswordResetRow).where(col(PasswordResetRow.expires_at) <= now - KEEP_EXPIRED)
         ).all()
@@ -58,15 +73,18 @@ def create(user_id: str, *, now: dt.datetime | None = None) -> str:
     return token
 
 
-def _usable(row: PasswordResetRow | None, user: UserRow | None, now: dt.datetime) -> UserRow:
+def _usable(s: Session, token: str, now: dt.datetime) -> UserRow:
+    """The account `token`'s link resets, if the link can be used now; else ResetRefused."""
+    row = s.get(PasswordResetRow, token_hash(token))
+    user = s.get(UserRow, row.user_id) if row is not None else None
     if row is None or user is None:
-        raise ResetRefused(RESET_UNKNOWN)
+        raise ResetRefused("unknown")
     if row.used_at is not None:
-        raise ResetRefused(RESET_USED)
+        raise ResetRefused("used")
     if as_utc(row.expires_at) <= now:
-        raise ResetRefused(RESET_EXPIRED)
+        raise ResetRefused("expired")
     if user.disabled_at is not None:
-        raise ResetRefused(RESET_DISABLED)
+        raise ResetRefused("disabled")
     return user
 
 
@@ -74,8 +92,7 @@ def check(token: str, *, now: dt.datetime | None = None) -> UserRow:
     """The account a still-usable link resets, or ResetRefused. Changes nothing."""
     now = now or utcnow()
     with session_scope() as s:
-        row = s.get(PasswordResetRow, token_hash(token))
-        user = _usable(row, s.get(UserRow, row.user_id) if row else None, now)
+        user = _usable(s, token, now)
         s.expunge(user)
         return user
 
@@ -85,14 +102,15 @@ def redeem(token: str, new_password: str, *, now: dt.datetime | None = None) -> 
     their sessions. ResetRefused if the link can't be used, PasswordRejected if the password
     breaks the rules (the link stays usable then)."""
     now = now or utcnow()
+    # A dead link is reported before a weak password, and no Argon2 work is spent on it. The
+    # write below checks the link again, in the transaction that claims it.
     check(token, now=now)
     problem = passwords.password_problem(new_password)
     if problem is not None:
         raise PasswordRejected(problem)
     hashed = passwords.hash_password(new_password)
     with session_scope() as s:
-        row = s.get(PasswordResetRow, token_hash(token))
-        user = _usable(row, s.get(UserRow, row.user_id) if row else None, now)
+        user = _usable(s, token, now)
         # Claim the link with a conditional UPDATE: of two redemptions racing, one wins.
         claimed = s.exec(
             update(PasswordResetRow)
@@ -103,7 +121,7 @@ def redeem(token: str, new_password: str, *, now: dt.datetime | None = None) -> 
             .values(used_at=now)
         )
         if claimed.rowcount != 1:
-            raise ResetRefused(RESET_USED)
+            raise ResetRefused("used")
         s.exec(
             update(PasswordResetRow)
             .where(
@@ -113,8 +131,9 @@ def redeem(token: str, new_password: str, *, now: dt.datetime | None = None) -> 
             .values(used_at=now)
         )
         user.password_hash = hashed
+        # Same transaction: the new password and the end of the old sessions land together.
+        sessions.end_user_sessions(s, user.id)
         s.flush()
         s.refresh(user)
         s.expunge(user)
-    sessions.end_user_sessions(user.id)
     return user

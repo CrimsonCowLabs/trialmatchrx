@@ -96,7 +96,9 @@ def test_ending_a_users_sessions_ends_all_of_theirs_and_no_one_elses() -> None:
     ana, ben = make_user(), make_user("ben@example.com")
     ana_tokens = [sessions.create(ana, now=T0) for _ in range(2)]
     ben_token = sessions.create(ben, now=T0)
-    assert sessions.end_user_sessions(ana) == 2
+    with session_scope() as s:
+        assert sessions.end_user_sessions(s, ana) == 2
     assert all(sessions.resolve(t, now=T0) is None for t in ana_tokens)
     assert sessions.resolve(ben_token, now=T0) is not None
-    assert sessions.end_user_sessions(ana) == 0
+    with session_scope() as s:
+        assert sessions.end_user_sessions(s, ana) == 0
