@@ -1,8 +1,8 @@
 // The public marketing page (SPEC.md "Marketing and accounts"), for trial sponsors and CROs:
-// hero (components/MarketingHero), demo video, the three moments, trust, award (hidden until set), request access, footer.
+// hero (components/MarketingHero), demo video, the four moments, trust, award (hidden until set), request access, footer.
 // Copy and config live in lib/marketing.ts; the screenshots are real captures of the app
 // (synthetic patients, DEMO_MODE=replay) in public/moments.
-import { Check, CircleHelp } from "lucide-react";
+import { Check } from "lucide-react";
 import type { Metadata } from "next";
 import Image, { getImageProps } from "next/image";
 
@@ -111,18 +111,6 @@ function MomentSection({ moment, flip }: { moment: Moment; flip: boolean }) {
         <h2 id={id} className="text-3xl leading-tight font-semibold tracking-tight text-balance text-ink sm:text-4xl">
           {moment.heading}
         </h2>
-        {moment.unknownsLine && (
-          // Marked like an unknown verdict in the app: the Needs info tier lists what's missing.
-          <h3 className="flex items-start gap-2.5 text-lg font-medium text-ink-2">
-            <span
-              aria-hidden
-              className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-verdict-unknown-bg text-verdict-unknown"
-            >
-              <CircleHelp className="size-3.5" strokeWidth={2.5} />
-            </span>
-            {moment.unknownsLine}
-          </h3>
-        )}
       </div>
       <figure className="min-w-0 lg:col-span-8">
         <Screenshot shot={moment.screenshot} />

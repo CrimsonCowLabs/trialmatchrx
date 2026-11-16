@@ -55,10 +55,8 @@ export interface MomentScreenshot extends ImageFile {
 }
 
 export interface Moment {
-  name: "Match" | "Feasibility" | "Proof";
+  name: "Match" | "Closer" | "Feasibility" | "Proof";
   heading: string;
-  /** Match only: its second approved line, about the Needs info tier's unknowns. */
-  unknownsLine?: string;
   screenshot: MomentScreenshot;
 }
 
@@ -79,19 +77,29 @@ export const MARKETING_COPY = {
   },
   subhead:
     "TrialMatch Rx screens a patient against every recruiting trial nearby, rule by rule, and shows its work. Every verdict quotes the trial and the patient's own record.",
-  // SPEC.md names three moments; the ticket approved four lines. "Unknowns become a to-do list"
-  // is about the Needs info tier, which the Match screenshot shows, so Match carries two.
+  // SPEC.md's four moments, one approved line each, in the demo script's order (Match, then
+  // the Closer's "Next steps" on the PAH card, then Feasibility); Proof closes.
   moments: [
     {
       name: "Match",
       heading: "Screen in minutes, not hours.",
-      unknownsLine: "Unknowns become a to-do list.",
       screenshot: {
         src: "/moments/match.webp",
-        alt: "A match run for a synthetic patient with pulmonary fibrosis: trials sorted into likely eligible, needs info and ineligible, with one trial open showing each criterion's verdict, the patient's quoted evidence, and the unknowns still to check.",
+        alt: "A match run for a synthetic patient with pulmonary fibrosis: trials sorted into likely eligible, needs info and ineligible, with one trial open showing each criterion's verdict and the patient's quoted evidence.",
         width: 1558,
         height: 1264,
         mobile: { src: "/moments/match-mobile.webp", width: 780, height: 1200 },
+      },
+    },
+    {
+      name: "Closer",
+      heading: "Unknowns become a to-do list.",
+      screenshot: {
+        src: "/moments/closer.webp",
+        alt: "Next steps for a synthetic patient with pulmonary arterial hypertension: one follow-up per unknown criterion, each a test to order or a question to ask, with the criterion it resolves and why.",
+        width: 1304,
+        height: 1200,
+        mobile: { src: "/moments/closer-mobile.webp", width: 780, height: 1200 },
       },
     },
     {

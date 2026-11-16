@@ -436,7 +436,7 @@ The nav's Home item and the guide's "Go to Home" link point to `/app`. The marke
 
 1. **Hero.** Headline, subhead, the award badge "Winner: Best Interdisciplinary Hack, HackRx 2026, by SacHacks", and the Request access and Sign in buttons. The badge is text in the app's own tokens, not a SacHacks logo, and links to https://sachacks.io until a results page exists.
 2. **Demo video.** A click-to-load player: a poster with a play button that loads `youtube-nocookie.com` only on click. The YouTube video ID is one config value. Until it's set, the poster reads "Demo video coming soon".
-3. **The three moments.** Match, Feasibility and Proof, each with a real screenshot of the app.
+3. **The four moments.** Match, Closer, Feasibility and Proof, each with a real screenshot of the app.
 4. **Trust.**
    - Every verdict quotes the trial and the patient.
    - Numeric rules are checked by code.

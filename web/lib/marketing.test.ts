@@ -93,9 +93,7 @@ test("the copy is the ticket's approved wording", () => {
     "TrialMatch Rx screens a patient against every recruiting trial nearby, rule by rule, and shows its work. Every verdict quotes the trial and the patient's own record.",
   );
   assert.deepEqual(
-    MARKETING_COPY.moments.flatMap((m) =>
-      "unknownsLine" in m ? [m.heading, m.unknownsLine] : [m.heading],
-    ),
+    MARKETING_COPY.moments.map((m) => m.heading),
     [
       "Screen in minutes, not hours.",
       "Unknowns become a to-do list.",
@@ -105,7 +103,7 @@ test("the copy is the ticket's approved wording", () => {
   );
   assert.deepEqual(
     MARKETING_COPY.moments.map((m) => m.name),
-    ["Match", "Feasibility", "Proof"],
+    ["Match", "Closer", "Feasibility", "Proof"],
   );
   assert.deepEqual(MARKETING_COPY.trust, [
     "Every verdict quotes the trial and the patient.",
