@@ -51,7 +51,7 @@ First time:
    ssh aaron@ccl-vps 'cd /app/trialmatchrx && docker compose -f compose.yaml ps && curl -fsS 127.0.0.1:8045/api/health'
    ```
 
-Later deploys are step 2 alone. Each successful one is a line in `/app/trialmatchrx/deploys.log`; the registry keeps the newest 3 tags. The registry is shared with KeyIDPro, so the delete + garbage-collect that prunes it runs under `flock -n /app/registry/.gc.lock`; a deploy that finds the lock held skips the prune and says so. KeyIDPro's deploy doesn't take that lock yet, so until it does, don't run the two deploys at the same time.
+Later deploys are step 2 alone, or `make deploy`, which deploys the latest `origin/main` whatever branch you have checked out (it fetches main into a temporary worktree and runs that commit's `scripts/deploy.sh`, so uncommitted work here never ships; `make deploy ARGS=--dry-run` first). Each successful one is a line in `/app/trialmatchrx/deploys.log`; the registry keeps the newest 3 tags. The registry is shared with KeyIDPro, so the delete + garbage-collect that prunes it runs under `flock -n /app/registry/.gc.lock`; a deploy that finds the lock held skips the prune and says so. KeyIDPro's deploy doesn't take that lock yet, so until it does, don't run the two deploys at the same time.
 
 ### Pinning the first-time guide's runs
 

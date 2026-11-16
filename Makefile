@@ -1,5 +1,5 @@
 .PHONY: install dev api web check check-api check-web check-scripts types seed cohort eval eval-offline \
-	eval-smoke compile-fixtures record-demo guide-pin dev-user reset-link users disable-user invite access-requests
+	eval-smoke compile-fixtures record-demo guide-pin dev-user reset-link users disable-user invite access-requests deploy
 
 API_PORT ?= 8045
 WEB_PORT ?= 3045
@@ -38,6 +38,12 @@ check-scripts:
 		out="$$(bash "$$t")" || { printf '%s\n' "$$out"; exit 1; }; \
 		printf '%s: %s\n' "$$t" "$$(printf '%s\n' "$$out" | tail -1)"; \
 	done
+
+# Build and ship the latest origin/main to ccl-vps, whatever branch is checked out here:
+# scripts/deploy-main.sh checks it out in a temporary worktree and runs that commit's
+# scripts/deploy.sh. `make deploy ARGS=--dry-run` says what it would do, and stops.
+deploy:
+	./scripts/deploy-main.sh $(ARGS)
 
 # Regenerate web/lib/api-types.ts from FastAPI's OpenAPI (no server needed).
 types:
