@@ -1,8 +1,8 @@
 "use client";
 
-// Who's signed in, from `/api/auth/me`: the email and a "Sign out" button, or a "Sign in" link
-// back to this page while signed out. The sidebar shows it at md and up; below md it's a slim
-// row above the page, since the tab bar is full.
+// Who's signed in, from `/api/auth/me`: the email (a link to /app/account) and a "Sign out"
+// button, or a "Sign in" link back to this page while signed out. The sidebar shows it at md
+// and up; below md it's a slim row above the page, since the tab bar is full.
 // HACK(demo): the signed-out state exists only because login isn't required on the app pages
 // yet; "Require login everywhere" (#10) makes it unreachable.
 import { LogIn, LogOut } from "lucide-react";
@@ -11,7 +11,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { api, type Me } from "@/lib/api";
-import { LOGIN_HREF, loginHref } from "@/lib/auth";
+import { ACCOUNT_HREF, LOGIN_HREF, loginHref } from "@/lib/auth";
 
 type Account = { state: "loading" } | { state: "signed-in"; me: Me } | { state: "signed-out" };
 
@@ -72,9 +72,13 @@ export function AccountStatus({ variant }: { variant: Variant }) {
   if (variant === "bar") {
     return (
       <div className={`flex min-w-0 items-center justify-end gap-3 ${HEIGHT.bar}`}>
-        <span className="min-w-0 truncate text-xs text-ink-3" title={account.me.email}>
+        <Link
+          href={ACCOUNT_HREF}
+          className="min-w-0 truncate text-xs text-ink-3 hover:underline"
+          title={`${account.me.email}: your account`}
+        >
           {account.me.email}
-        </span>
+        </Link>
         {signOutButton}
       </div>
     );
@@ -82,9 +86,13 @@ export function AccountStatus({ variant }: { variant: Variant }) {
   return (
     <div className="flex min-w-0 flex-col gap-1.5 border-t pt-3">
       <span className="text-xs text-ink-4">Signed in as</span>
-      <span className="truncate text-sm font-medium text-ink" title={account.me.email}>
+      <Link
+        href={ACCOUNT_HREF}
+        className="truncate text-sm font-medium text-ink hover:underline"
+        title={`${account.me.email}: your account`}
+      >
         {account.me.email}
-      </span>
+      </Link>
       <div>{signOutButton}</div>
     </div>
   );

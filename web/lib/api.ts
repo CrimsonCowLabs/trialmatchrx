@@ -26,6 +26,10 @@ export type Me = Schemas["Me"];
 export type LoginRequest = Schemas["LoginRequest"];
 export type ResetLinkInfo = Schemas["ResetLinkInfo"];
 export type ResetPasswordRequest = Schemas["ResetPasswordRequest"];
+export type PasskeyInfo = Schemas["PasskeyInfo"];
+export type PasskeyOptions = Schemas["PasskeyOptions"];
+export type PasskeyLoginRequest = Schemas["PasskeyLoginRequest"];
+export type PasskeyRegisterRequest = Schemas["PasskeyRegisterRequest"];
 
 // Called directly (not through a Next rewrite) so the SSE stream is never buffered. Inlined at
 // build time: the Docker image is built with "" so every call is a same-origin `/api/...` path.
@@ -40,6 +44,12 @@ type JsonBody<P extends keyof paths, M extends "post"> = paths[P][M] extends {
 /** How a failed call reads on the page. */
 export function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+/** How a failed auth call reads on the page: the API's own message ("Email or password is
+ *  incorrect", ...), or that the server couldn't be reached. */
+export function apiFailureMessage(err: unknown): string {
+  return err instanceof ApiError && err.detail ? err.detail : "Couldn't reach the server. Try again.";
 }
 
 /** A non-2xx answer; `status` lets a page react to e.g. 404 (not compiled) vs 503, and
@@ -100,6 +110,18 @@ export const api = {
     request<Me>("/api/auth/reset", { method: "POST", body: JSON.stringify(body) }),
   /** The signed-in account; rejects with an ApiError of status 401 when signed out. */
   me: () => request<Me>("/api/auth/me"),
+  passkeyLoginOptions: () =>
+    request<PasskeyOptions>("/api/auth/passkey/login/options", { method: "POST" }),
+  passkeyLoginVerify: (body: PasskeyLoginRequest) =>
+    request<Me>("/api/auth/passkey/login/verify", { method: "POST", body: JSON.stringify(body) }),
+  listPasskeys: () => request<PasskeyInfo[]>("/api/auth/passkeys"),
+  passkeyRegisterOptions: () =>
+    request<PasskeyOptions>("/api/auth/passkey/register/options", { method: "POST" }),
+  passkeyRegisterVerify: (body: PasskeyRegisterRequest) =>
+    request<PasskeyInfo>("/api/auth/passkey/register/verify", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
   startMatch: (body: JsonBody<"/api/match", "post">) =>
     request<RunStarted>("/api/match", { method: "POST", body: JSON.stringify(body) }),
   startCloser: (body: CloserRequest) =>

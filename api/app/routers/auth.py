@@ -1,5 +1,5 @@
-"""Sign in with email and password, see who's signed in, sign out, and set a new password
-with a reset link (SPEC.md "Marketing and accounts").
+"""Sign in with email and password or a passkey, add and list passkeys, see who's signed in,
+sign out, and set a new password with a reset link (SPEC.md "Marketing and accounts").
 
 Sign-in isn't an agent run, so its decisions (throttled, which failure, success) go to the
 `app.auth` logger rather than a TraceRecorder: a trace needs a run row and belongs in the trace
@@ -12,7 +12,7 @@ from typing import Annotated, NamedTuple
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
-from app.auth import passwords, resets, sessions, throttle, users
+from app.auth import passkeys, passwords, resets, sessions, throttle, users
 from app.auth.client_ip import request_ip
 from app.auth.deps import (
     SESSION_COOKIE,
@@ -20,16 +20,21 @@ from app.auth.deps import (
     require_user,
     set_session_cookie,
 )
-from app.db import UserRow
+from app.db import PasskeyRow, UserRow
 from app.schemas import (
     LOGIN_FAILED,
     LOGIN_THROTTLED,
+    PASSKEY_NOT_ADDED,
     RESET_DISABLED,
     RESET_EXPIRED,
     RESET_UNKNOWN,
     RESET_USED,
     LoginRequest,
     Me,
+    PasskeyInfo,
+    PasskeyLoginRequest,
+    PasskeyOptions,
+    PasskeyRegisterRequest,
     ResetLinkCheck,
     ResetLinkInfo,
     ResetPasswordRequest,
@@ -98,12 +103,91 @@ def login(body: LoginRequest, request: Request, response: Response) -> Me:
             log.info("login failed (%s) ip=%s", checked.failure, ip)
             raise HTTPException(status_code=401, detail=LOGIN_FAILED)
     user = users.record_login(checked.user.id, new_hash=checked.new_hash)
+    _start_session(request, response, user.id)
+    log.info("login ok user=%s ip=%s", user.id, ip)
+    return to_me(user)
+
+
+def _start_session(request: Request, response: Response, user_id: str) -> None:
     old = request.cookies.get(SESSION_COOKIE)
     if old:
         sessions.delete(old)  # signing in again replaces this browser's session
-    set_session_cookie(response, sessions.create(user.id))
-    log.info("login ok user=%s ip=%s", user.id, ip)
+    set_session_cookie(response, sessions.create(user_id))
+
+
+@router.post("/passkey/login/options", response_model=PasskeyOptions)
+def passkey_login_options() -> PasskeyOptions:
+    """Start a passkey sign-in: the options for `startAuthentication()` (button or autofill)."""
+    return passkeys.begin_login()
+
+
+@router.post(
+    "/passkey/login/verify",
+    response_model=Me,
+    responses={401: {"description": LOGIN_FAILED}, 429: {"description": LOGIN_THROTTLED}},
+)
+def passkey_login_verify(body: PasskeyLoginRequest, request: Request, response: Response) -> Me:
+    """Finish a passkey sign-in; `credential: null` reports a cancel. Failures share the
+    password sign-in's 401 and throttle: each counts against the IP, and against the passkey
+    owner's email when the passkey is known."""
+    ip = request_ip(request)
+    claimed = passkeys.claimed_by(body.credential)
+    email = claimed.user.email if claimed.user is not None else ""
+    with _attempt_lock:
+        if throttle.is_throttled(email, ip):
+            passkeys.finish_login(body.challenge_id, None, claimed)  # spend the challenge
+            log.info("passkey login throttled ip=%s", ip)
+            raise HTTPException(status_code=429, detail=LOGIN_THROTTLED)
+        user, failure = passkeys.finish_login(body.challenge_id, body.credential, claimed)
+        if user is None:
+            throttle.record_failure(email, ip)
+            log.info("passkey login failed (%s) ip=%s", failure, ip)
+            raise HTTPException(status_code=401, detail=LOGIN_FAILED)
+    user = users.record_login(user.id, new_hash=None)
+    _start_session(request, response, user.id)
+    log.info("passkey login ok user=%s ip=%s", user.id, ip)
     return to_me(user)
+
+
+def to_passkey_info(row: PasskeyRow) -> PasskeyInfo:
+    return PasskeyInfo(id=row.id, created_at=row.created_at, last_used_at=row.last_used_at)
+
+
+@router.get(
+    "/passkeys", response_model=list[PasskeyInfo], responses={401: {"description": "Not signed in"}}
+)
+def list_passkeys(user: Annotated[UserRow, Depends(require_user)]) -> list[PasskeyInfo]:
+    """The signed-in account's passkeys, oldest first."""
+    return [to_passkey_info(p) for p in passkeys.list_for_user(user.id)]
+
+
+@router.post(
+    "/passkey/register/options",
+    response_model=PasskeyOptions,
+    responses={401: {"description": "Not signed in"}},
+)
+def passkey_register_options(user: Annotated[UserRow, Depends(require_user)]) -> PasskeyOptions:
+    """Start adding a passkey to the signed-in account: options for `startRegistration()`."""
+    return passkeys.begin_registration(user)
+
+
+@router.post(
+    "/passkey/register/verify",
+    status_code=201,
+    response_model=PasskeyInfo,
+    responses={400: {"description": PASSKEY_NOT_ADDED}, 401: {"description": "Not signed in"}},
+)
+def passkey_register_verify(
+    body: PasskeyRegisterRequest, user: Annotated[UserRow, Depends(require_user)]
+) -> PasskeyInfo:
+    """Finish adding a passkey. Any problem (expired challenge, bad response, wrong origin) is
+    the same 400, and nothing is stored."""
+    row = passkeys.finish_registration(user.id, body.challenge_id, body.credential)
+    if row is None:
+        log.info("passkey not added user=%s", user.id)
+        raise HTTPException(status_code=400, detail=PASSKEY_NOT_ADDED)
+    log.info("passkey added user=%s", user.id)
+    return to_passkey_info(row)
 
 
 @router.post("/logout", status_code=204)

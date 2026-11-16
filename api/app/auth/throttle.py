@@ -26,14 +26,16 @@ def record_failure(email: str, ip: str, *, now: dt.datetime | None = None) -> No
 
 
 def is_throttled(email: str, ip: str, *, now: dt.datetime | None = None) -> bool:
-    """Whether the email or the IP has `MAX_FAILURES` failures in the last `WINDOW`."""
+    """Whether the email or the IP has `MAX_FAILURES` failures in the last `WINDOW`. An empty
+    email (a passkey sign-in that names no known account) checks the IP only: those failures
+    are stored with email "", and one shared bucket would let anyone throttle everyone."""
     now = now or utcnow()
     recent = col(LoginFailureRow.failed_at) > now - WINDOW
+    matches = [col(LoginFailureRow.ip) == ip]
+    if normalized := normalize_email(email):
+        matches.append(col(LoginFailureRow.email) == normalized)
     with session_scope() as s:
-        for match in (
-            col(LoginFailureRow.email) == normalize_email(email),
-            col(LoginFailureRow.ip) == ip,
-        ):
+        for match in matches:
             count = s.exec(select(func.count()).where(recent, match)).one()
             if count >= MAX_FAILURES:
                 return True

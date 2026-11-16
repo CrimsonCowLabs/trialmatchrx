@@ -1,19 +1,32 @@
 "use client";
 
-// The sign-in form (SPEC.md "Marketing and accounts", Login): email + password, "Request
-// access" and "Forgot password?". The API decides every failure's message ("Email or password
-// is incorrect", or "Try again in a few minutes" once throttled); the page shows it as is.
+// The sign-in page (SPEC.md "Marketing and accounts", Login): "Sign in with a passkey" as the
+// primary button, browser autofill offering saved passkeys from the email field, and the email +
+// password form below, with "Request access" and "Forgot password?". The API decides every
+// failure's message ("Email or password is incorrect", or "Try again in a few minutes" once
+// throttled), passkey or password; the page shows it as is.
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { KeyRound } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, apiFailureMessage } from "@/lib/api";
 import { FORGOT_PASSWORD_MESSAGE, safeNextPath } from "@/lib/auth";
 import { HOME_HREF } from "@/lib/nav";
+import {
+  browserSupportsWebAuthn,
+  browserSupportsWebAuthnAutofill,
+  passkeySignIn,
+  WebAuthnAbortService,
+} from "@/lib/passkey-browser";
+
+/** WebAuthn support doesn't change while the page is open. */
+const noChange = () => () => {};
+
 
 export function LoginView() {
   const router = useRouter();
@@ -23,6 +36,8 @@ export function LoginView() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showForgot, setShowForgot] = useState(false);
+  // False on the server and in browsers without WebAuthn: then only the password form shows.
+  const hasPasskeys = useSyncExternalStore(noChange, browserSupportsWebAuthn, () => false);
 
   // Already signed in: there's nothing to do here.
   useEffect(() => {
@@ -36,6 +51,46 @@ export function LoginView() {
     };
   }, [router]);
 
+  // Autofill: the email field's suggestions include this site's passkeys, and picking one
+  // signs in. The request waits in the background until then; the passkey button supersedes
+  // it. After any failed attempt (button or an autofill pick) it's started again. Leaving the
+  // page cancels it.
+  const autofill = useRef({ active: false });
+  const startAutofill = useCallback(() => {
+    const run = { active: true };
+    autofill.current = run;
+    const wait = () =>
+      passkeySignIn({ autofill: true }).then(
+        (me) => run.active && me && router.replace(next),
+        (err: unknown) => {
+          if (!run.active || !(err instanceof ApiError)) return;
+          setError(apiFailureMessage(err));
+          wait();
+        },
+      );
+    browserSupportsWebAuthnAutofill().then((supported) => supported && run.active && wait());
+  }, [router, next]);
+
+  useEffect(() => {
+    startAutofill();
+    return () => {
+      autofill.current.active = false;
+      WebAuthnAbortService.cancelCeremony();
+    };
+  }, [startAutofill]);
+
+  async function onPasskey() {
+    setBusy(true);
+    setError(null);
+    try {
+      if (await passkeySignIn({ autofill: false })) return router.replace(next);
+    } catch (err) {
+      setError(apiFailureMessage(err));
+      startAutofill();
+    }
+    setBusy(false);
+  }
+
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
@@ -44,11 +99,7 @@ export function LoginView() {
       await api.login({ email, password });
       router.replace(next);
     } catch (err) {
-      setError(
-        err instanceof ApiError && err.detail
-          ? err.detail
-          : "Couldn't reach the server. Try again.",
-      );
+      setError(apiFailureMessage(err));
       setBusy(false);
     }
   }
@@ -65,8 +116,19 @@ export function LoginView() {
       <Card>
         <CardContent className="flex flex-col gap-5">
           <h1 className="text-xl font-semibold tracking-tight text-ink">Sign in</h1>
-          {/* HACK(demo): password only for now. "Sign in with a passkey" (#4) goes here, above
-              the form, as the primary button (SPEC.md). */}
+          {hasPasskeys && (
+            <>
+              <Button type="button" size="lg" className="h-10" onClick={onPasskey} disabled={busy}>
+                <KeyRound aria-hidden />
+                Sign in with a passkey
+              </Button>
+              <div className="flex items-center gap-3 text-xs text-ink-4" aria-hidden>
+                <span className="h-px flex-1 bg-line-soft" />
+                or use your password
+                <span className="h-px flex-1 bg-line-soft" />
+              </div>
+            </>
+          )}
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className="text-sm font-medium">
@@ -76,7 +138,8 @@ export function LoginView() {
                 id="email"
                 name="email"
                 type="email"
-                autoComplete="username"
+                // "webauthn" lets autofill offer saved passkeys here too.
+                autoComplete="username webauthn"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="h-10"
@@ -119,7 +182,13 @@ export function LoginView() {
                 {error}
               </p>
             )}
-            <Button type="submit" size="lg" className="h-10" disabled={busy || !email || !password}>
+            <Button
+              type="submit"
+              size="lg"
+              variant={hasPasskeys ? "outline" : "default"}
+              className="h-10"
+              disabled={busy || !email || !password}
+            >
               {busy ? "Signing in…" : "Sign in"}
             </Button>
           </form>

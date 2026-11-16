@@ -402,3 +402,36 @@ class Me(BaseModel):
     email: str
     has_password: bool  # false for a passkey-only account
     created_at: dt.datetime
+
+
+# Passkeys (WebAuthn, `app/auth/passkeys.py`). A ceremony is two calls: `options` hands the
+# browser py_webauthn's options JSON plus the id of the server-side challenge, and `verify`
+# posts back what `@simplewebauthn/browser` returned. A failed or cancelled passkey sign-in is
+# the same 401 LOGIN_FAILED as a password one (SPEC.md: every failure, one message).
+PASSKEY_NOT_ADDED = "Couldn't add the passkey. Try again."
+
+
+class PasskeyOptions(BaseModel):
+    challenge_id: str
+    # PublicKeyCredentialCreationOptionsJSON / ...RequestOptionsJSON, as py_webauthn writes it.
+    options: dict[str, Any]
+
+
+class PasskeyRegisterRequest(BaseModel):
+    challenge_id: str = Field(max_length=64)
+    credential: dict[str, Any]  # RegistrationResponseJSON from startRegistration()
+
+
+class PasskeyLoginRequest(BaseModel):
+    challenge_id: str = Field(max_length=64)
+    # AuthenticationResponseJSON from startAuthentication(); null when the person cancelled,
+    # so the cancel counts toward the sign-in throttle like any other failure.
+    credential: dict[str, Any] | None
+
+
+class PasskeyInfo(BaseModel):
+    """One passkey on the account page: when it was added and last used for a sign-in."""
+
+    id: str  # the credential id, base64url
+    created_at: dt.datetime
+    last_used_at: dt.datetime | None

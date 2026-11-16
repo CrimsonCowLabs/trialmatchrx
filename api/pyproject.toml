@@ -19,10 +19,12 @@ dependencies = [
     "sqlmodel>=0.0.49",
     "sse-starlette>=3.7.0",
     "uvicorn[standard]>=0.54.0",
+    "webauthn>=3.0.1",
 ]
 
 [dependency-groups]
 dev = [
+    "cbor2>=6.3.0",
     "mypy>=2.4.1",
     "pandas-stubs>=3.1.0.261029",
     "pytest>=9.2.0",

@@ -106,3 +106,61 @@
   - `/login` sends a signed-in visitor to `/app` (as the ticket says), not to `?next=`.
   - Both AccountStatus instances (sidebar and mobile row) mount, one hidden by CSS, so `/api/auth/me` is read twice per shell mount. Kept simple; a shared context can come with #10.
   - In dev, use `localhost` for both the web app and the API. 127.0.0.1 vs localhost is cross-site, so the Lax cookie wouldn't flow.
+
+## 2026-11-16 12:16 marketing-and-accounts/passkeys
+- Passkeys (#4): sign in with one, and add them on a minimal `/app/account`. The invite page's "add a passkey" waits for #3 (PR #17, not merged yet).
+- Tables (db.py, from `create_all`):
+  - `passkeys`: id (credential id, base64url), user_id, public_key (COSE), sign_count, transports, created_at, last_used_at.
+  - `webauthn_challenges`: id, kind (register / login), challenge, user_id (set only when registering), created_at.
+- `app/auth/passkeys.py` (py_webauthn):
+  - `begin_registration(user)` / `finish_registration(user_id, ...)` take a user, not a session, so the invite page can reuse them.
+  - `begin_login()` / `claimed_by(credential)` / `finish_login(...)`.
+  - Every challenge is single-use and lasts 5 minutes. At most 1,000 are kept; past that the oldest are dropped.
+- Routes (`routers/auth.py`, under the public `/api/auth/*`):
+  - `POST /passkey/login/options` and `POST /passkey/login/verify` return `Me` and set the session cookie. They share the password sign-in's lock, 401 "Email or password is incorrect" and 429 throttle.
+  - `POST /passkey/register/options`, `POST /passkey/register/verify` (201 `PasskeyInfo`, or 400 "Couldn't add the passkey. Try again.") and `GET /passkeys` need a session.
+  - Schemas `PasskeyOptions`, `PasskeyLoginRequest`, `PasskeyRegisterRequest` and `PasskeyInfo` are in schemas.py; `make types` was run.
+- Settings: `WEBAUTHN_RP_ID` / `WEBAUTHN_ORIGIN` default to `localhost` / `http://localhost:3045`. compose.yaml sets `tmrx.crimsoncowlabs.com` / `https://tmrx.crimsoncowlabs.com`, both overridable from the shell or .env for the local proxy stack.
+- Throttle: an empty email (a passkey that names no known account) now checks the IP only, rather than one shared "" bucket that would throttle everyone.
+- `make users` (#7) shows each account's real passkey count; its `HACK(demo)` zero is gone.
+- Web:
+  - `/login`: "Sign in with a passkey" is the primary button. The password form sits below an "or use your password" rule, and its button becomes the outline variant. The email field is `autocomplete="username webauthn"`, and a conditional-mediation request waits in the background so autofill offers saved passkeys. The button supersedes that request; it restarts after any failed attempt and is cancelled on leaving the page.
+  - `/app/account` (noindex): "Passkey n", added / last used ("Not used yet"), and "Add a passkey". It's `HACK(demo)` minimal: remove, password and "Sign out everywhere" are #5.
+  - `AddPasskeyButton` is the reusable piece for the invite page.
+  - lib/passkeys.ts holds the ceremony rules, with the steps injected; lib/passkey-browser.ts wires @simplewebauthn/browser and the API.
+  - The signed-in email in the sidebar and mobile row links to `/app/account`.
+- Code review (standards + spec, against origin/main). Fixed:
+  - Dropped a hand-written copy of `PasskeyOptions` (web and API).
+  - Moved the duplicated "Couldn't reach the server" logic into `apiFailureMessage`.
+  - Removed an unused `count_for_user` and an unused button `variant` prop.
+  - Two verifies racing on one challenge, or adding one credential twice, now fail cleanly with 401 / 400 (counted DELETE, IntegrityError) instead of a 500.
+  - The challenge table is capped.
+  - Autofill restarts after a failed autofill pick.
+  - `cbor2` is declared as a dev dependency.
+- Tests:
+  - pytest: `test_auth_passkeys` against `tests/webauthn_fake.py`, a software authenticator that builds the same JSON @simplewebauthn/browser posts and signs with synthetic P-256 keys in `tests/fixtures/webauthn/`. Covered:
+    - add and list; sign in (session, last used, last_login_at); a passkey-only account;
+    - each failure gives the same 401 (cancelled, unknown passkey, phishing origin, other RP ID, wrong key, no user verification, disabled account, a user handle for another account);
+    - single-use and expired challenges; the challenge cap;
+    - IP and email throttling shared with passwords, and unknown passkeys not throttling others;
+    - registration needs a session; registration options (discoverable, UV required, excludeCredentials); bad registrations store nothing; one user's challenge can't add a passkey to another; a duplicate is refused;
+    - the RP ID and origin from settings (prod values).
+  - Also a test for the `make users` passkey count.
+  - node: lib/passkeys.test.ts (cancel reported as a null credential, superseded and autofill errors not reported, cancelled add never reaches the API).
+  - `make check` green.
+- Browser check: `make dev API_PORT=8345 WEB_PORT=3345` with `WEBAUTHN_ORIGIN=http://localhost:3345`, driven by headless Chromium with a CDP virtual authenticator (ctap2, resident keys, UV). It added a passkey on /app/account and signed in through autofill and through the button (last used then shown). A failed user verification showed "Email or password is incorrect". /login has no horizontal scroll at 390px.
+- Decisions:
+  - Dependency: `webauthn` (py_webauthn, SPEC.md names it) for server-side WebAuthn verification. It pulls in `cbor2`, `cryptography`, `pyopenssl`, `pyasn1` and `pyasn1-modules`.
+  - Dependency: `@simplewebauthn/browser` (SPEC.md names it) for the browser-side WebAuthn JSON encoding and conditional UI.
+  - Dev dependency: `cbor2`, already installed through webauthn, declared because the test authenticator encodes attestation objects with it.
+  - Challenges are stored server-side in `webauthn_challenges`, not in a cookie: single-use, a 5-minute TTL, and a cap of 1,000 (oldest dropped). The browser gets the challenge id beside the options and posts it back. A register challenge is bound to its user.
+  - Passkeys must be discoverable (resident key required) and user-verified (UV required on both ceremonies), since a passkey is the whole sign-in and autofill needs discoverable credentials. Login options send no allowCredentials, so nothing reveals which accounts exist.
+  - The WebAuthn user handle is the opaque user id, never the email. A sign-in whose userHandle doesn't match the passkey's owner fails, because the signature doesn't cover it.
+  - A passkey failure shows the spec's single message, "Email or password is incorrect" (SPEC.md: "Every failure shows the same message"), even though no password was involved.
+  - A cancelled or failed prompt from the button is posted as `credential: null`, so it counts toward the throttle (as the ticket asks). Errors from the background autofill request aren't posted, since the person made no attempt: a browser may reject it on its own on page load. A superseded (aborted) request isn't posted either.
+  - A passkey failure counts against the IP, and against the owner's email when the credential id is known (looked up before verifying). Like a wrong password typed against someone's email, a junk response with a known credential id can throttle that email; accounts still never lock (SPEC.md).
+  - Adding a passkey isn't a sign-in, so its failures don't count toward the throttle. They have their own messages: "Couldn't add the passkey. Try again." from the API, and "No passkey was added." for a cancelled prompt, which is never sent to the API.
+  - Without WebAuthn in the browser (and in the server render), /login shows only the password form.
+  - Passkeys are listed as "Passkey 1, 2, …" in the order they were added: there are no names yet.
+  - The account page is reached from the signed-in email in the sidebar / mobile row. There's no nav item: the spec's nav has five.
+  - The dev origin is `http://localhost:3045` (the web app, not the API). Passkeys don't work from 127.0.0.1 with an RP ID of localhost.

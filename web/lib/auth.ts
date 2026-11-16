@@ -4,6 +4,9 @@ import { HOME_HREF } from "./nav.ts";
 
 export const LOGIN_HREF = "/login";
 
+/** Your passkeys (and, with #5, password and sessions). */
+export const ACCOUNT_HREF = `${HOME_HREF}/account`;
+
 /** What "Forgot password?" says (SPEC.md): the team prints a reset link (`make reset-link`). */
 export const FORGOT_PASSWORD_MESSAGE = "Contact the team to reset your password.";
 
