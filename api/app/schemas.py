@@ -310,6 +310,22 @@ class CloserRequest(BaseModel):
     nct_id: str
 
 
+# The first-time guide's steps (SPEC.md "First-time user guide"), in the order the guide shows.
+GuideStep = Literal["als", "ipf", "ipf_flip", "pah", "feasibility"]
+
+
+class GuidePin(BaseModel):
+    """One pinned guide step: the run (and, for some steps, the trial) its links open."""
+
+    step: GuideStep
+    run_id: str | None
+    nct_id: str | None
+    # True when `run_id` names a run in the runs table (any status); False when it doesn't
+    # or there is no `run_id`. A `feasibility` pin carries only `nct_id`, so it is False
+    # there; the web side keys that step off `nct_id`.
+    run_exists: bool
+
+
 EvalSystem = Literal["bm25", "matcher"]
 
 

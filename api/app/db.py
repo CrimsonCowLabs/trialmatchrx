@@ -179,3 +179,15 @@ class CohortPatientRow(SQLModel, table=True):
     source: str  # bundle file name, so a row can be traced back to its record
     loaded_at: dt.datetime = Field(default_factory=utcnow)
     facts: dict[str, Any] = Field(sa_column=Column(JSON, nullable=False))
+
+
+class GuidePinRow(SQLModel, table=True):
+    """One step of the first-time guide, pinned to a recorded run (and, for `feasibility`,
+    a trial). Written by `make guide-pin`; the API only reads it."""
+
+    __tablename__ = "guide_pins"
+
+    step: str = Field(primary_key=True)  # GuideStep
+    run_id: str | None = None  # no foreign key: a pin outlives a deleted run (run_exists)
+    nct_id: str | None = None
+    pinned_at: dt.datetime = Field(default_factory=utcnow)

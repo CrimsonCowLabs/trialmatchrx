@@ -12,7 +12,7 @@ from fastapi.routing import APIRoute
 from app.config import get_settings
 from app.db import init_db
 from app.routers import eval as eval_routes
-from app.routers import feasibility, match, runs, trials
+from app.routers import feasibility, guide, match, runs, trials
 from app.schemas import Health, RunDone
 from app.sources.cohort import get_cohort
 from app.trace.replay import recorded_patients
@@ -47,7 +47,7 @@ app.add_middleware(
     expose_headers=["X-Run-Id"],
 )
 
-for module in (match, runs, trials, feasibility, eval_routes):
+for module in (match, runs, trials, feasibility, eval_routes, guide):
     app.include_router(module.router)
 
 
