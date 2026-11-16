@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useCallback, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useState, type ReactNode } from "react";
 
 import { PageHeader } from "@/components/PageHeader";
 import { ThresholdSlider } from "@/components/ThresholdSlider";
@@ -209,10 +209,12 @@ function Feasibility({ nct }: { nct: string }) {
                 <div className="mt-1 text-sm text-ink-2">
                   on {countNoun(review.criteria.length, "criterion", "criteria")} without a rule:{" "}
                   {review.criteria.map((r, i) => (
-                    <span key={r.criterion_id} className="font-mono whitespace-nowrap">
-                      {r.criterion_id}
+                    // The ", " sits outside the nowrap span: it's where the list may wrap. Inside
+                    // it, the whole list was one unbreakable run that overflowed the card.
+                    <Fragment key={r.criterion_id}>
+                      <span className="font-mono whitespace-nowrap">{r.criterion_id}</span>
                       {i < review.criteria.length - 1 && ", "}
-                    </span>
+                    </Fragment>
                   ))}
                 </div>
               </>
