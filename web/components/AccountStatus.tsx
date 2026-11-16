@@ -2,9 +2,9 @@
 
 // Who's signed in, from `/api/auth/me`: the email (a link to /app/account) and a "Sign out"
 // button, or a "Sign in" link back to this page while signed out. The sidebar shows it at md
-// and up; below md it's a slim row above the page, since the tab bar is full.
-// HACK(demo): the signed-out state exists only because login isn't required on the app pages
-// yet; "Require login everywhere" (#10) makes it unreachable.
+// and up; below md it's a slim row above the page, since the tab bar is full. The app pages
+// need a session (web/proxy.ts, and a 401 sends you to /login: lib/api.ts), so the signed-out
+// state shows only for a moment before that redirect, or while the API can't be reached.
 import { LogIn, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";

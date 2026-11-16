@@ -52,11 +52,13 @@ async def traced_run(
     request: dict[str, Any],
     *,
     run_id: str | None = None,
+    created_by: str | None = None,
     bus: EventBus = default_bus,
 ) -> AsyncIterator[TracedRun]:
-    """Open a run (creating its row unless `run_id` names an existing one) and close it."""
+    """Open a run (creating its row, started by user id `created_by`, unless `run_id` names an
+    existing one) and close it."""
     if run_id is None:
-        run_id = store.create_run(kind, request)
+        run_id = store.create_run(kind, request, created_by=created_by)
     run = TracedRun(run_id, TraceRecorder(run_id, bus))
     try:
         yield run
@@ -72,10 +74,16 @@ async def traced_run(
 
 
 def start_traced_run(
-    kind: RunKind, request: dict[str, Any], work: RunWork, *, bus: EventBus = default_bus
+    kind: RunKind,
+    request: dict[str, Any],
+    work: RunWork,
+    *,
+    created_by: str | None = None,
+    bus: EventBus = default_bus,
 ) -> str:
-    """Create the run row now, run `work` in a background task, return the run id."""
-    run_id = store.create_run(kind, request)
+    """Create the run row now (started by user id `created_by`), run `work` in a background
+    task, return the run id."""
+    run_id = store.create_run(kind, request, created_by=created_by)
 
     async def drive() -> None:
         try:

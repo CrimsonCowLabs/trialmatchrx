@@ -16,7 +16,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { api, ApiError, apiFailureMessage } from "@/lib/api";
 import { FORGOT_PASSWORD_MESSAGE, safeNextPath } from "@/lib/auth";
-import { HOME_HREF } from "@/lib/nav";
 import {
   browserSupportsWebAuthn,
   browserSupportsWebAuthnAutofill,
@@ -39,17 +38,17 @@ export function LoginView() {
   // False on the server and in browsers without WebAuthn: then only the password form shows.
   const canUsePasskeys = useSyncExternalStore(noChange, browserSupportsWebAuthn, () => false);
 
-  // Already signed in: there's nothing to do here.
+  // Already signed in: there's nothing to do here, so go where you were headed.
   useEffect(() => {
     let cancelled = false;
     api.me().then(
-      () => !cancelled && router.replace(HOME_HREF),
+      () => !cancelled && router.replace(next),
       () => {}, // 401 (signed out) or API down: stay on the form
     );
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [router, next]);
 
   // Autofill: the email field's suggestions include this site's passkeys, and picking one
   // signs in. The request waits in the background until then; the passkey button supersedes
