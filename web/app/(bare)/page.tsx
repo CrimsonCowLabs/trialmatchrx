@@ -1,25 +1,22 @@
 // The public marketing page (SPEC.md "Marketing and accounts"), for trial sponsors and CROs:
-// hero, demo video, the three moments, trust, award (hidden until set), request access, footer.
+// hero (components/MarketingHero), demo video, the three moments, trust, award (hidden until set), request access, footer.
 // Copy and config live in lib/marketing.ts; the screenshots are real captures of the app
 // (synthetic patients, DEMO_MODE=replay) in public/moments.
-import { Award, Check, CircleHelp } from "lucide-react";
+import { Check, CircleHelp } from "lucide-react";
 import type { Metadata } from "next";
 import Image, { getImageProps } from "next/image";
-import Link from "next/link";
 
 import { DemoVideo } from "@/components/DemoVideo";
+import { MarketingHero } from "@/components/MarketingHero";
 import { RequestAccessForm } from "@/components/RequestAccessForm";
-import { buttonVariants } from "@/components/ui/button";
 import { REQUEST_ACCESS_ID } from "@/lib/access-request";
-import { LOGIN_HREF } from "@/lib/auth";
 import {
-  AWARD_BADGE,
   AWARD_PHOTOS,
   AWARD_RESULTS_URL,
+  AWARD_TITLE,
   DEMO_VIDEO_ID,
   MARKETING_COPY,
   MARKETING_METADATA,
-  awardBadgeHref,
   awardSection,
   demoVideo,
   type Moment,
@@ -35,14 +32,9 @@ export default function MarketingPage() {
   const award = awardSection(AWARD_RESULTS_URL, AWARD_PHOTOS);
   return (
     <div className="flex flex-1 flex-col">
-      <header className={`${COLUMN} flex items-center gap-2.5 pt-5 sm:pt-7`}>
-        <Image src="/brand/icon.svg" alt="" width={28} height={28} />
-        <span className="text-[0.9375rem] font-semibold tracking-tight text-ink">TrialMatch Rx</span>
-      </header>
+      <MarketingHero />
 
-      <Hero />
-
-      <section aria-label="Demo video" className={`${COLUMN} pb-20 sm:pb-28`}>
+      <section aria-label="Demo video" className={`${COLUMN} py-20 sm:py-28`}>
         <DemoVideo
           video={demoVideo(DEMO_VIDEO_ID)}
           poster={MARKETING_COPY.moments[0].screenshot.src}
@@ -60,7 +52,7 @@ export default function MarketingPage() {
       {award && (
         <section aria-labelledby="award-heading" className={`${COLUMN} pb-20 sm:pb-28`}>
           <h2 id="award-heading" className="text-2xl font-semibold tracking-tight text-ink">
-            {AWARD_BADGE}
+            {AWARD_TITLE}
           </h2>
           <a href={award.resultsUrl} className="link mt-2 inline-block text-sm font-medium">
             {MARKETING_COPY.awardResultsLink}
@@ -104,44 +96,6 @@ export default function MarketingPage() {
         <p className={`${COLUMN} py-6 text-sm text-ink-4`}>{MARKETING_COPY.footer}</p>
       </footer>
     </div>
-  );
-}
-
-function Hero() {
-  return (
-    <section className={`${COLUMN} flex flex-col items-start gap-6 pt-14 pb-12 sm:gap-8 sm:pt-24 sm:pb-16`}>
-      <a
-        href={awardBadgeHref(AWARD_RESULTS_URL)}
-        className="inline-flex max-w-full items-start gap-2 rounded-lg bg-teal-tint px-3 py-1.5 text-[0.8125rem] font-medium text-teal-strong transition-colors hover:bg-teal-selected sm:items-center"
-      >
-        <Award className="mt-0.5 size-4 shrink-0 sm:mt-0" aria-hidden />
-        {AWARD_BADGE}
-      </a>
-      <h1 className="max-w-4xl text-[2.625rem] leading-[1.04] font-semibold tracking-[-0.035em] text-balance text-ink sm:text-6xl lg:text-7xl">
-        {MARKETING_COPY.headline}
-      </h1>
-      <p className="max-w-2xl text-lg leading-relaxed text-pretty text-ink-3 sm:text-xl">
-        {MARKETING_COPY.subhead}
-      </p>
-      <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-        <a
-          href={`#${REQUEST_ACCESS_ID}`}
-          className={buttonVariants({ size: "lg", className: "h-11 px-5 text-[0.9375rem]" })}
-        >
-          Request access
-        </a>
-        <Link
-          href={LOGIN_HREF}
-          className={buttonVariants({
-            variant: "outline",
-            size: "lg",
-            className: "h-11 bg-surface px-5 text-[0.9375rem]",
-          })}
-        >
-          Sign in
-        </Link>
-      </div>
-    </section>
   );
 }
 

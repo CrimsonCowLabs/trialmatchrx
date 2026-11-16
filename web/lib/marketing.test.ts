@@ -5,24 +5,42 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import {
-  AWARD_BADGE,
   AWARD_LINK,
-  awardBadgeHref,
+  AWARD_TITLE,
+  HERO_LINKS,
+  awardHref,
   MARKETING_COPY,
   MARKETING_METADATA,
   awardSection,
   demoVideo,
 } from "./marketing.ts";
 
-test("the award badge is the spec's wording and links to sachacks.io", () => {
-  assert.equal(AWARD_BADGE, "Winner: Best Interdisciplinary Hack, HackRx 2026, by SacHacks");
+test("the award section's title is the ticket's wording; it links to sachacks.io", () => {
+  assert.equal(AWARD_TITLE, "Winner: Best Interdisciplinary Hack, HackRx 2026, by SacHacks");
   assert.equal(AWARD_LINK, "https://sachacks.io");
 });
 
-test("the badge links to the results page once it exists, sachacks.io until then", () => {
-  assert.equal(awardBadgeHref(null), "https://sachacks.io");
-  assert.equal(awardBadgeHref(""), "https://sachacks.io");
-  assert.equal(awardBadgeHref("https://sachacks.io/results"), "https://sachacks.io/results");
+test("the award links go to the results page once it exists, sachacks.io until then", () => {
+  assert.equal(awardHref(null), "https://sachacks.io");
+  assert.equal(awardHref(""), "https://sachacks.io");
+  assert.equal(awardHref("https://sachacks.io/results"), "https://sachacks.io/results");
+});
+
+test("the hero is the design handoff's copy (hero-3b), word for word", () => {
+  const { hero } = MARKETING_COPY;
+  assert.deepEqual(hero.tape, ["Winner", "Best Interdisciplinary Hack", "HackRx 2026", "SACHACKS.IO"]);
+  assert.equal(hero.eyebrowTag, "Award-winning");
+  assert.equal(hero.eyebrowText, "Best Interdisciplinary Hack, HackRx 2026, by SacHacks");
+  // "missing." is the accented part of the headline.
+  assert.equal(hero.headlineLead + hero.headlineAccent, MARKETING_COPY.headline);
+  assert.equal(hero.headlineAccent, "missing.");
+  assert.equal(hero.requestAccess, "Request access");
+  assert.equal(hero.signIn, "Sign in");
+});
+
+test("the hero CTAs: Request access to the form on this page, Sign in to /login", () => {
+  assert.equal(HERO_LINKS.requestAccess, "#request-access");
+  assert.equal(HERO_LINKS.signIn, "/login");
 });
 
 test("with no video ID the poster says the demo is coming soon", () => {
@@ -117,7 +135,7 @@ function allStrings(value: unknown): string[] {
 }
 
 test("no accuracy numbers: no percentages or scores anywhere in the page's copy", () => {
-  for (const s of allStrings({ MARKETING_COPY, MARKETING_METADATA, AWARD_BADGE })) {
+  for (const s of allStrings({ MARKETING_COPY, MARKETING_METADATA, AWARD_TITLE })) {
     assert.doesNotMatch(s, /\d\s*%|precision|recall|accuracy|ndcg|f1\b/i, s);
   }
 });

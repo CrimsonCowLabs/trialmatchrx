@@ -5,6 +5,9 @@
 // change is an edit plus a deploy (user decision, logged with the marketing plan).
 import type { Metadata } from "next";
 
+import { REQUEST_ACCESS_ID } from "./access-request.ts";
+import { LOGIN_HREF } from "./auth.ts";
+
 // HACK(demo): set once the demo video is on YouTube (the 11-character ID from its URL). Until
 // then the poster reads "Demo video coming soon".
 export const DEMO_VIDEO_ID: string | null = null;
@@ -14,14 +17,22 @@ export const DEMO_VIDEO_ID: string | null = null;
 export const AWARD_RESULTS_URL: string | null = null;
 export const AWARD_PHOTOS: readonly AwardPhoto[] = [];
 
-/** The badge, word for word, and where it links until a results page exists. */
-export const AWARD_BADGE = "Winner: Best Interdisciplinary Hack, HackRx 2026, by SacHacks";
+/** The award, in the ticket's words: the award section's title and the OG description. */
+export const AWARD_TITLE = "Winner: Best Interdisciplinary Hack, HackRx 2026, by SacHacks";
+/** Where the award links until a results page exists (SPEC.md). */
 export const AWARD_LINK = "https://sachacks.io";
 
-/** Where the badge links: the results page once there is one, sachacks.io until then. */
-export function awardBadgeHref(resultsUrl: string | null): string {
+/** Where the hero's award tape and eyebrow link: the results page once there is one,
+ *  sachacks.io until then. */
+export function awardHref(resultsUrl: string | null): string {
   return resultsUrl || AWARD_LINK;
 }
+
+/** The hero's two CTAs: the request-access form further down this page, and sign-in. */
+export const HERO_LINKS = {
+  requestAccess: `#${REQUEST_ACCESS_ID}`,
+  signIn: LOGIN_HREF,
+} as const;
 
 /** The prod origin, so the OG image URL is absolute (SPEC.md: the passkey domain). */
 export const SITE_URL = "https://tmrx.crimsoncowlabs.com";
@@ -54,6 +65,18 @@ export interface Moment {
 /** The ticket's approved copy, word for word, plus the spec's trust lines. */
 export const MARKETING_COPY = {
   headline: "Find the patients your trial is missing.",
+  // The hero follows the design handoff hero-3b (user decision; its copy is final). Its award
+  // wording replaces the ticket's single badge string in the hero.
+  hero: {
+    /** The magenta award tape, separated by stars. */
+    tape: ["Winner", "Best Interdisciplinary Hack", "HackRx 2026", "SACHACKS.IO"],
+    eyebrowTag: "Award-winning",
+    eyebrowText: "Best Interdisciplinary Hack, HackRx 2026, by SacHacks",
+    headlineLead: "Find the patients your trial is ",
+    headlineAccent: "missing.",
+    requestAccess: "Request access",
+    signIn: "Sign in",
+  },
   subhead:
     "TrialMatch Rx screens a patient against every recruiting trial nearby, rule by rule, and shows its work. Every verdict quotes the trial and the patient's own record.",
   // SPEC.md names three moments; the ticket approved four lines. "Unknowns become a to-do list"
@@ -117,7 +140,7 @@ export const MARKETING_METADATA: Metadata = {
     type: "website",
     siteName: "TrialMatch Rx",
     title: "Find the patients your trial is missing.",
-    description: `Every verdict quotes the trial and the patient's own record. ${AWARD_BADGE}.`,
+    description: `Every verdict quotes the trial and the patient's own record. ${AWARD_TITLE}.`,
     images: [{ url: "/og.png", width: 1200, height: 630, alt: "TrialMatch Rx" }],
   },
   twitter: { card: "summary_large_image" },
