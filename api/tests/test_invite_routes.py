@@ -125,9 +125,9 @@ async def test_a_password_that_breaks_the_rules_keeps_the_link_usable() -> None:
     async with https_client() as c:
         short = await accept(c, issued.token, "too short")
         common = await accept(c, issued.token, "unbelievable")
-        assert short.status_code == 400
+        assert short.status_code == 422
         assert short.json()["detail"] == passwords.password_problem("too short")
-        assert common.status_code == 400
+        assert common.status_code == 422
         assert common.json()["detail"] == passwords.password_problem("unbelievable")
         assert users.find_by_email("ana@example.com") is None
         assert (await accept(c, issued.token)).status_code == 200
@@ -150,12 +150,16 @@ async def test_accepting_needs_the_csrf_header() -> None:
     assert users.find_by_email("ana@example.com") is None
 
 
-async def test_two_invites_for_one_email_accepted_at_once_make_one_account() -> None:
+async def test_a_new_invite_cancels_the_older_unused_ones() -> None:
     first = invites.create("ana@example.com")
+    other = invites.create("bea@example.com")
     second = invites.create("ana@example.com")
-    async with https_client() as a, https_client() as b:
-        results = await asyncio.gather(accept(a, first.token), accept(b, second.token))
-    assert sorted(r.status_code for r in results) == [200, 409]  # never a 500
+    async with https_client() as c:
+        old = await accept(c, first.token)
+        assert old.status_code == 410 and old.json()["detail"] == INVITE_EXPIRED
+        assert users.find_by_email("ana@example.com") is None
+        assert (await accept(c, second.token)).status_code == 200
+        assert (await accept(c, other.token, "a third long password")).status_code == 200
 
 
 def test_losing_the_race_on_the_email_is_account_exists_not_a_crash(
