@@ -157,6 +157,8 @@ function SetPasswordForm({
           className="h-10"
           required
         />
+        {/* HACK(demo): the rules restated by hand from api/app/auth/passwords.py; the API's
+            message on a refused password is the one that counts. */}
         <p id="password-rules" className="text-xs text-ink-3">
           At least 12 characters. Common passwords aren&apos;t allowed.
         </p>

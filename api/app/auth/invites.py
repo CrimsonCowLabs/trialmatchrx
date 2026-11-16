@@ -13,6 +13,7 @@ import uuid
 from typing import Literal, NamedTuple
 
 from sqlalchemy import update
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, col, select
 
 from app.auth.sessions import token_hash
@@ -24,11 +25,15 @@ INVITE_TTL = dt.timedelta(days=7)
 Unusable = Literal["unknown", "expired", "used"]
 
 
-class AlreadyHasAccount(Exception):
+class InviteRefused(Exception):
+    """Why an invite can't be made or used; nothing was created."""
+
+
+class AlreadyHasAccount(InviteRefused):
     """The invited email already has an account."""
 
 
-class InviteUnusable(Exception):
+class InviteUnusable(InviteRefused):
     def __init__(self, reason: Unusable) -> None:
         super().__init__(reason)
         self.reason: Unusable = reason
@@ -43,15 +48,16 @@ def create(email: str, *, now: dt.datetime | None = None) -> Issued:
     """A new invite for `email`. Raises AlreadyHasAccount if the email has an account.
     Earlier unused invites for the same email keep working until one of them is accepted."""
     now = now or utcnow()
+    email = normalize_email(email)
     if find_by_email(email) is not None:
-        raise AlreadyHasAccount(normalize_email(email))
+        raise AlreadyHasAccount(email)
     token = secrets.token_urlsafe(32)  # 256 bits
     expires_at = now + INVITE_TTL
     with session_scope() as s:
         s.add(
             InviteRow(
                 token_hash=token_hash(token),
-                email=normalize_email(email),
+                email=email,
                 created_at=now,
                 expires_at=expires_at,
             )
@@ -81,10 +87,9 @@ def lookup(token: str, *, now: dt.datetime | None = None) -> InviteRow:
     return row
 
 
-def accept(token: str, *, password_hash: str | None, now: dt.datetime | None = None) -> UserRow:
-    """Spend the invite and create its account (`password_hash` None would be passkey-only,
-    for #4). Raises like `lookup`; on any refusal nothing is created and the invite is
-    unchanged."""
+def accept(token: str, *, password_hash: str, now: dt.datetime | None = None) -> UserRow:
+    """Spend the invite and create its account with this password. Raises like `lookup`; on
+    any refusal nothing is created and the invite is unchanged."""
     now = now or utcnow()
     with session_scope() as s:
         row = _usable(s, token, now)
@@ -97,11 +102,17 @@ def accept(token: str, *, password_hash: str | None, now: dt.datetime | None = N
         )
         if spent.rowcount != 1:
             raise InviteUnusable("used")
+        email = row.email  # read now: after a failed flush the row can't be loaded
         user = UserRow(
-            id=uuid.uuid4().hex, email=row.email, password_hash=password_hash, created_at=now
+            id=uuid.uuid4().hex, email=email, password_hash=password_hash, created_at=now
         )
         s.add(user)
-        s.flush()
+        try:
+            s.flush()
+        except IntegrityError as err:
+            # Another invite for this email was accepted at the same moment: users.email is
+            # unique, so this one loses and rolls back (its invite stays unspent).
+            raise AlreadyHasAccount(email) from err
         s.refresh(user)
         s.expunge(user)
     return user

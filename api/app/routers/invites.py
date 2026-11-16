@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 
 from app.auth import invites, passwords, sessions, users
 from app.auth.deps import SESSION_COOKIE, set_session_cookie
+from app.db import as_utc
 from app.routers.auth import to_me
 from app.schemas import (
     INVITE_ACCOUNT_EXISTS,
@@ -40,12 +41,13 @@ _REFUSALS: dict[int | str, dict[str, Any]] = {
 }
 
 
-def _refuse(err: invites.InviteUnusable | invites.AlreadyHasAccount) -> NoReturn:
-    if isinstance(err, invites.AlreadyHasAccount):
+def _refuse(err: invites.InviteRefused) -> NoReturn:
+    if isinstance(err, invites.InviteUnusable):
+        status, detail = _UNUSABLE[err.reason]
+        log.info("invite refused (%s)", err.reason)
+    else:
+        status, detail = 409, INVITE_ACCOUNT_EXISTS
         log.info("invite refused (account exists)")
-        raise HTTPException(status_code=409, detail=INVITE_ACCOUNT_EXISTS) from err
-    status, detail = _UNUSABLE[err.reason]
-    log.info("invite refused (%s)", err.reason)
     raise HTTPException(status_code=status, detail=detail) from err
 
 
@@ -54,9 +56,9 @@ def invite_info(token: str) -> InviteInfo:
     """Who a usable invite is for; 404 unknown, 410 expired or used, 409 account exists."""
     try:
         row = invites.lookup(token)
-    except (invites.InviteUnusable, invites.AlreadyHasAccount) as err:
+    except invites.InviteRefused as err:
         _refuse(err)
-    return InviteInfo(email=row.email, expires_at=row.expires_at)
+    return InviteInfo(email=row.email, expires_at=as_utc(row.expires_at))
 
 
 # Sync on purpose: Argon2 runs in FastAPI's threadpool, not on the event loop.
@@ -72,14 +74,14 @@ def accept_invite(
     breaks the rules (400, with why), creates nothing and leaves the link as it was."""
     try:
         invites.lookup(token)  # refuse a bad link before spending an Argon2 hash on it
-    except (invites.InviteUnusable, invites.AlreadyHasAccount) as err:
+    except invites.InviteRefused as err:
         _refuse(err)
     problem = passwords.password_problem(body.password)
     if problem is not None:
         raise HTTPException(status_code=400, detail=problem)
     try:
         user = invites.accept(token, password_hash=passwords.hash_password(body.password))
-    except (invites.InviteUnusable, invites.AlreadyHasAccount) as err:
+    except invites.InviteRefused as err:
         _refuse(err)
     user = users.record_login(user.id, new_hash=None)
     old = request.cookies.get(SESSION_COOKIE)

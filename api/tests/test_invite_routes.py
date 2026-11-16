@@ -5,11 +5,13 @@ message and creates nothing."""
 
 import asyncio
 import datetime as dt
+from typing import Any
 
 import httpx
+import pytest
 from sqlmodel import select
 
-from app.auth import invites, passwords, users
+from app.auth import invites, passwords, sessions, users
 from app.auth.deps import SESSION_COOKIE
 from app.db import InviteRow, session_scope, utcnow
 from app.main import app
@@ -146,3 +148,32 @@ async def test_accepting_needs_the_csrf_header() -> None:
         r = await accept(c, issued.token)
     assert r.status_code == 403
     assert users.find_by_email("ana@example.com") is None
+
+
+async def test_two_invites_for_one_email_accepted_at_once_make_one_account() -> None:
+    first = invites.create("ana@example.com")
+    second = invites.create("ana@example.com")
+    async with https_client() as a, https_client() as b:
+        results = await asyncio.gather(accept(a, first.token), accept(b, second.token))
+    assert sorted(r.status_code for r in results) == [200, 409]  # never a 500
+
+
+def test_losing_the_race_on_the_email_is_account_exists_not_a_crash(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The other invite's account lands after this one's check but before its insert."""
+    issued = invites.create("ana@example.com")
+    usable = invites._usable
+
+    def check_then_lose(*args: Any) -> InviteRow:
+        row = usable(*args)
+        users.create_user("ana@example.com", password_hash=None)
+        return row
+
+    monkeypatch.setattr(invites, "_usable", check_then_lose)
+    with pytest.raises(invites.AlreadyHasAccount):
+        invites.accept(issued.token, password_hash=passwords.hash_password(PASSWORD))
+    monkeypatch.undo()
+    with session_scope() as s:  # rolled back: the invite is still unspent
+        row = s.get(InviteRow, sessions.token_hash(issued.token))
+        assert row is not None and row.used_at is None
