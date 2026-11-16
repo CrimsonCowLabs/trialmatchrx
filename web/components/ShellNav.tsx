@@ -9,6 +9,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { GuideButton } from "@/components/GuidePanel";
 import { api, errorMessage, type Health } from "@/lib/api";
 import { activeNav, countHint, healthLine, NAV_ITEMS, type NavId } from "@/lib/nav";
 
@@ -128,6 +129,7 @@ export function SidebarNav() {
     <>
       <nav aria-label="Main" className="flex-1">
         <SidebarItems active={activeNav(pathname)} status={status} />
+        <GuideButton />
       </nav>
       <HealthStatus status={status} />
     </>
@@ -139,6 +141,7 @@ export function SidebarNavFallback() {
   return (
     <nav aria-label="Main" className="flex-1">
       <SidebarItems active={null} status={null} />
+      <GuideButton />
     </nav>
   );
 }

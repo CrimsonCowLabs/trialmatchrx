@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { DEMO_PATIENTS, demoPatientForNote, type DemoPatient } from "@/lib/demo";
+import { markGuideStep } from "@/lib/guide";
 import {
   AGENT_STEPS,
   DEFAULT_RADIUS_MI,
@@ -47,6 +48,8 @@ export default function MatchPage() {
     setError(null);
     try {
       const { run_id } = await api.startMatch({ note, condition, radius_mi: radius });
+      // The guide's step 1 is checked when the ALS demo note's run starts.
+      if (loaded?.id === "als") markGuideStep("als");
       router.push(`/match/${run_id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

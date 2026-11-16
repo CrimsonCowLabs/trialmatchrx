@@ -17,6 +17,7 @@ import { api, errorMessage, type EvalLatest, type RunListItem } from "@/lib/api"
 import { runLinks } from "@/lib/browse";
 import { DEMO_PATIENTS, demoMatchRequest, type DemoPatient } from "@/lib/demo";
 import { formatScore } from "@/lib/eval";
+import { markGuideStep } from "@/lib/guide";
 import { defaultFeasibilityNct, evalBars } from "@/lib/home";
 import { useLoad } from "@/lib/use-load";
 
@@ -47,6 +48,8 @@ export function MatchCard() {
     setError(null);
     try {
       const { run_id } = await api.startMatch(demoMatchRequest(patient));
+      // The guide's step 1 is checked when the ALS run starts.
+      if (patient.id === "als") markGuideStep("als");
       router.push(`/match/${encodeURIComponent(run_id)}`);
     } catch (err) {
       setError(errorMessage(err));
