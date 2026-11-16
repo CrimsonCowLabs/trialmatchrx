@@ -13,7 +13,12 @@ import pytest
 from app.auth import account, passkeys, passwords, sessions, users
 from app.auth.deps import SESSION_COOKIE
 from app.db import UserRow
-from app.schemas import LAST_SIGN_IN_METHOD, LOGIN_THROTTLED, PASSKEY_NOT_FOUND, PASSWORD_WRONG
+from app.schemas import (
+    LAST_SIGN_IN_METHOD,
+    PASSKEY_NOT_FOUND,
+    PASSWORD_CHANGE_THROTTLED,
+    PASSWORD_WRONG,
+)
 from tests.test_auth_passkeys import passkey_login
 from tests.test_auth_routes import PASSWORD, https_client, login, make_user, set_cookie_header
 from tests.webauthn_fake import FakeAuthenticator
@@ -101,16 +106,28 @@ async def test_a_new_password_that_breaks_the_rules_is_422_with_the_reason(new: 
         assert (await c.get("/api/auth/me")).json()["has_password"] is False
 
 
-async def test_wrong_current_passwords_count_toward_the_sign_in_throttle() -> None:
-    """A stolen session mustn't become an unthrottled way to guess the password."""
+async def test_wrong_current_passwords_have_their_own_limit() -> None:
+    """A stolen session mustn't become an unthrottled way to guess the password, nor a way to
+    lock the owner out of signing in: the limit is per account and separate from sign-in's."""
     async with with_password() as c:
         for _ in range(5):
             assert (await change(c, "not the password", NEW_PASSWORD)).status_code == 403
         r = await change(c, PASSWORD, NEW_PASSWORD)
         assert r.status_code == 429
-        assert r.json()["detail"] == LOGIN_THROTTLED
-    async with https_client(ip="203.0.113.99") as elsewhere:  # the email is throttled too
-        assert (await login(elsewhere, "ana@example.com", PASSWORD)).status_code == 429
+        assert r.json()["detail"] == PASSWORD_CHANGE_THROTTLED
+        async with https_client(ip="198.51.100.10") as same_ip:  # sign-in isn't throttled
+            assert (await login(same_ip, "ana@example.com", PASSWORD)).status_code == 200
+    async with https_client(ip="203.0.113.99") as elsewhere:
+        assert (await login(elsewhere, "ana@example.com", PASSWORD)).status_code == 200
+
+
+async def test_failed_sign_ins_dont_block_changing_the_password() -> None:
+    async with with_password() as c:
+        async with https_client(ip="203.0.113.99") as attacker:
+            for _ in range(5):
+                await login(attacker, "ana@example.com", "not the password")
+            assert (await login(attacker, "ana@example.com", PASSWORD)).status_code == 429
+        assert (await change(c, PASSWORD, NEW_PASSWORD)).status_code == 200
 
 
 async def test_changing_the_password_ends_your_other_sessions_but_not_this_one() -> None:

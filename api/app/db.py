@@ -287,6 +287,18 @@ class LoginFailureRow(SQLModel, table=True):
     failed_at: dt.datetime = Field(default_factory=utcnow, index=True)
 
 
+class PasswordChangeFailureRow(SQLModel, table=True):
+    """One wrong current password on `/app/account`, for its own limit (5 per account in 15
+    minutes, `app/auth/throttle.py`). Kept apart from `login_failures` so a stolen session
+    can't use it to lock the owner out of signing in. Pruned like `login_failures`."""
+
+    __tablename__ = "password_change_failures"
+
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: str = Field(foreign_key="users.id", index=True)
+    failed_at: dt.datetime = Field(default_factory=utcnow, index=True)
+
+
 class PasswordResetRow(SQLModel, table=True):
     """One password-reset link, printed by `make reset-link` (`app/auth/resets.py`). Like a
     session, only the token's SHA-256 is stored. The link works once (`used_at`), until

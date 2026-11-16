@@ -541,8 +541,9 @@ export interface paths {
          * Change Password
          * @description Set a password (an account without one) or change it (the current one is required).
          *     A new password that breaks the rules is a 422 with the reason. A wrong current password
-         *     is a 403 and counts toward the sign-in throttle for the account's email and the IP; once
-         *     throttled it's a 429 without checking. Ends every other session; this one stays.
+         *     is a 403 and counts toward the account's own password-change limit (not sign-in's, so a
+         *     stolen session can't lock the owner out); once over it, a 429 without checking. Ends
+         *     every other session; this one stays.
          */
         post: operations["change_password"];
         delete?: never;
@@ -2329,7 +2330,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Try again in a few minutes */
+            /** @description Too many wrong passwords. Try again in a few minutes. */
             429: {
                 headers: {
                     [name: string]: unknown;

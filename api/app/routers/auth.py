@@ -28,6 +28,7 @@ from app.schemas import (
     LOGIN_THROTTLED,
     PASSKEY_NOT_ADDED,
     PASSKEY_NOT_FOUND,
+    PASSWORD_CHANGE_THROTTLED,
     PASSWORD_WRONG,
     RESET_DISABLED,
     RESET_EXPIRED,
@@ -313,7 +314,7 @@ def reset_password(body: ResetPasswordRequest, request: Request, response: Respo
         401: {"description": "Not signed in"},
         403: {"description": PASSWORD_WRONG},
         422: {"description": "The new password breaks the rules"},
-        429: {"description": LOGIN_THROTTLED},
+        429: {"description": PASSWORD_CHANGE_THROTTLED},
     },
 )
 def change_password(
@@ -323,20 +324,21 @@ def change_password(
 ) -> Me:
     """Set a password (an account without one) or change it (the current one is required).
     A new password that breaks the rules is a 422 with the reason. A wrong current password
-    is a 403 and counts toward the sign-in throttle for the account's email and the IP; once
-    throttled it's a 429 without checking. Ends every other session; this one stays."""
+    is a 403 and counts toward the account's own password-change limit (not sign-in's, so a
+    stolen session can't lock the owner out); once over it, a 429 without checking. Ends
+    every other session; this one stays."""
     problem = passwords.password_problem(body.new_password)
     if problem is not None:
         raise HTTPException(status_code=422, detail=problem)
     ip = request_ip(request)
     if user.password_hash is not None:
         with _attempt_lock:
-            if throttle.is_throttled(user.email, ip):
+            if throttle.password_change_throttled(user.id):
                 log.info("password change throttled user=%s ip=%s", user.id, ip)
-                raise HTTPException(status_code=429, detail=LOGIN_THROTTLED)
+                raise HTTPException(status_code=429, detail=PASSWORD_CHANGE_THROTTLED)
             ok, _ = passwords.verify_password(user.password_hash, body.current_password or "")
             if not ok:
-                throttle.record_failure(user.email, ip)
+                throttle.record_password_change_failure(user.id)
                 log.info("password change: wrong current password user=%s ip=%s", user.id, ip)
                 raise HTTPException(status_code=403, detail=PASSWORD_WRONG)
     try:

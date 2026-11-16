@@ -362,6 +362,8 @@ class Health(BaseModel):
 # messages whatever went wrong (unknown email, wrong password, disabled account, no password).
 LOGIN_FAILED = "Email or password is incorrect"
 LOGIN_THROTTLED = "Try again in a few minutes"
+# Too many wrong current passwords on /app/account: its own limit, so it never blocks sign-in.
+PASSWORD_CHANGE_THROTTLED = "Too many wrong passwords. Try again in a few minutes."
 
 
 class LoginRequest(BaseModel):
