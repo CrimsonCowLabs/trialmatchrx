@@ -53,6 +53,7 @@ def _start_replay(
     request: dict[str, Any],
     fixture: RunFixture,
     ids: dict[str, str],
+    *,
     created_by: str,
 ) -> RunStarted:
     """A new run that re-emits `fixture` (persisted and streamed like a live run)."""
@@ -96,7 +97,7 @@ async def start_match(
     if get_settings().demo_mode == "replay":
         fixture = _recorded(req.note)
         # The recorded request, not this one: the run's request, parse and trace must agree.
-        return _start_replay("match", fixture.request, fixture, {}, user.id)
+        return _start_replay("match", fixture.request, fixture, {}, created_by=user.id)
 
     async def work(rec: TraceRecorder) -> dict[str, Any]:
         return await run_match(
@@ -138,7 +139,9 @@ async def start_closer(
         fixture = _recorded(match_run.request.get("note") if match_run else None, req.nct_id)
         # The recorded agent read the recorded match run; the replay points at this one.
         ids = {str(fixture.request["run_id"]): req.run_id}
-        return _start_replay("closer", req.model_dump(mode="json"), fixture, ids, user.id)
+        return _start_replay(
+            "closer", req.model_dump(mode="json"), fixture, ids, created_by=user.id
+        )
     try:
         model = model_factory()
     except CloserModelUnavailable as exc:

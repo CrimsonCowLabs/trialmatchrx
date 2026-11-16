@@ -38,9 +38,14 @@ export function useRunEvents(runId: string | null): RunEvents {
       source.close(); // otherwise EventSource reconnects forever
     });
     // EventSource retries on its own (sending Last-Event-ID); only a closed source is fatal.
+    // A refused stream (e.g. a 401 when the session ended) closes it, and EventSource can't
+    // see the status. Asking for the run through `api` can: a 401 there goes to /login
+    // (lib/api.ts); otherwise the page shows the error.
     source.onerror = () => {
-      if (source.readyState === EventSource.CLOSED) setState("error");
-      else setState("connecting");
+      if (source.readyState === EventSource.CLOSED) {
+        setState("error");
+        api.getRun(runId).catch(() => {});
+      } else setState("connecting");
     };
 
     return () => source.close();

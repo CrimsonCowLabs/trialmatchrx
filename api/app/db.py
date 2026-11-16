@@ -67,11 +67,12 @@ ADDED_COLUMNS: list[tuple[str, str]] = [
 def _add_missing_columns(engine: Engine) -> None:
     """ALTER TABLE ... ADD COLUMN for each `ADDED_COLUMNS` entry the database lacks, plus its
     index. Idempotent: a column that's there is skipped, and a duplicate-column error (another
-    process added it first) is ignored."""
+    process added it first) is ignored, and the index is CREATE INDEX IF NOT EXISTS."""
     for table_name, column_name in ADDED_COLUMNS:
         table = SQLModel.metadata.tables[table_name]
         column = table.columns[column_name]
-        assert column.nullable and column.server_default is None, f"{table_name}.{column_name}"
+        if not column.nullable or column.server_default is not None:
+            raise RuntimeError(f"{table_name}.{column_name}: ADDED_COLUMNS must be nullable")
         existing = {c["name"] for c in inspect(engine).get_columns(table_name)}
         if column_name not in existing:
             ddl = f"ALTER TABLE {table_name} ADD COLUMN {column_name} "
@@ -86,7 +87,13 @@ def _add_missing_columns(engine: Engine) -> None:
                     raise
         for index in table.indexes:
             if [c.name for c in index.columns] == [column_name]:
-                index.create(engine, checkfirst=True)
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            f"CREATE INDEX IF NOT EXISTS {index.name} "
+                            f"ON {table_name} ({column_name})"
+                        )
+                    )
 
 
 def init_db() -> None:

@@ -86,6 +86,8 @@ def require_session(request: Request, response: Response) -> None:
 
 
 def signed_in_user(request: Request) -> UserRow:
-    """The user `require_session` let through (only on a gated route)."""
-    user: UserRow = request.state.user
+    """The user `require_session` let through. Only on a gated route: a public one has none."""
+    user: UserRow | None = getattr(request.state, "user", None)
+    if user is None:
+        raise RuntimeError(f"signed_in_user on public route {request.url.path}: use require_user")
     return user
