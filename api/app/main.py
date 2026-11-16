@@ -12,7 +12,7 @@ from fastapi.routing import APIRoute
 from app.auth.csrf import RequireXRequestedWith
 from app.config import get_settings
 from app.db import init_db
-from app.routers import auth, feasibility, guide, invites, match, runs, trials
+from app.routers import access_requests, auth, feasibility, guide, invites, match, runs, trials
 from app.routers import eval as eval_routes
 from app.schemas import Health, RunDone
 from app.sources.cohort import get_cohort
@@ -54,7 +54,17 @@ app.add_middleware(
     expose_headers=["X-Run-Id"],
 )
 
-for module in (match, runs, trials, feasibility, eval_routes, guide, auth, invites):
+for module in (
+    match,
+    runs,
+    trials,
+    feasibility,
+    eval_routes,
+    guide,
+    auth,
+    invites,
+    access_requests,
+):
     app.include_router(module.router)
 
 

@@ -303,3 +303,20 @@ class InviteRow(SQLModel, table=True):
     created_at: dt.datetime = Field(default_factory=utcnow)
     expires_at: dt.datetime
     used_at: dt.datetime | None = None
+
+
+class AccessRequestRow(SQLModel, table=True):
+    """One request-access submission from the form on `/` (SPEC.md "Marketing and accounts").
+    `ip` is the client IP (`app/auth/client_ip.py`), kept for the limit of 3 per hour per IP
+    (`app/access_requests.py`). `make access-requests` lists them, newest first."""
+
+    __tablename__ = "access_requests"
+
+    id: int | None = Field(default=None, primary_key=True)
+    name: str
+    email: str
+    organization: str
+    role: str  # schemas.AccessRole: "sponsor" | "cro" | "site" | "other"
+    message: str | None = None  # None when left blank
+    ip: str = Field(index=True)
+    created_at: dt.datetime = Field(default_factory=utcnow, index=True)
