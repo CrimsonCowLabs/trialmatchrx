@@ -16,6 +16,8 @@ ends any sessions it has, and exits 0. There is no re-enable command.
 import argparse
 import sys
 
+from sqlmodel import select
+
 from app.auth import sessions, users
 from app.db import UserRow, as_utc, init_db, session_scope, utcnow
 
@@ -25,19 +27,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("email")
     email = users.normalize_email(parser.parse_args(argv).email)
     init_db()
-    found = users.find_by_email(email)
-    if found is None:
-        print(f"no account {email}", file=sys.stderr)
-        return 2
     with session_scope() as s:
-        row = s.get(UserRow, found.id)
-        assert row is not None
-        already = row.disabled_at
-        if already is None:
+        row = s.exec(select(UserRow).where(UserRow.email == email)).first()
+        if row is None:
+            print(f"no account {email}", file=sys.stderr)
+            return 2
+        disabled_since = row.disabled_at
+        if disabled_since is None:
             row.disabled_at = utcnow()
         ended = sessions.end_user_sessions(s, row.id)
-    if already is not None:
-        since = as_utc(already).strftime("%Y-%m-%d %H:%M UTC")
+    if disabled_since is not None:
+        since = as_utc(disabled_since).strftime("%Y-%m-%d %H:%M UTC")
         print(f"{email} is already disabled (since {since}); {ended} sessions ended")
     else:
         print(f"disabled {email}; {ended} sessions ended")

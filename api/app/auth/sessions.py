@@ -10,7 +10,7 @@ import hashlib
 import secrets
 from typing import NamedTuple
 
-from sqlmodel import Session, col, select
+from sqlmodel import Session, col
 from sqlmodel import delete as sql_delete
 
 from app.db import SessionRow, UserRow, as_utc, session_scope, utcnow
@@ -78,7 +78,5 @@ def delete(token: str) -> None:
 
 def end_user_sessions(session: Session, user_id: str) -> int:
     """Delete every session of `user_id` inside the caller's transaction; returns how many."""
-    rows = session.exec(select(SessionRow).where(SessionRow.user_id == user_id)).all()
-    for row in rows:
-        session.delete(row)
-    return len(rows)
+    stmt = sql_delete(SessionRow).where(col(SessionRow.user_id) == user_id)
+    return session.connection().execute(stmt).rowcount

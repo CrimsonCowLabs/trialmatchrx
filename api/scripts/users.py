@@ -35,7 +35,7 @@ def _minute(value: dt.datetime) -> str:
     return as_utc(value).strftime("%Y-%m-%d %H:%M")
 
 
-def rows() -> list[tuple[str, ...]]:
+def display_rows() -> list[tuple[str, ...]]:
     """One display row per account, oldest first."""
     with session_scope() as s:
         accounts = s.exec(select(UserRow).order_by(col(UserRow.created_at), col(UserRow.email)))
@@ -63,7 +63,7 @@ def format_table(table: list[tuple[str, ...]]) -> str:
 def main(argv: list[str] | None = None) -> int:
     argparse.ArgumentParser(description=__doc__.split("\n\n")[0]).parse_args(argv)
     init_db()
-    accounts = rows()
+    accounts = display_rows()
     print(format_table([HEADER, *accounts]) if accounts else "no accounts")
     return 0
 
