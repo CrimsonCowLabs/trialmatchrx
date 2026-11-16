@@ -5,24 +5,46 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import {
-  AWARD_BADGE,
   AWARD_LINK,
-  awardBadgeHref,
+  AWARD_TITLE,
+  HERO_LINKS,
+  awardHref,
   MARKETING_COPY,
   MARKETING_METADATA,
   awardSection,
   demoVideo,
 } from "./marketing.ts";
+import { APP_SECTIONS } from "./auth.ts";
+import { ROBOTS_DISALLOW, robotsRules } from "./robots.ts";
 
-test("the award badge is the spec's wording and links to sachacks.io", () => {
-  assert.equal(AWARD_BADGE, "Winner: Best Interdisciplinary Hack, HackRx 2026, by SacHacks");
+test("the award section's title is the ticket's wording; it links to sachacks.io", () => {
+  assert.equal(AWARD_TITLE, "Winner: Best Interdisciplinary Hack, HackRx 2026, by SacHacks");
   assert.equal(AWARD_LINK, "https://sachacks.io");
 });
 
-test("the badge links to the results page once it exists, sachacks.io until then", () => {
-  assert.equal(awardBadgeHref(null), "https://sachacks.io");
-  assert.equal(awardBadgeHref(""), "https://sachacks.io");
-  assert.equal(awardBadgeHref("https://sachacks.io/results"), "https://sachacks.io/results");
+test("the award links go to the results page once it exists, sachacks.io until then", () => {
+  assert.equal(awardHref(null), "https://sachacks.io");
+  assert.equal(awardHref(""), "https://sachacks.io");
+  assert.equal(awardHref("https://sachacks.io/results"), "https://sachacks.io/results");
+});
+
+test("the hero is the design handoff's copy (hero-3b), word for word", () => {
+  const { hero } = MARKETING_COPY;
+  assert.deepEqual(hero.tape, ["Winner", "Best Interdisciplinary Hack", "HackRx 2026", "SACHACKS.IO"]);
+  assert.equal(hero.eyebrowTag, "Award-winning");
+  assert.equal(hero.eyebrowText, "Best Interdisciplinary Hack, HackRx 2026, by SacHacks");
+  // The same award as the ticket's wording, which the award section and the OG description use.
+  assert.equal(`Winner: ${hero.eyebrowText}`, AWARD_TITLE);
+  // "missing." is the accented part of the headline.
+  assert.equal(hero.headlineLead + hero.headlineAccent, MARKETING_COPY.headline);
+  assert.equal(hero.headlineAccent, "missing.");
+  assert.equal(hero.requestAccess, "Request access");
+  assert.equal(hero.signIn, "Sign in");
+});
+
+test("the hero CTAs: Request access to the form on this page, Sign in to /login", () => {
+  assert.equal(HERO_LINKS.requestAccess, "#request-access");
+  assert.equal(HERO_LINKS.signIn, "/login");
 });
 
 test("with no video ID the poster says the demo is coming soon", () => {
@@ -73,9 +95,7 @@ test("the copy is the ticket's approved wording", () => {
     "TrialMatch Rx screens a patient against every recruiting trial nearby, rule by rule, and shows its work. Every verdict quotes the trial and the patient's own record.",
   );
   assert.deepEqual(
-    MARKETING_COPY.moments.flatMap((m) =>
-      "unknownsLine" in m ? [m.heading, m.unknownsLine] : [m.heading],
-    ),
+    MARKETING_COPY.moments.map((m) => m.heading),
     [
       "Screen in minutes, not hours.",
       "Unknowns become a to-do list.",
@@ -85,7 +105,7 @@ test("the copy is the ticket's approved wording", () => {
   );
   assert.deepEqual(
     MARKETING_COPY.moments.map((m) => m.name),
-    ["Match", "Feasibility", "Proof"],
+    ["Match", "Closer", "Feasibility", "Proof"],
   );
   assert.deepEqual(MARKETING_COPY.trust, [
     "Every verdict quotes the trial and the patient.",
@@ -117,7 +137,7 @@ function allStrings(value: unknown): string[] {
 }
 
 test("no accuracy numbers: no percentages or scores anywhere in the page's copy", () => {
-  for (const s of allStrings({ MARKETING_COPY, MARKETING_METADATA, AWARD_BADGE })) {
+  for (const s of allStrings({ MARKETING_COPY, MARKETING_METADATA, AWARD_TITLE })) {
     assert.doesNotMatch(s, /\d\s*%|precision|recall|accuracy|ndcg|f1\b/i, s);
   }
 });
@@ -158,7 +178,50 @@ test("robots: `/` is the only indexable page; the app, /login and the token page
   for (const file of routeFiles(app)) {
     assert.doesNotMatch(readFileSync(file, "utf8"), /index:\s*true/, file);
   }
-  // And there's no robots.txt: a Disallow would stop crawlers reading those pages' noindex.
-  assert.throws(() => statSync(join(app, "robots.ts")));
+  // robots.txt comes from app/robots.ts only, not a static file as well.
+  assert.ok(statSync(join(app, "robots.ts")).isFile());
+  assert.throws(() => statSync(join(app, "robots.txt")));
   assert.throws(() => statSync(join(import.meta.dirname, "..", "public", "robots.txt")));
+});
+
+test("robots.txt allows `/` and disallows the app, /login, the token pages and the API", () => {
+  assert.deepEqual(robotsRules(), {
+    rules: {
+      userAgent: "*",
+      allow: "/",
+      disallow: [
+        "/app",
+        "/match",
+        "/runs",
+        "/trials",
+        "/eval",
+        "/feasibility",
+        "/closer",
+        "/login",
+        "/invite/",
+        "/reset/",
+        "/api/",
+      ],
+    },
+  });
+  // Every signed-in section the proxy guards is disallowed, so a new section can't be missed.
+  for (const section of APP_SECTIONS) assert.ok(ROBOTS_DISALLOW.includes(`/${section}`), section);
+  // No sitemap: there's one public page.
+  assert.equal(robotsRules().sitemap, undefined);
+});
+
+/** Every file under public/, as the URL path it's served at. */
+function publicPaths(dir: string, prefix = ""): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    const url = `${prefix}/${name}`;
+    return statSync(path).isDirectory() ? publicPaths(path, url) : [url];
+  });
+}
+
+test("robots.txt rules are prefixes: no public file starts with a disallowed one", () => {
+  // e.g. a future /apple-touch-icon.png would be blocked by "Disallow: /app".
+  for (const url of publicPaths(join(import.meta.dirname, "..", "public"))) {
+    for (const rule of ROBOTS_DISALLOW) assert.ok(!url.startsWith(rule), `${url} vs ${rule}`);
+  }
 });

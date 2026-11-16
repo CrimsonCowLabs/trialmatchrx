@@ -62,6 +62,18 @@
   --color-replay-fg: var(--replay-fg);
   --color-replay-muted: var(--replay-muted);
   --color-replay-progress: var(--replay-progress);
+  --color-hero: var(--hero);
+  --color-hero-fg: var(--hero-fg);
+  --color-hero-ink: var(--hero-ink);
+  --color-hero-muted: var(--hero-muted);
+  --color-hero-nav: var(--hero-nav);
+  --color-hero-accent: var(--hero-accent);
+  --color-hero-on-accent: var(--hero-on-accent);
+  --color-hero-outline: var(--hero-outline);
+  --color-award-magenta: var(--award-magenta);
+  --color-award-cream: var(--award-cream);
+  --color-award-plum: var(--award-plum);
+  --animate-tape: tape 60s linear infinite;
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -103,6 +115,13 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
   --radius-card: 12px;
+}
+
+/* The award tape's marquee: the track holds the items twice, so moving it by half loops. */
+@keyframes tape {
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 /* The one teal text-link style (teal, darker on hover). Size, weight and underline stay with the
@@ -185,6 +204,20 @@
   --replay-fg: #ffffff;
   --replay-muted: #9aa3ab;
   --replay-progress: #5fc4cc;
+
+  /* Marketing hero (the claude.ai design handoff "hero-3b"): a dark band with a magenta award
+     tape. Only the hero on `/` uses these. */
+  --hero: #101315;
+  --hero-fg: #ffffff;
+  --hero-ink: var(--ink);
+  --hero-muted: #a9b3bb;
+  --hero-nav: #d7dde2;
+  --hero-accent: #5fd0d8;
+  --hero-on-accent: #0b1f22;
+  --hero-outline: #3a4148;
+  --award-magenta: #e24ad8;
+  --award-cream: #f3eee4;
+  --award-plum: #3a1240;
 
   /* shadcn slots, mapped onto the palette */
   --background: var(--canvas);
