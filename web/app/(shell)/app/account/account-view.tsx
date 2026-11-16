@@ -31,12 +31,13 @@ const when = (iso: string) =>
 function PasskeyRow({
   passkey,
   n,
-  blocked,
+  removable,
   onRemoved,
 }: {
   passkey: PasskeyInfo;
   n: number;
-  blocked: boolean;
+  // "last": your only way to sign in (explained under the list); "loading": not known yet.
+  removable: "yes" | "last" | "loading";
   onRemoved: () => void;
 }) {
   const [confirming, setConfirming] = useState(false);
@@ -72,8 +73,8 @@ function PasskeyRow({
             type="button"
             variant="outline"
             size="sm"
-            disabled={blocked}
-            aria-describedby={blocked ? "only-sign-in-method" : undefined}
+            disabled={removable !== "yes"}
+            aria-describedby={removable === "last" ? "only-sign-in-method" : undefined}
             onClick={() => setConfirming(true)}
           >
             Remove
@@ -115,8 +116,12 @@ export function AccountView() {
   const listed = useLoad(loadPasskeys);
   const [added, setAdded] = useState<PasskeyInfo[]>([]);
   const [removed, setRemoved] = useState<ReadonlySet<string>>(new Set());
+  // Numbered by when they were added, before removals, so "Passkey 2" keeps its name on this
+  // page after "Passkey 1" goes.
   const passkeys = listed.data
-    ? [...listed.data, ...added].filter((p) => !removed.has(p.id))
+    ? [...listed.data, ...added]
+        .map((passkey, i) => ({ passkey, n: i + 1 }))
+        .filter(({ passkey }) => !removed.has(passkey.id))
     : null;
 
   const blocked =
@@ -131,6 +136,11 @@ export function AccountView() {
         title="Account"
         description={me ? <p>Signed in as {me.email}</p> : null}
       />
+      {loadedMe.error && !me && (
+        <p className="text-sm break-words text-destructive" role="alert">
+          {loadedMe.error}
+        </p>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Passkeys</CardTitle>
@@ -149,13 +159,15 @@ export function AccountView() {
               <p className="text-sm text-ink-4">No passkeys yet.</p>
             ) : (
               <ul className="divide-y divide-line-soft" data-testid="passkeys">
-                {passkeys.map((p, i) => (
+                {passkeys.map(({ passkey, n }) => (
                   <PasskeyRow
-                    key={p.id}
-                    passkey={p}
-                    n={i + 1}
-                    blocked={blocked !== null}
-                    onRemoved={() => setRemoved((r) => new Set(r).add(p.id))}
+                    key={passkey.id}
+                    passkey={passkey}
+                    n={n}
+                    // Off until the account has loaded too: it decides whether this is the last
+                    // way to sign in.
+                    removable={!me ? "loading" : blocked ? "last" : "yes"}
+                    onRemoved={() => setRemoved((r) => new Set(r).add(passkey.id))}
                   />
                 ))}
               </ul>

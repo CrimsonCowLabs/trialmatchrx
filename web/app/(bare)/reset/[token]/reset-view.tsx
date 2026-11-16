@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { api, ApiError } from "@/lib/api";
 import { LOGIN_HREF } from "@/lib/auth";
 import { HOME_HREF } from "@/lib/nav";
-import { resetFormProblem } from "@/lib/reset";
+import { confirmPasswordProblem } from "@/lib/password";
 
 const UNREACHABLE = "Couldn't reach the server. Try again.";
 
@@ -48,7 +48,7 @@ export function ResetView() {
     };
   }, [token]);
 
-  const mismatch = resetFormProblem(password, confirm);
+  const mismatch = confirmPasswordProblem(password, confirm);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

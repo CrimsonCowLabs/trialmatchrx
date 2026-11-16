@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { api, apiFailureMessage, type Me } from "@/lib/api";
-import { resetFormProblem } from "@/lib/reset";
+import { confirmPasswordProblem } from "@/lib/password";
 
 function Field({
   id,
@@ -55,7 +55,7 @@ export function PasswordCard({ me, onChanged }: { me: Me; onChanged: (me: Me) =>
   const [done, setDone] = useState<string | null>(null);
 
   const changing = me.has_password;
-  const mismatch = resetFormProblem(password, confirm);
+  const mismatch = confirmPasswordProblem(password, confirm);
   const ready = Boolean((!changing || current) && password && confirm && mismatch === null);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -126,7 +126,7 @@ export function PasswordCard({ me, onChanged }: { me: Me; onChanged: (me: Me) =>
             </p>
           )}
           {done && (
-            <p className="text-sm text-verdict-pass" role="status" data-testid="password-done">
+            <p className="text-sm text-status-done" role="status" data-testid="password-done">
               {done}
             </p>
           )}
