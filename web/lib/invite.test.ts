@@ -14,7 +14,7 @@ test("a refused link shows the API's message and offers sign-in", () => {
 });
 
 test("a password that breaks the rules stays on the form with the rule", () => {
-  assert.deepEqual(inviteProblem({ status: 400, detail: "Use at least 12 characters." }), {
+  assert.deepEqual(inviteProblem({ status: 422, detail: "Use at least 12 characters." }), {
     kind: "password",
     message: "Use at least 12 characters.",
   });

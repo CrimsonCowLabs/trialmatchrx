@@ -415,7 +415,8 @@ export interface paths {
         /**
          * Accept Invite
          * @description Set a password, create the account and sign in. A refused link, or a password that
-         *     breaks the rules (400, with why), creates nothing and leaves the link as it was.
+         *     breaks the rules (422 with why, as on a reset), creates nothing and leaves the link as it
+         *     was.
          */
         post: operations["accept_invite"];
         delete?: never;
@@ -1828,13 +1829,6 @@ export interface operations {
                     "application/json": components["schemas"]["Me"];
                 };
             };
-            /** @description The password breaks the rules */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
             /** @description This invite link isn't valid. Check that you copied all of it. */
             404: {
                 headers: {
@@ -1856,14 +1850,12 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Validation Error */
+            /** @description The password breaks the rules */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
+                content?: never;
             };
         };
     };

@@ -65,20 +65,21 @@ def invite_info(token: str) -> InviteInfo:
 @router.post(
     "/{token}/accept",
     response_model=Me,
-    responses={**_REFUSALS, 400: {"description": "The password breaks the rules"}},
+    responses={**_REFUSALS, 422: {"description": "The password breaks the rules"}},
 )
 def accept_invite(
     token: str, body: AcceptInviteRequest, request: Request, response: Response
 ) -> Me:
     """Set a password, create the account and sign in. A refused link, or a password that
-    breaks the rules (400, with why), creates nothing and leaves the link as it was."""
+    breaks the rules (422 with why, as on a reset), creates nothing and leaves the link as it
+    was."""
     try:
         invites.lookup(token)  # refuse a bad link before spending an Argon2 hash on it
     except invites.InviteRefused as err:
         _refuse(err)
     problem = passwords.password_problem(body.password)
     if problem is not None:
-        raise HTTPException(status_code=400, detail=problem)
+        raise HTTPException(status_code=422, detail=problem)
     try:
         user = invites.accept(token, password_hash=passwords.hash_password(body.password))
     except invites.InviteRefused as err:
