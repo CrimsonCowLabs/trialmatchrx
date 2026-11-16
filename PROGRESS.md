@@ -19,3 +19,6 @@
   - User decision: the passkey domain is `tmrx.crimsoncowlabs.com`; a later domain move means re-registering passkeys.
   - User decision: the award badge is text in the app's styles, linking to sachacks.io; the results link and photos come later; no accuracy numbers until a scored TREC run exists.
   - User decision: the design is built in code and reviewed from screenshots, not mocked first.
+  - User decision: the web side uses `@simplewebauthn/browser` for passkey encoding, because the browser's WebAuthn JSON helpers aren't available everywhere yet. Third new dependency, after `py_webauthn` and `argon2-cffi`.
+  - User decision: the video ID, results link and photo list are constants in `web/lib/marketing.ts`, and the photos go in `web/public/award/`. Changing them means an edit plus a deploy.
+  - User decision: the footer reads "© 2026 Crimson Cow Labs · Synthetic data only".
