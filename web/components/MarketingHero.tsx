@@ -1,7 +1,7 @@
 // The marketing page's hero, from the claude.ai design handoff "hero-3b": a dark band with a
-// rotated magenta award tape, the nav, an "Award-winning" eyebrow, the headline with "missing."
-// in teal, and pill CTAs. Colours are the hero-* and award-* tokens in globals.css; copy and
-// link targets come from lib/marketing.ts.
+// rotated magenta award tape, the nav, an "Award-winning" eyebrow, the headline with
+// "patients" and "missing." in teal, and pill CTAs. Colours are the hero-* and award-* tokens
+// in globals.css; copy and link targets come from lib/marketing.ts.
 import Image from "next/image";
 import Link from "next/link";
 import { Fragment } from "react";
@@ -56,8 +56,15 @@ export function MarketingHero() {
           id="hero-heading"
           className="max-w-[1000px] text-[clamp(3rem,1.6rem+5.6vw,6rem)] leading-[0.98] font-bold tracking-[-0.045em] text-balance"
         >
-          {hero.headlineLead}
-          <span className="text-hero-accent">{hero.headlineAccent}</span>
+          {hero.headline.map((part) =>
+            part.accent ? (
+              <span key={part.text} className="text-hero-accent">
+                {part.text}
+              </span>
+            ) : (
+              part.text
+            ),
+          )}
         </h1>
         <p className="max-w-[640px] text-lg leading-[1.55] text-pretty text-hero-muted sm:text-xl">
           {MARKETING_COPY.subhead}
