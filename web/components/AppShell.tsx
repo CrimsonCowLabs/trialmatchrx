@@ -1,4 +1,5 @@
-// The global app shell: a sidebar at md and up, a bottom tab bar below md (never both), and the
+// The global app shell: a sidebar at md and up, a bottom tab bar below md (never both), the
+// first-time user guide (GuidePanel: docked right, a drawer, or a bottom sheet), and the
 // page frame every route renders in. The frame owns the 16px mobile gutters and padding; a page
 // picks its width with <Page width=...>. The route-aware nav suspends under cacheComponents on
 // dynamic routes, so each nav has a static fallback (same items, nothing highlighted).
@@ -6,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 
+import { GuidePanel } from "./GuidePanel";
 import { SidebarNav, SidebarNavFallback, TabBarNav, TabBarNavFallback } from "./ShellNav";
 
 /** The brand icon (public/brand, see its README): two rings = patient + trial, the lens = the
@@ -27,10 +29,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Suspense>
         <p className="text-xs text-ink-4">Synthetic data only</p>
       </aside>
-      {/* Bottom padding below md clears the fixed tab bar (h-16 plus the safe-area inset). */}
-      <main className="flex min-w-0 flex-1 flex-col px-4 pt-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-8 sm:pt-8 md:pb-8">
+      {/* Bottom padding below md clears the fixed tab bar (h-16 plus the safe-area inset) and
+          the collapsed guide handle above it (h-11). */}
+      <main className="flex min-w-0 flex-1 flex-col px-4 pt-6 pb-[calc(8.25rem+env(safe-area-inset-bottom))] sm:px-8 sm:pt-8 md:pb-8">
         {children}
       </main>
+      <GuidePanel />
       <nav
         aria-label="Main"
         className="fixed inset-x-0 bottom-0 z-40 border-t bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
