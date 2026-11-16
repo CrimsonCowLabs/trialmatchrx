@@ -41,7 +41,7 @@ export const DEMO_PATIENTS: readonly DemoPatient[] = [
     condition: "Idiopathic pulmonary fibrosis",
     searchCondition: "idiopathic pulmonary fibrosis",
     summary: "UIP pattern, FVC 62%, DLCO 38%, mild emphysema; stable on nintedanib.",
-    note: "68-year-old man with idiopathic pulmonary fibrosis diagnosed 2 years ago, UIP pattern on HRCT. Former smoker with mild emphysema, less extensive than the fibrosis. FVC 62% predicted, DLCO 38% predicted, FEV1/FVC 0.66. On nintedanib 150 mg twice daily, stable dose for 1 year. No heart failure. Lives in Sacramento, CA.",
+    note: "68-year-old man with idiopathic pulmonary fibrosis diagnosed 2 years ago, UIP pattern on HRCT. Former smoker with mild emphysema, less extensive than the fibrosis. FVC 62% predicted, DLCO 38% predicted, FEV1/FVC 0.75. On nintedanib 150 mg twice daily, stable dose for 1 year. No heart failure. Lives in Sacramento, CA.",
   },
   {
     id: "pah",
