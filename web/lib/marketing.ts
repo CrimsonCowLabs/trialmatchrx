@@ -70,8 +70,13 @@ export const MARKETING_COPY = {
     tape: ["Winner", "Best Interdisciplinary Hack", "HackRx 2026", "SACHACKS.IO"],
     eyebrowTag: "Award-winning",
     eyebrowText: "Best Interdisciplinary Hack, HackRx 2026, by SacHacks",
-    headlineLead: "Find the patients your trial is ",
-    headlineAccent: "missing.",
+    /** The headline in order; `accent` parts are in the hero's teal. */
+    headline: [
+      { text: "Find the " },
+      { text: "patients", accent: true },
+      { text: " your trial is " },
+      { text: "missing.", accent: true },
+    ] as { text: string; accent?: boolean }[],
     requestAccess: "Request access",
     signIn: "Sign in",
   },

@@ -1,7 +1,7 @@
 // The marketing page's hero, from the claude.ai design handoff "hero-3b": a dark band with a
-// rotated magenta award tape, the nav, an "Award-winning" eyebrow, the headline with "missing."
-// in teal, and pill CTAs. Colours are the hero-* and award-* tokens in globals.css; copy and
-// link targets come from lib/marketing.ts.
+// rotated magenta award tape, the nav, an "Award-winning" eyebrow, the headline with
+// "patients" and "missing." in teal, and pill CTAs. Colours are the hero-* and award-* tokens
+// in globals.css; copy and link targets come from lib/marketing.ts.
 import Image from "next/image";
 import Link from "next/link";
 import { Fragment } from "react";
@@ -47,7 +47,8 @@ export function MarketingHero() {
           href={award}
           className={`flex flex-wrap items-center gap-x-3.5 gap-y-3 self-start rounded font-mono text-[0.8125rem] font-bold tracking-[0.1em] text-award-cream uppercase hover:text-hero-fg sm:text-[0.9375rem] ${FOCUS}`}
         >
-          <span className="rounded-[6px] border-2 border-hero-ink bg-award-cream px-3 py-1.5 text-award-plum shadow-[3px_3px_0_var(--award-magenta)]">
+          <span className="inline-flex items-center gap-2 rounded-[6px] border-2 border-hero-ink bg-award-cream px-3 py-1.5 text-award-plum shadow-[3px_3px_0_var(--award-magenta)]">
+            <AwardRosette />
             {hero.eyebrowTag}
           </span>
           {hero.eyebrowText}
@@ -56,8 +57,15 @@ export function MarketingHero() {
           id="hero-heading"
           className="max-w-[1000px] text-[clamp(3rem,1.6rem+5.6vw,6rem)] leading-[0.98] font-bold tracking-[-0.045em] text-balance"
         >
-          {hero.headlineLead}
-          <span className="text-hero-accent">{hero.headlineAccent}</span>
+          {hero.headline.map((part) =>
+            part.accent ? (
+              <span key={part.text} className="text-hero-accent">
+                {part.text}
+              </span>
+            ) : (
+              part.text
+            ),
+          )}
         </h1>
         <p className="max-w-[640px] text-lg leading-[1.55] text-pretty text-hero-muted sm:text-xl">
           {MARKETING_COPY.subhead}
@@ -110,5 +118,17 @@ function AwardTape({ href }: { href: string }) {
         <span className="flex gap-7 pr-7">{items(1)}</span>
       </span>
     </a>
+  );
+}
+
+/** A rosette with two ribbons, in the tag's text colour; the ring is cut in the tag's cream. */
+function AwardRosette() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-[1.25em] shrink-0" fill="currentColor">
+      <polygon points="8.2,13.4 4.6,21.6 7.4,21 8.7,23.4 11.8,16.4" />
+      <polygon points="15.8,13.4 19.4,21.6 16.6,21 15.3,23.4 12.2,16.4" />
+      <polygon points="12.00,1.90 13.27,3.12 14.91,2.48 15.61,4.10 17.37,4.13 17.40,5.89 19.02,6.59 18.38,8.23 19.60,9.50 18.38,10.77 19.02,12.41 17.40,13.11 17.37,14.87 15.61,14.90 14.91,16.52 13.27,15.88 12.00,17.10 10.73,15.88 9.09,16.52 8.39,14.90 6.63,14.87 6.60,13.11 4.98,12.41 5.62,10.77 4.40,9.50 5.62,8.23 4.98,6.59 6.60,5.89 6.63,4.13 8.39,4.10 9.09,2.48 10.73,3.12" />
+      <circle cx="12" cy="9.5" r="4.7" fill="none" stroke="var(--award-cream)" strokeWidth="1.3" />
+    </svg>
   );
 }
