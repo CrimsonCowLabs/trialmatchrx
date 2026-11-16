@@ -13,9 +13,10 @@ import {
   ACCESS_REQUEST_INVALID,
   ACCESS_REQUEST_SENT,
   ACCESS_ROLES,
-  toAccessRequest,
+  EMPTY_ACCESS_REQUEST,
+  type AccessRequestFields,
 } from "@/lib/access-request";
-import { api, ApiError, apiFailureMessage, type AccessRole } from "@/lib/api";
+import { api, ApiError, apiFailureMessage } from "@/lib/api";
 
 // The API's caps (api/app/schemas.py AccessRequestCreate), so the browser stops it first.
 const MAX = { name: 200, email: 320, organization: 200, message: 2000 } as const;
@@ -35,25 +36,24 @@ function Field({ id, label, children }: { id: string; label: string; children: R
 }
 
 export function RequestAccessForm() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [organization, setOrganization] = useState("");
-  const [role, setRole] = useState<AccessRole | "">("");
-  const [message, setMessage] = useState("");
-  const [website, setWebsite] = useState("");
+  const [fields, setFields] = useState<AccessRequestFields>(EMPTY_ACCESS_REQUEST);
+  const set =
+    (key: keyof AccessRequestFields) =>
+    (e: { target: { value: string } }) =>
+      setFields((f) => ({ ...f, [key]: e.target.value }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const { role, message } = fields;
     if (!role) return; // `required` on the select already stops this
     setBusy(true);
     setError(null);
     try {
-      await api.requestAccess(
-        toAccessRequest({ name, email, organization, role, message, website }),
-      );
+      // The API trims every field; a blank message is stored as none.
+      await api.requestAccess({ ...fields, role, message: message || null });
       setSent(true);
     } catch (err) {
       setError(
@@ -79,8 +79,8 @@ export function RequestAccessForm() {
             id="ra-name"
             name="name"
             autoComplete="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={fields.name}
+            onChange={set("name")}
             maxLength={MAX.name}
             className="h-10"
             required
@@ -92,8 +92,8 @@ export function RequestAccessForm() {
             name="email"
             type="email"
             autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={fields.email}
+            onChange={set("email")}
             maxLength={MAX.email}
             className="h-10"
             required
@@ -104,8 +104,8 @@ export function RequestAccessForm() {
             id="ra-organization"
             name="organization"
             autoComplete="organization"
-            value={organization}
-            onChange={(e) => setOrganization(e.target.value)}
+            value={fields.organization}
+            onChange={set("organization")}
             maxLength={MAX.organization}
             className="h-10"
             required
@@ -115,8 +115,8 @@ export function RequestAccessForm() {
           <select
             id="ra-role"
             name="role"
-            value={role}
-            onChange={(e) => setRole(e.target.value as AccessRole | "")}
+            value={fields.role}
+            onChange={set("role")}
             className={SELECT_CLASS}
             required
           >
@@ -135,8 +135,8 @@ export function RequestAccessForm() {
         <Textarea
           id="ra-message"
           name="message"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          value={fields.message}
+          onChange={set("message")}
           maxLength={MAX.message}
           rows={3}
           className="min-h-20"
@@ -151,8 +151,8 @@ export function RequestAccessForm() {
           type="text"
           tabIndex={-1}
           autoComplete="off"
-          value={website}
-          onChange={(e) => setWebsite(e.target.value)}
+          value={fields.website}
+          onChange={set("website")}
         />
       </div>
       {error && (
