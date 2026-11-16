@@ -11,14 +11,15 @@ import { DemoVideo } from "@/components/DemoVideo";
 import { RequestAccessForm } from "@/components/RequestAccessForm";
 import { buttonVariants } from "@/components/ui/button";
 import { REQUEST_ACCESS_ID } from "@/lib/access-request";
+import { LOGIN_HREF } from "@/lib/auth";
 import {
   AWARD_BADGE,
-  AWARD_LINK,
   AWARD_PHOTOS,
   AWARD_RESULTS_URL,
   DEMO_VIDEO_ID,
   MARKETING_COPY,
   MARKETING_METADATA,
+  awardBadgeHref,
   awardSection,
   demoVideo,
   type Moment,
@@ -27,7 +28,6 @@ import {
 
 export const metadata: Metadata = MARKETING_METADATA;
 
-const SIGN_IN_HREF = "/login";
 /** The page's one column: 16px gutters on a phone, wider from `sm`. */
 const COLUMN = "mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8";
 
@@ -38,15 +38,15 @@ export default function MarketingPage() {
       <header className={`${COLUMN} flex items-center gap-2.5 pt-5 sm:pt-7`}>
         <Image src="/brand/icon.svg" alt="" width={28} height={28} />
         <span className="text-[0.9375rem] font-semibold tracking-tight text-ink">TrialMatch Rx</span>
-        <Link href={SIGN_IN_HREF} className="link ml-auto text-sm font-medium">
-          Sign in
-        </Link>
       </header>
 
       <Hero />
 
       <section aria-label="Demo video" className={`${COLUMN} pb-20 sm:pb-28`}>
-        <DemoVideo video={demoVideo(DEMO_VIDEO_ID)} poster={MARKETING_COPY.moments[0].screenshot.src} />
+        <DemoVideo
+          video={demoVideo(DEMO_VIDEO_ID)}
+          poster={MARKETING_COPY.moments[0].screenshot.src}
+        />
       </section>
 
       <div className="flex flex-col gap-20 pb-20 sm:gap-28 sm:pb-28">
@@ -63,7 +63,7 @@ export default function MarketingPage() {
             {AWARD_BADGE}
           </h2>
           <a href={award.resultsUrl} className="link mt-2 inline-block text-sm font-medium">
-            See the HackRx 2026 results
+            {MARKETING_COPY.awardResultsLink}
           </a>
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {award.photos.map((p) => (
@@ -94,10 +94,7 @@ export default function MarketingPage() {
             >
               {MARKETING_COPY.requestAccess}
             </h2>
-            <p className="max-w-md text-ink-3">
-              For trial sponsors, CROs and research sites. Tell us who you are and we&apos;ll
-              get back to you.
-            </p>
+            <p className="max-w-md text-ink-3">{MARKETING_COPY.requestAccessNote}</p>
           </div>
           <RequestAccessForm />
         </div>
@@ -114,7 +111,7 @@ function Hero() {
   return (
     <section className={`${COLUMN} flex flex-col items-start gap-6 pt-14 pb-12 sm:gap-8 sm:pt-24 sm:pb-16`}>
       <a
-        href={AWARD_LINK}
+        href={awardBadgeHref(AWARD_RESULTS_URL)}
         className="inline-flex max-w-full items-start gap-2 rounded-lg bg-teal-tint px-3 py-1.5 text-[0.8125rem] font-medium text-teal-strong transition-colors hover:bg-teal-selected sm:items-center"
       >
         <Award className="mt-0.5 size-4 shrink-0 sm:mt-0" aria-hidden />
@@ -134,7 +131,7 @@ function Hero() {
           Request access
         </a>
         <Link
-          href={SIGN_IN_HREF}
+          href={LOGIN_HREF}
           className={buttonVariants({
             variant: "outline",
             size: "lg",
@@ -149,7 +146,6 @@ function Hero() {
 }
 
 function MomentSection({ moment, flip }: { moment: Moment; flip: boolean }) {
-  const [heading, ...more] = moment.lines;
   const id = `moment-${moment.name.toLowerCase()}`;
   return (
     <section
@@ -159,20 +155,20 @@ function MomentSection({ moment, flip }: { moment: Moment; flip: boolean }) {
       <div className={`flex flex-col gap-4 lg:col-span-4 ${flip ? "lg:order-last" : ""}`}>
         <p className="font-mono text-sm text-teal-strong">{moment.name}</p>
         <h2 id={id} className="text-3xl leading-tight font-semibold tracking-tight text-balance text-ink sm:text-4xl">
-          {heading}
+          {moment.heading}
         </h2>
-        {more.map((line) => (
-          // The Match moment's second line: the Needs info tier, where unknowns are listed.
-          <h3 key={line} className="flex items-start gap-2.5 text-lg font-medium text-ink-2">
+        {moment.unknownsLine && (
+          // Marked like an unknown verdict in the app: the Needs info tier lists what's missing.
+          <h3 className="flex items-start gap-2.5 text-lg font-medium text-ink-2">
             <span
               aria-hidden
               className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-verdict-unknown-bg text-verdict-unknown"
             >
               <CircleHelp className="size-3.5" strokeWidth={2.5} />
             </span>
-            {line}
+            {moment.unknownsLine}
           </h3>
-        ))}
+        )}
       </div>
       <figure className="min-w-0 lg:col-span-8">
         <Screenshot shot={moment.screenshot} />
@@ -186,15 +182,12 @@ function MomentSection({ moment, flip }: { moment: Moment; flip: boolean }) {
 function Screenshot({ shot }: { shot: MomentScreenshot }) {
   const { mobile: small, ...large } = shot;
   const desktopSizes = "(min-width: 1280px) 760px, (min-width: 1024px) 66vw, 100vw";
-  const {
-    props: { srcSet: desktop },
-  } = getImageProps({ ...large, sizes: desktopSizes });
-  const {
-    props: { srcSet: mobile, ...img },
-  } = getImageProps({ ...small, alt: shot.alt, sizes: "100vw" });
+  const desktop = getImageProps({ ...large, sizes: desktopSizes }).props.srcSet;
+  // The <img> is the 390px capture; the <source> swaps in the desktop one from `sm`.
+  const { props: img } = getImageProps({ ...small, alt: shot.alt, sizes: "100vw" });
   return (
     <picture>
-      {/* width/height on each source give the right aspect ratio before it loads. */}
+      {/* width/height on the source give the desktop aspect ratio before it loads. */}
       <source
         media="(min-width: 640px)"
         srcSet={desktop}
@@ -202,7 +195,6 @@ function Screenshot({ shot }: { shot: MomentScreenshot }) {
         width={large.width}
         height={large.height}
       />
-      <source srcSet={mobile} sizes="100vw" width={small.width} height={small.height} />
       <img
         {...img}
         alt={shot.alt}

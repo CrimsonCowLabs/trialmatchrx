@@ -18,21 +18,23 @@ export const AWARD_PHOTOS: readonly AwardPhoto[] = [];
 export const AWARD_BADGE = "Winner: Best Interdisciplinary Hack, HackRx 2026, by SacHacks";
 export const AWARD_LINK = "https://sachacks.io";
 
+/** Where the badge links: the results page once there is one, sachacks.io until then. */
+export function awardBadgeHref(resultsUrl: string | null): string {
+  return resultsUrl || AWARD_LINK;
+}
+
 /** The prod origin, so the OG image URL is absolute (SPEC.md: the passkey domain). */
 export const SITE_URL = "https://tmrx.crimsoncowlabs.com";
-
-export interface AwardPhoto {
-  /** A static file under public/award/, e.g. "/award/stage.jpg". */
-  src: string;
-  alt: string;
-  width: number;
-  height: number;
-}
 
 export interface ImageFile {
   src: string;
   width: number;
   height: number;
+}
+
+/** `src` is a static file under public/award/, e.g. "/award/stage.jpg". */
+export interface AwardPhoto extends ImageFile {
+  alt: string;
 }
 
 /** A capture of the app at desktop width, and the same view at 390px for phones. */
@@ -43,8 +45,9 @@ export interface MomentScreenshot extends ImageFile {
 
 export interface Moment {
   name: "Match" | "Feasibility" | "Proof";
-  /** The approved lines; the first is the moment's heading. */
-  lines: readonly string[];
+  heading: string;
+  /** Match only: its second approved line, about the Needs info tier's unknowns. */
+  unknownsLine?: string;
   screenshot: MomentScreenshot;
 }
 
@@ -58,7 +61,8 @@ export const MARKETING_COPY = {
   moments: [
     {
       name: "Match",
-      lines: ["Screen in minutes, not hours.", "Unknowns become a to-do list."],
+      heading: "Screen in minutes, not hours.",
+      unknownsLine: "Unknowns become a to-do list.",
       screenshot: {
         src: "/moments/match.webp",
         alt: "A match run for a synthetic patient with pulmonary fibrosis: trials sorted into likely eligible, needs info and ineligible, with one trial open showing each criterion's verdict, the patient's quoted evidence, and the unknowns still to check.",
@@ -69,18 +73,18 @@ export const MARKETING_COPY = {
     },
     {
       name: "Feasibility",
-      lines: ["See who your criteria shut out."],
+      heading: "See who your criteria shut out.",
       screenshot: {
         src: "/moments/feasibility.webp",
-        alt: "Cohort feasibility for a type 2 diabetes trial: how many of 1,000 synthetic patients pass every rule, the biggest blocker and how many patients dropping it would add, and a waterfall of the criteria with a slider on each threshold.",
+        alt: "Cohort feasibility for a trial in adults with obesity and type 2 diabetes: how many of 1,000 synthetic patients pass every rule, the biggest blocker and how many patients dropping it would add, and a waterfall of the criteria with a slider on each threshold.",
         width: 1600,
-        height: 663,
+        height: 621,
         mobile: { src: "/moments/feasibility-mobile.webp", width: 780, height: 1200 },
       },
     },
     {
       name: "Proof",
-      lines: ["Check it, don't trust it."],
+      heading: "Check it, don't trust it.",
       screenshot: {
         src: "/moments/proof.webp",
         alt: "An exclusion verdict, FEV1/FVC 0.66 below 0.7, next to the trace event that produced it: a code rule, with its output and the quoted evidence.",
@@ -97,6 +101,10 @@ export const MARKETING_COPY = {
     "All data is synthetic.",
   ],
   requestAccess: "Bring TrialMatch Rx to your trial.",
+  // From the request-access ticket (#8), kept from the `/` placeholder.
+  requestAccessNote:
+    "For trial sponsors, CROs and research sites. Tell us who you are and we'll get back to you.",
+  awardResultsLink: "See the HackRx 2026 results",
   footer: "© 2026 Crimson Cow Labs · Synthetic data only",
 } as const;
 
@@ -109,8 +117,7 @@ export const MARKETING_METADATA: Metadata = {
     type: "website",
     siteName: "TrialMatch Rx",
     title: "Find the patients your trial is missing.",
-    description:
-      "Every verdict quotes the trial and the patient's own record. Winner: Best Interdisciplinary Hack, HackRx 2026, by SacHacks.",
+    description: `Every verdict quotes the trial and the patient's own record. ${AWARD_BADGE}.`,
     images: [{ url: "/og.png", width: 1200, height: 630, alt: "TrialMatch Rx" }],
   },
   twitter: { card: "summary_large_image" },
@@ -118,7 +125,7 @@ export const MARKETING_METADATA: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export type DemoVideo =
+export type DemoVideoState =
   | { kind: "soon"; label: string }
   | { kind: "ready"; label: string; embedUrl: string };
 
@@ -126,7 +133,7 @@ const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
 
 /** The video poster's state. No ID: "coming soon". An ID: the youtube-nocookie embed, which the
  *  page loads only on click (so it autoplays). Anything else is a config mistake and throws. */
-export function demoVideo(id: string | null): DemoVideo {
+export function demoVideo(id: string | null): DemoVideoState {
   const trimmed = id?.trim() ?? "";
   if (!trimmed) return { kind: "soon", label: "Demo video coming soon" };
   if (!YOUTUBE_ID.test(trimmed)) {

@@ -7,6 +7,7 @@ import { test } from "node:test";
 import {
   AWARD_BADGE,
   AWARD_LINK,
+  awardBadgeHref,
   MARKETING_COPY,
   MARKETING_METADATA,
   awardSection,
@@ -16,6 +17,12 @@ import {
 test("the award badge is the spec's wording and links to sachacks.io", () => {
   assert.equal(AWARD_BADGE, "Winner: Best Interdisciplinary Hack, HackRx 2026, by SacHacks");
   assert.equal(AWARD_LINK, "https://sachacks.io");
+});
+
+test("the badge links to the results page once it exists, sachacks.io until then", () => {
+  assert.equal(awardBadgeHref(null), "https://sachacks.io");
+  assert.equal(awardBadgeHref(""), "https://sachacks.io");
+  assert.equal(awardBadgeHref("https://sachacks.io/results"), "https://sachacks.io/results");
 });
 
 test("with no video ID the poster says the demo is coming soon", () => {
@@ -66,7 +73,9 @@ test("the copy is the ticket's approved wording", () => {
     "TrialMatch Rx screens a patient against every recruiting trial nearby, rule by rule, and shows its work. Every verdict quotes the trial and the patient's own record.",
   );
   assert.deepEqual(
-    MARKETING_COPY.moments.flatMap((m) => m.lines),
+    MARKETING_COPY.moments.flatMap((m) =>
+      "unknownsLine" in m ? [m.heading, m.unknownsLine] : [m.heading],
+    ),
     [
       "Screen in minutes, not hours.",
       "Unknowns become a to-do list.",

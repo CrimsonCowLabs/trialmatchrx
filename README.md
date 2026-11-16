@@ -89,7 +89,7 @@ The public page at `/` (SPEC.md, "Marketing and accounts") takes its copy and th
 - `DEMO_VIDEO_ID`: the YouTube video's 11-character ID. While it's `null` the poster reads "Demo video coming soon"; once set, `youtube-nocookie.com` loads only when someone clicks play.
 - `AWARD_RESULTS_URL` and `AWARD_PHOTOS`: the award section stays hidden until both are set. Photos are static files in `web/public/award/` (`{ src: "/award/stage.jpg", alt, width, height }`).
 
-The moment screenshots in `web/public/moments/` are real captures of the app with `DEMO_MODE=replay` (synthetic patients), at 1600px and 390px wide: Match is the IPF demo run with the first Needs info trial open, Feasibility is NCT07664553, and Proof is "Why?" on ifetroban's (NCT05571059) FEV1/FVC exclusion. `web/public/og.png` (1200x630) is the page's own hero. Recapture them after a visible UI change.
+The moment screenshots in `web/public/moments/` are real captures of the app with `DEMO_MODE=replay` (synthetic patients), at 1600px and 390px wide: Match is the IPF demo run with the first Needs info trial open, Feasibility is NCT07743450, and Proof is "Why?" on ifetroban's (NCT05571059) FEV1/FVC exclusion. `web/public/og.png` (1200x630) is the page's own hero. Recapture them after a visible UI change.
 
 ### Inviting someone
 
