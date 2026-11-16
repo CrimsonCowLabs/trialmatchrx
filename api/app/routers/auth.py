@@ -339,10 +339,17 @@ def change_password(
                 throttle.record_failure(user.email, ip)
                 log.info("password change: wrong current password user=%s ip=%s", user.id, ip)
                 raise HTTPException(status_code=403, detail=PASSWORD_WRONG)
-    updated = account.set_password(
-        user.id,
-        passwords.hash_password(body.new_password),
-        keep_session=request.cookies.get(SESSION_COOKIE),
-    )
+    try:
+        updated = account.set_password(
+            user.id,
+            passwords.hash_password(body.new_password),
+            expected=user.password_hash,
+            keep_session=request.cookies.get(SESSION_COOKIE),
+        )
+    except account.PasswordChangedMeanwhile:
+        # Set or changed by another request since this one checked: the current password
+        # given here (or its absence) wasn't checked against it. Not a guess, so no strike.
+        log.info("password change: changed meanwhile user=%s", user.id)
+        raise HTTPException(status_code=403, detail=PASSWORD_WRONG) from None
     log.info("password %s user=%s", "changed" if user.password_hash else "set", user.id)
     return to_me(updated)

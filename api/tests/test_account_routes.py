@@ -10,7 +10,7 @@ from typing import Any
 import httpx
 import pytest
 
-from app.auth import passkeys, passwords, sessions, users
+from app.auth import account, passkeys, passwords, sessions, users
 from app.auth.deps import SESSION_COOKIE
 from app.db import UserRow
 from app.schemas import LAST_SIGN_IN_METHOD, LOGIN_THROTTLED, PASSKEY_NOT_FOUND, PASSWORD_WRONG
@@ -236,3 +236,23 @@ async def test_sign_out_everywhere_needs_a_session_and_the_csrf_header() -> None
         bare = await c.post("/api/auth/logout-everywhere", headers={"X-Requested-With": ""})
         assert bare.status_code == 403
         assert (await c.get("/api/auth/me")).status_code == 200
+
+
+# ---- Races --------------------------------------------------------------------------------
+
+
+async def test_a_password_set_meanwhile_isnt_overwritten_without_it() -> None:
+    """The route decides "set" vs "change" from the account as the request found it. If a
+    password appeared since (two tabs setting one at once), the later write is refused with
+    the wrong-password answer instead of replacing a password it never checked."""
+    user = make_user("keys@example.com", password=None)
+    first = account.set_password(
+        user.id, passwords.hash_password(PASSWORD), expected=None, keep_session=None
+    )
+    assert first.password_hash is not None
+    with pytest.raises(account.PasswordChangedMeanwhile):
+        account.set_password(
+            user.id, passwords.hash_password(NEW_PASSWORD), expected=None, keep_session=None
+        )
+    async with https_client() as c:
+        assert (await login(c, "keys@example.com", PASSWORD)).status_code == 200
