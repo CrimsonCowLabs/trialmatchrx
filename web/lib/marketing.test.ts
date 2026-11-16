@@ -31,6 +31,8 @@ test("the hero is the design handoff's copy (hero-3b), word for word", () => {
   assert.deepEqual(hero.tape, ["Winner", "Best Interdisciplinary Hack", "HackRx 2026", "SACHACKS.IO"]);
   assert.equal(hero.eyebrowTag, "Award-winning");
   assert.equal(hero.eyebrowText, "Best Interdisciplinary Hack, HackRx 2026, by SacHacks");
+  // The same award as the ticket's wording, which the award section and the OG description use.
+  assert.equal(`Winner: ${hero.eyebrowText}`, AWARD_TITLE);
   // "missing." is the accented part of the headline.
   assert.equal(hero.headlineLead + hero.headlineAccent, MARKETING_COPY.headline);
   assert.equal(hero.headlineAccent, "missing.");

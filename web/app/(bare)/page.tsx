@@ -34,7 +34,7 @@ export default function MarketingPage() {
     <div className="flex flex-1 flex-col">
       <MarketingHero />
 
-      <section aria-label="Demo video" className={`${COLUMN} py-20 sm:py-28`}>
+      <section aria-label="Demo video" className={`${COLUMN} pb-20 sm:pb-28`}>
         <DemoVideo
           video={demoVideo(DEMO_VIDEO_ID)}
           poster={MARKETING_COPY.moments[0].screenshot.src}
