@@ -14,6 +14,8 @@ import {
   awardSection,
   demoVideo,
 } from "./marketing.ts";
+import { APP_SECTIONS } from "./auth.ts";
+import { ROBOTS_DISALLOW, robotsRules } from "./robots.ts";
 
 test("the award section's title is the ticket's wording; it links to sachacks.io", () => {
   assert.equal(AWARD_TITLE, "Winner: Best Interdisciplinary Hack, HackRx 2026, by SacHacks");
@@ -176,7 +178,34 @@ test("robots: `/` is the only indexable page; the app, /login and the token page
   for (const file of routeFiles(app)) {
     assert.doesNotMatch(readFileSync(file, "utf8"), /index:\s*true/, file);
   }
-  // And there's no robots.txt: a Disallow would stop crawlers reading those pages' noindex.
-  assert.throws(() => statSync(join(app, "robots.ts")));
+  // robots.txt comes from app/robots.ts only, not a static file as well.
+  assert.ok(statSync(join(app, "robots.ts")).isFile());
+  assert.throws(() => statSync(join(app, "robots.txt")));
   assert.throws(() => statSync(join(import.meta.dirname, "..", "public", "robots.txt")));
+});
+
+test("robots.txt allows `/` and disallows the app, /login, the token pages and the API", () => {
+  assert.deepEqual(robotsRules(), {
+    rules: {
+      userAgent: "*",
+      allow: "/",
+      disallow: [
+        "/app",
+        "/match",
+        "/runs",
+        "/trials",
+        "/eval",
+        "/feasibility",
+        "/closer",
+        "/login",
+        "/invite/",
+        "/reset/",
+        "/api/",
+      ],
+    },
+  });
+  // Every signed-in section the proxy guards is disallowed, so a new section can't be missed.
+  for (const section of APP_SECTIONS) assert.ok(ROBOTS_DISALLOW.includes(`/${section}`), section);
+  // No sitemap: there's one public page.
+  assert.equal(robotsRules().sitemap, undefined);
 });
