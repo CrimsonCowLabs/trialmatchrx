@@ -539,7 +539,7 @@ export interface paths {
         /**
          * Accept Invite
          * @description Create the account with a passkey, a password, or both, and sign in. A refused link, a
-         *     password that breaks the rules (400, with why), a passkey that doesn't verify or neither
+         *     password that breaks the rules (422, with why), a passkey that doesn't verify or neither
          *     (400) creates nothing and leaves the link as it was.
          */
         post: operations["accept_invite"];
@@ -2217,7 +2217,7 @@ export interface operations {
                     "application/json": components["schemas"]["Me"];
                 };
             };
-            /** @description The password breaks the rules / Couldn't add the passkey. Try again. / Add a passkey or set a password to finish. */
+            /** @description Couldn't add the passkey. Try again. / Add a passkey or set a password to finish. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2245,14 +2245,12 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Validation Error */
+            /** @description The password breaks the rules (as on the reset page) */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
+                content?: never;
             };
         };
     };

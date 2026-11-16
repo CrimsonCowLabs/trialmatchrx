@@ -2,9 +2,9 @@
 one-time link that expires after 7 days.
 
 The link carries an opaque random token; the table holds only its SHA-256, like a session.
-`create` refuses an email that already has an account. `accept` creates the account and spends
-the invite in one transaction, so a link can't be used twice even by two requests at once, and
-a refused link creates nothing.
+`create` refuses an email that already has an account and cancels that email's older unused
+invites. `accept` creates the account and spends the invite in one transaction, so a link can't
+be used twice even by two requests at once, and a refused link creates nothing.
 """
 
 import datetime as dt
@@ -46,7 +46,8 @@ class Issued(NamedTuple):
 
 def create(email: str, *, now: dt.datetime | None = None) -> Issued:
     """A new invite for `email`. Raises AlreadyHasAccount if the email has an account.
-    Earlier unused invites for the same email keep working until one of them is accepted."""
+    Earlier unused invites for the same email are cancelled: they expire now, so only the
+    newest link works and an old one reads as expired."""
     now = now or utcnow()
     email = normalize_email(email)
     if find_by_email(email) is not None:
@@ -54,6 +55,13 @@ def create(email: str, *, now: dt.datetime | None = None) -> Issued:
     token = secrets.token_urlsafe(32)  # 256 bits
     expires_at = now + INVITE_TTL
     with session_scope() as s:
+        s.connection().execute(
+            update(InviteRow)
+            .where(col(InviteRow.email) == email)
+            .where(col(InviteRow.used_at).is_(None))
+            .where(col(InviteRow.expires_at) > now)
+            .values(expires_at=now)
+        )
         s.add(
             InviteRow(
                 token_hash=token_hash(token),
@@ -130,8 +138,9 @@ def accept(
         try:
             s.flush()
         except IntegrityError as err:
-            # Another invite for this email was accepted at the same moment: users.email is
-            # unique, so this one loses and rolls back (its invite stays unspent).
+            # An account for this email landed at the same moment (an older invite accepted
+            # while this one was made): users.email is unique, so this one loses and rolls
+            # back (its invite stays unspent).
             raise AlreadyHasAccount(email) from err
         if passkey is not None:
             s.add(passkey)
