@@ -1,7 +1,9 @@
 """SQLite via SQLModel: one engine, a session helper, and the table definitions.
 
 Add new tables here (trials cache, compiled criteria, cohort, eval_runs) as plain SQLModel
-classes with `table=True`; `init_db()` creates whatever is missing at startup.
+classes with `table=True`; `init_db()` creates whatever is missing at startup. `create_all`
+never changes a table that already exists, so a column added to an existing table must also be
+listed in `ADDED_COLUMNS`, which `init_db()` adds to an older database.
 """
 
 import datetime as dt
@@ -9,8 +11,9 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
 
-from sqlalchemy import JSON, Column, event
+from sqlalchemy import JSON, Column, event, inspect, text
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import OperationalError
 from sqlmodel import Field, Session, SQLModel, create_engine
 
 from app.config import get_settings
@@ -54,8 +57,42 @@ def set_engine(engine: Engine) -> None:
     _engine = engine
 
 
+# (table, column) pairs added to a table after it first shipped. Each must be nullable with no
+# default, which is what SQLite's ADD COLUMN can do in place; existing rows get NULL.
+ADDED_COLUMNS: list[tuple[str, str]] = [
+    ("runs", "created_by"),  # SPEC.md "Who started a run" (#10)
+]
+
+
+def _add_missing_columns(engine: Engine) -> None:
+    """ALTER TABLE ... ADD COLUMN for each `ADDED_COLUMNS` entry the database lacks, plus its
+    index. Idempotent: a column that's there is skipped, and a duplicate-column error (another
+    process added it first) is ignored."""
+    for table_name, column_name in ADDED_COLUMNS:
+        table = SQLModel.metadata.tables[table_name]
+        column = table.columns[column_name]
+        assert column.nullable and column.server_default is None, f"{table_name}.{column_name}"
+        existing = {c["name"] for c in inspect(engine).get_columns(table_name)}
+        if column_name not in existing:
+            ddl = f"ALTER TABLE {table_name} ADD COLUMN {column_name} "
+            ddl += column.type.compile(engine.dialect)
+            for fk in column.foreign_keys:
+                ddl += f" REFERENCES {fk.column.table.name} ({fk.column.name})"
+            try:
+                with engine.begin() as conn:
+                    conn.execute(text(ddl))
+            except OperationalError as exc:
+                if "duplicate column" not in str(exc):
+                    raise
+        for index in table.indexes:
+            if [c.name for c in index.columns] == [column_name]:
+                index.create(engine, checkfirst=True)
+
+
 def init_db() -> None:
-    SQLModel.metadata.create_all(get_engine())
+    engine = get_engine()
+    SQLModel.metadata.create_all(engine)
+    _add_missing_columns(engine)
 
 
 @contextmanager
@@ -94,6 +131,10 @@ class RunRow(SQLModel, table=True):
     request: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     result: dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
     error: str | None = None
+    # Who started it (SPEC.md "Who started a run"), for auditing and cost tracking only: every
+    # signed-in user sees every run. Null for runs from before accounts and for runs a script
+    # starts (`make eval`, `make record-demo`). Added after the table shipped: ADDED_COLUMNS.
+    created_by: str | None = Field(default=None, foreign_key="users.id", index=True)
 
 
 class CompiledCriteriaRow(SQLModel, table=True):

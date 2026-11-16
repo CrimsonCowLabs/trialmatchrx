@@ -4,7 +4,9 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from app.auth.deps import signed_in_user
 from app.config import get_settings
+from app.db import UserRow
 from app.pipeline.closer_agent import (
     CloserModelUnavailable,
     CloserToolError,
@@ -47,7 +49,11 @@ def _recorded(note: str | None, nct_id: str | None = None) -> RunFixture:
 
 
 def _start_replay(
-    kind: RunKind, request: dict[str, Any], fixture: RunFixture, ids: dict[str, str]
+    kind: RunKind,
+    request: dict[str, Any],
+    fixture: RunFixture,
+    ids: dict[str, str],
+    created_by: str,
 ) -> RunStarted:
     """A new run that re-emits `fixture` (persisted and streamed like a live run)."""
 
@@ -55,7 +61,7 @@ def _start_replay(
         gap = get_settings().demo_replay_max_gap_s
         return await replay_run(rec, fixture, max_gap_s=gap, ids=ids)
 
-    return RunStarted(run_id=start_traced_run(kind, request, work))
+    return RunStarted(run_id=start_traced_run(kind, request, work, created_by=created_by))
 
 
 def parse_model_factory() -> ModelFactory:
@@ -74,6 +80,7 @@ async def start_match(
     model_factory: Annotated[ModelFactory, Depends(compile_model_factory)],
     parse_model: Annotated[ModelFactory, Depends(parse_model_factory)],
     judge_model: Annotated[ModelFactory, Depends(judge_model_factory)],
+    user: Annotated[UserRow, Depends(signed_in_user)],
 ) -> RunStarted:
     """Start a match run in the background; poll `GET /api/runs/{run_id}` or stream its
     events. Exactly one of `note` (parsed by the LLM) or `fhir_bundle` (a Synthea FHIR bundle,
@@ -89,7 +96,7 @@ async def start_match(
     if get_settings().demo_mode == "replay":
         fixture = _recorded(req.note)
         # The recorded request, not this one: the run's request, parse and trace must agree.
-        return _start_replay("match", fixture.request, fixture, {})
+        return _start_replay("match", fixture.request, fixture, {}, user.id)
 
     async def work(rec: TraceRecorder) -> dict[str, Any]:
         return await run_match(
@@ -100,7 +107,8 @@ async def start_match(
             judge_model_factory=judge_model,
         )
 
-    return RunStarted(run_id=start_traced_run("match", req.model_dump(mode="json"), work))
+    request = req.model_dump(mode="json")
+    return RunStarted(run_id=start_traced_run("match", request, work, created_by=user.id))
 
 
 def closer_model_factory() -> ModelFactory:
@@ -112,6 +120,7 @@ def closer_model_factory() -> ModelFactory:
 async def start_closer(
     req: CloserRequest,
     model_factory: Annotated[ModelFactory, Depends(closer_model_factory)],
+    user: Annotated[UserRow, Depends(signed_in_user)],
 ) -> RunStarted:
     """Start the closer agent on one trial of a finished match run; stream it like a match.
     404 if the run or the trial isn't there, 409 while the match is still running, 503 with
@@ -129,7 +138,7 @@ async def start_closer(
         fixture = _recorded(match_run.request.get("note") if match_run else None, req.nct_id)
         # The recorded agent read the recorded match run; the replay points at this one.
         ids = {str(fixture.request["run_id"]): req.run_id}
-        return _start_replay("closer", req.model_dump(mode="json"), fixture, ids)
+        return _start_replay("closer", req.model_dump(mode="json"), fixture, ids, user.id)
     try:
         model = model_factory()
     except CloserModelUnavailable as exc:
@@ -138,4 +147,5 @@ async def start_closer(
     async def work(rec: TraceRecorder) -> dict[str, Any]:
         return await run_closer(rec, req, model=model)
 
-    return RunStarted(run_id=start_traced_run("closer", req.model_dump(mode="json"), work))
+    request = req.model_dump(mode="json")
+    return RunStarted(run_id=start_traced_run("closer", request, work, created_by=user.id))

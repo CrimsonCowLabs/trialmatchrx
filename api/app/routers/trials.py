@@ -5,6 +5,8 @@ from typing import Annotated
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Response
 
+from app.auth.deps import signed_in_user
+from app.db import UserRow
 from app.pipeline import criteria_cache
 from app.pipeline.access_barriers import flag_access_barriers
 from app.pipeline.compile_criteria import (
@@ -52,10 +54,12 @@ async def list_trials(q: str | None = None) -> list[TrialListItem]:
 
 
 @router.get("/{nct}", response_model=TrialDetail)
-async def get_trial(nct: str, response: Response) -> TrialDetail:
+async def get_trial(
+    nct: str, response: Response, user: Annotated[UserRow, Depends(signed_in_user)]
+) -> TrialDetail:
     """Cached trial summary (fetched once on a cache miss). Traced as a `trial` run whose id
     comes back in the `X-Run-Id` header, on errors too."""
-    async with traced_run("trial", {"nct": nct}) as run:
+    async with traced_run("trial", {"nct": nct}, created_by=user.id) as run:
         response.headers["X-Run-Id"] = run.run_id
         headers = {"X-Run-Id": run.run_id}
         try:
@@ -79,9 +83,11 @@ async def compile_trial(
     req: CompileRequest,
     response: Response,
     model_factory: Annotated[ModelFactory, Depends(compile_model_factory)],
+    user: Annotated[UserRow, Depends(signed_in_user)],
 ) -> list[Criterion]:
     """Traced: the compile run's id comes back in the `X-Run-Id` header."""
-    async with traced_run("compile", {"nct": nct, "force": req.force}) as run:
+    request = {"nct": nct, "force": req.force}
+    async with traced_run("compile", request, created_by=user.id) as run:
         response.headers["X-Run-Id"] = run.run_id
         headers = {"X-Run-Id": run.run_id}
         try:
