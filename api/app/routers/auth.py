@@ -22,9 +22,11 @@ from app.auth.deps import (
 )
 from app.db import PasskeyRow, UserRow
 from app.schemas import (
+    LAST_SIGN_IN_METHOD,
     LOGIN_FAILED,
     LOGIN_THROTTLED,
     PASSKEY_NOT_ADDED,
+    PASSKEY_NOT_FOUND,
     PASSWORD_WRONG,
     RESET_DISABLED,
     RESET_EXPIRED,
@@ -161,6 +163,28 @@ def to_passkey_info(row: PasskeyRow) -> PasskeyInfo:
 def list_passkeys(user: Annotated[UserRow, Depends(require_user)]) -> list[PasskeyInfo]:
     """The signed-in account's passkeys, oldest first."""
     return [to_passkey_info(p) for p in passkeys.list_for_user(user.id)]
+
+
+@router.delete(
+    "/passkeys/{passkey_id}",
+    status_code=204,
+    responses={
+        401: {"description": "Not signed in"},
+        404: {"description": PASSKEY_NOT_FOUND},
+        409: {"description": LAST_SIGN_IN_METHOD},
+    },
+)
+def remove_passkey(passkey_id: str, user: Annotated[UserRow, Depends(require_user)]) -> None:
+    """Remove one of your passkeys. Someone else's, or an unknown id, is 404. Your last way
+    to sign in (no password and no other passkey) is 409, and nothing is removed."""
+    try:
+        account.remove_passkey(user.id, passkey_id)
+    except account.PasskeyNotFound:
+        raise HTTPException(status_code=404, detail=PASSKEY_NOT_FOUND) from None
+    except account.LastSignInMethod:
+        log.info("passkey not removed (last sign-in method) user=%s", user.id)
+        raise HTTPException(status_code=409, detail=LAST_SIGN_IN_METHOD) from None
+    log.info("passkey removed user=%s", user.id)
 
 
 @router.post(

@@ -118,6 +118,9 @@ export const api = {
   passkeyLoginVerify: (body: PasskeyLoginRequest) =>
     request<Me>("/api/auth/passkey/login/verify", { method: "POST", body: JSON.stringify(body) }),
   listPasskeys: () => request<PasskeyInfo[]>("/api/auth/passkeys"),
+  /** Remove one of your passkeys; 409 when it's your last way to sign in. */
+  removePasskey: (id: string) =>
+    request<void>(`/api/auth/passkeys/${encodeURIComponent(id)}`, { method: "DELETE" }),
   /** Set a password, or change it with the current one; ends your other sessions. */
   changePassword: (body: ChangePasswordRequest) =>
     request<Me>("/api/auth/password", { method: "POST", body: JSON.stringify(body) }),

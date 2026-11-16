@@ -439,6 +439,10 @@ class PasskeyInfo(BaseModel):
 
 # The account page (`/app/account`, `app/auth/account.py`).
 PASSWORD_WRONG = "Your current password is incorrect."
+PASSKEY_NOT_FOUND = "That passkey isn't on your account."
+LAST_SIGN_IN_METHOD = (
+    "You can't remove your last way to sign in. Set a password or add another passkey first."
+)
 
 
 class ChangePasswordRequest(BaseModel):

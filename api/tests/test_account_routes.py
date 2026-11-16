@@ -2,16 +2,18 @@
 your password (POST /api/auth/password), remove a passkey (DELETE /api/auth/passkeys/{id}),
 and sign out everywhere (POST /api/auth/logout-everywhere)."""
 
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 import httpx
 import pytest
 
-from app.auth import passkeys, passwords, sessions
+from app.auth import passkeys, passwords, sessions, users
 from app.auth.deps import SESSION_COOKIE
 from app.db import UserRow
-from app.schemas import LOGIN_THROTTLED, PASSWORD_WRONG
+from app.schemas import LAST_SIGN_IN_METHOD, LOGIN_THROTTLED, PASSKEY_NOT_FOUND, PASSWORD_WRONG
 from tests.test_auth_passkeys import passkey_login
 from tests.test_auth_routes import PASSWORD, https_client, login, make_user
 from tests.webauthn_fake import FakeAuthenticator
@@ -125,3 +127,76 @@ async def test_changing_the_password_ends_your_other_sessions_but_not_this_one()
 async def test_setting_the_password_needs_a_session() -> None:
     async with https_client() as c:
         assert (await change(c, None, NEW_PASSWORD)).status_code == 401
+
+
+# ---- Remove a passkey ---------------------------------------------------------------------
+
+
+async def remove(c: httpx.AsyncClient, passkey_id: str, **kwargs: Any) -> httpx.Response:
+    return await c.delete(f"/api/auth/passkeys/{passkey_id}", **kwargs)
+
+
+async def test_remove_a_passkey_when_you_have_a_password() -> None:
+    async with with_password() as c:
+        user = users.find_by_email("ana@example.com")
+        assert user is not None
+        device = add_device(user)
+        assert (await remove(c, device.id)).status_code == 204
+        assert (await c.get("/api/auth/passkeys")).json() == []
+    async with https_client() as fresh:
+        assert (await passkey_login(fresh, device)).status_code == 401
+
+
+async def test_remove_one_of_two_passkeys_on_a_passkey_only_account() -> None:
+    async with passkey_only() as c:
+        user = users.find_by_email("keys@example.com")
+        assert user is not None
+        second = add_device(user, n=2)
+        assert (await remove(c, second.id)).status_code == 204
+        [left] = (await c.get("/api/auth/passkeys")).json()
+        assert left["id"] != second.id
+
+
+async def test_you_cant_remove_your_last_sign_in_method() -> None:
+    async with passkey_only() as c:
+        [only] = (await c.get("/api/auth/passkeys")).json()
+        r = await remove(c, only["id"])
+        assert r.status_code == 409
+        assert r.json()["detail"] == LAST_SIGN_IN_METHOD
+        assert len((await c.get("/api/auth/passkeys")).json()) == 1
+        # Once there's a password, the same passkey can go.
+        assert (await change(c, None, NEW_PASSWORD)).status_code == 200
+        assert (await remove(c, only["id"])).status_code == 204
+
+
+async def test_you_cant_remove_someone_elses_passkey() -> None:
+    other = make_user("bo@example.com")
+    theirs = add_device(other, n=9)
+    async with with_password() as c:
+        r = await remove(c, theirs.id)
+        assert r.status_code == 404  # the same answer as a passkey that doesn't exist
+        assert r.json()["detail"] == PASSKEY_NOT_FOUND
+        assert (await remove(c, "no-such-passkey")).status_code == 404
+    assert len(passkeys.list_for_user(other.id)) == 1
+
+
+async def test_removing_a_passkey_needs_a_session_and_the_csrf_header() -> None:
+    user = make_user("bo@example.com")
+    device = add_device(user)
+    async with https_client() as c:
+        assert (await remove(c, device.id)).status_code == 401
+    async with with_password() as c:
+        bare = await remove(c, device.id, headers={"X-Requested-With": ""})
+        assert bare.status_code == 403
+    assert len(passkeys.list_for_user(user.id)) == 1
+
+
+async def test_removing_the_last_two_passkeys_at_once_leaves_one() -> None:
+    async with passkey_only() as c:
+        user = users.find_by_email("keys@example.com")
+        assert user is not None
+        add_device(user, n=2)
+        ids = [p["id"] for p in (await c.get("/api/auth/passkeys")).json()]
+        answers = await asyncio.gather(*(remove(c, i) for i in ids))
+        assert sorted(r.status_code for r in answers) == [204, 409]
+        assert len(passkeys.list_for_user(user.id)) == 1

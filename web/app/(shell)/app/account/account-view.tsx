@@ -1,16 +1,18 @@
 "use client";
 
 // /app/account (SPEC.md "Marketing and accounts"): your passkeys, when each was added and
-// last used, and "Add a passkey"; set or change your password.
-// HACK(demo): removing a passkey (with the can't-remove-your-last-sign-in-method rule) and "Sign
-// out everywhere" are still to come in #5.
+// last used, add or remove them; set or change your password. You can't remove your last way
+// to sign in: the Remove button is off and says why (the API refuses it too).
+// HACK(demo): "Sign out everywhere" is still to come in #5.
 import { KeyRound } from "lucide-react";
 import { useCallback, useState } from "react";
 
 import { AddPasskeyButton } from "@/components/AddPasskeyButton";
 import { PageHeader } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { api, type Me, type PasskeyInfo } from "@/lib/api";
+import { removePasskeyBlocked } from "@/lib/account";
+import { api, apiFailureMessage, type Me, type PasskeyInfo } from "@/lib/api";
 import { HOME_HREF } from "@/lib/nav";
 import { useLoad } from "@/lib/use-load";
 
@@ -25,29 +27,101 @@ const when = (iso: string) =>
     minute: "2-digit",
   });
 
-function PasskeyRow({ passkey, n }: { passkey: PasskeyInfo; n: number }) {
+function PasskeyRow({
+  passkey,
+  n,
+  blocked,
+  onRemoved,
+}: {
+  passkey: PasskeyInfo;
+  n: number;
+  blocked: boolean;
+  onRemoved: () => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function remove() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.removePasskey(passkey.id);
+      onRemoved();
+    } catch (err) {
+      setError(apiFailureMessage(err));
+      setBusy(false);
+      setConfirming(false);
+    }
+  }
+
   return (
-    <li className="flex items-start gap-3 py-3" data-testid="passkey">
-      <KeyRound aria-hidden className="mt-0.5 size-4 shrink-0 text-ink-3" />
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <span className="text-sm font-medium text-ink">Passkey {n}</span>
-        <span className="text-xs text-ink-3">
-          Added {when(passkey.created_at)} ·{" "}
-          {passkey.last_used_at ? `Last used ${when(passkey.last_used_at)}` : "Not used yet"}
-        </span>
+    <li className="flex flex-col gap-2 py-3" data-testid="passkey">
+      <div className="flex items-start gap-3">
+        <KeyRound aria-hidden className="mt-0.5 size-4 shrink-0 text-ink-3" />
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="text-sm font-medium text-ink">Passkey {n}</span>
+          <span className="text-xs text-ink-3">
+            Added {when(passkey.created_at)} ·{" "}
+            {passkey.last_used_at ? `Last used ${when(passkey.last_used_at)}` : "Not used yet"}
+          </span>
+        </div>
+        {!confirming && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={blocked}
+            aria-describedby={blocked ? "only-sign-in-method" : undefined}
+            onClick={() => setConfirming(true)}
+          >
+            Remove
+          </Button>
+        )}
       </div>
+      {confirming && (
+        <div className="flex flex-wrap items-center gap-2 pl-7" role="group">
+          <span className="text-sm text-ink-2">Remove Passkey {n}?</span>
+          <Button type="button" variant="destructive" size="sm" disabled={busy} onClick={remove}>
+            {busy ? "Removing…" : "Remove"}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={busy}
+            onClick={() => setConfirming(false)}
+          >
+            Cancel
+          </Button>
+        </div>
+      )}
+      {error && (
+        <p className="pl-7 text-sm break-words text-destructive" role="alert">
+          {error}
+        </p>
+      )}
     </li>
   );
 }
 
 export function AccountView() {
-  const loaded = useLoad(api.me);
-  const [changed, setChanged] = useState<Me | null>(null);
-  const me = changed ?? loaded.data;
+  const loadedMe = useLoad(api.me);
+  const [changedMe, setChangedMe] = useState<Me | null>(null);
+  const me = changedMe ?? loadedMe.data;
+
   const loadPasskeys = useCallback(() => api.listPasskeys(), []);
   const listed = useLoad(loadPasskeys);
   const [added, setAdded] = useState<PasskeyInfo[]>([]);
-  const passkeys = listed.data ? [...listed.data, ...added] : null;
+  const [removed, setRemoved] = useState<ReadonlySet<string>>(new Set());
+  const passkeys = listed.data
+    ? [...listed.data, ...added].filter((p) => !removed.has(p.id))
+    : null;
+
+  const blocked =
+    me && passkeys
+      ? removePasskeyBlocked({ hasPassword: me.has_password, passkeys: passkeys.length })
+      : null;
 
   return (
     <>
@@ -75,14 +149,25 @@ export function AccountView() {
             ) : (
               <ul className="divide-y divide-line-soft" data-testid="passkeys">
                 {passkeys.map((p, i) => (
-                  <PasskeyRow key={p.id} passkey={p} n={i + 1} />
+                  <PasskeyRow
+                    key={p.id}
+                    passkey={p}
+                    n={i + 1}
+                    blocked={blocked !== null}
+                    onRemoved={() => setRemoved((r) => new Set(r).add(p.id))}
+                  />
                 ))}
               </ul>
             ))}
+          {blocked && (
+            <p id="only-sign-in-method" className="text-sm text-ink-3" data-testid="remove-blocked">
+              {blocked}
+            </p>
+          )}
           <AddPasskeyButton onAdded={(p) => setAdded((a) => [...a, p])} />
         </CardContent>
       </Card>
-      {me && <PasswordCard me={me} onChanged={setChanged} />}
+      {me && <PasswordCard me={me} onChanged={setChangedMe} />}
     </>
   );
 }
