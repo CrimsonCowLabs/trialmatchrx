@@ -16,7 +16,7 @@ TrialMatch Rx screens a patient against recruiting trials on ClinicalTrials.gov,
 
 **In scope:** one disease area, a Sacramento-centered radius search, English criteria, synthetic data only, and a closer agent (follow-up questions, coordinator email, patient summary in Spanish).
 
-**Out of scope:** authentication, real PHI, EHR write-back, multi-disease coverage, deployment beyond one demo host, and mobile layout.
+**Out of scope:** open sign-up and per-user data (accounts are invite-only and see shared runs; see "Marketing and accounts"), real PHI, EHR write-back, multi-disease coverage, deployment beyond one demo host, and mobile layout.
 
 **Design principle:** the LLM is used where language is ambiguous; code handles everything else. Criteria are compiled once into structured predicates and evaluated deterministically, which makes the slider instant, the results reproducible, and the eval cheap.
 
@@ -414,6 +414,94 @@ The panel ends with one line per nav item (Home, Match, Runs, Trials, Eval).
 | Method | Path | Body / params | Returns |
 | --- | --- | --- | --- |
 | GET | `/api/guide` |  | `list[GuidePin]`: `{step, run_id, nct_id, run_exists}` for every pinned step; read-only, not traced |
+
+## Marketing and accounts
+
+Added 2026-11-16, after TrialMatch Rx won **Best Interdisciplinary Hack at HackRx 2026, by SacHacks**. A public marketing page now sits in front of the app, and invite-only accounts replace Caddy basic_auth. The audience is trial sponsors and CROs. The main button is "Request access", and "Sign in" is the secondary one.
+
+**Routes.** Only Home moves.
+
+- **Public:**
+  - `/`: the marketing page.
+  - `/login`.
+  - `/invite/[token]` and `/reset/[token]`.
+- **Behind login:**
+  - `/app`: the old Home.
+  - `/app/account`.
+  - Match, Runs, Trials, Eval, Feasibility and Closer, at their current paths, so saved `/match/<id>` links keep working.
+
+The nav's Home item and the guide's "Go to Home" link point to `/app`. The marketing and login pages use their own layout, without the sidebar or tab bar. The sidebar shows the signed-in email and a "Sign out" button. The first-time guide is unchanged: it opens on the first visit after login.
+
+**Marketing page (`/`).** From top to bottom:
+
+1. **Hero.** Headline, subhead, the award badge "Winner: Best Interdisciplinary Hack, HackRx 2026, by SacHacks", and the Request access and Sign in buttons. The badge is text in the app's own tokens, not a SacHacks logo, and links to https://sachacks.io until a results page exists.
+2. **Demo video.** A click-to-load player: a poster with a play button that loads `youtube-nocookie.com` only on click. The YouTube video ID is one config value. Until it's set, the poster reads "Demo video coming soon".
+3. **The three moments.** Match, Feasibility and Proof, each with a real screenshot of the app.
+4. **Trust.**
+   - Every verdict quotes the trial and the patient.
+   - Numeric rules are checked by code.
+   - Invented quotes are caught and marked unknown.
+   - All data is synthetic.
+5. **Award.** The results link and photos, hidden until they are configured.
+6. **Request access form.**
+7. **Footer.**
+
+The page states no accuracy numbers until a scored TREC run exists. It has a title, a description and a static OG image; robots may index `/` but not `/app`, `/login` or the token pages. The design is built in code with the app's tokens (see UI design) and reviewed from desktop and 390px screenshots.
+
+**Request access.** The form asks for name, work email, organization, role (`sponsor`, `cro`, `site` or `other`) and an optional message. Spam is handled by a hidden honeypot field and a limit of 3 submissions per hour per IP, so there is no CAPTCHA. After sending, the page reads "Thanks, we'll be in touch." Submissions go to an `access_requests` table.
+
+**Accounts.**
+
+- **Invite-only.** An account starts from a one-time invite link that expires after 7 days. On the invite page the person adds a passkey, sets a password, or both.
+- **No email sending.** Every link is printed by a CLI command, and you send it yourself.
+- **Login (`/login`).**
+  - "Sign in with a passkey" is the primary button, and browser autofill offers saved passkeys when you click the email field. An email + password form sits below it.
+  - Every failure shows the same message, "Email or password is incorrect".
+  - After 5 failed attempts in 15 minutes for the same email or IP, the page reads "Try again in a few minutes". Accounts never lock.
+  - "Forgot password?" says to contact the team.
+- **Passwords.**
+  - At least 12 characters, with no composition rules.
+  - Rejected if on a bundled list of the 10,000 most common passwords (offline, no network call).
+  - Hashed with Argon2id using `argon2-cffi`'s defaults.
+- **Passkeys.**
+  - Handled with `py_webauthn`.
+  - The passkey domain (WebAuthn relying-party ID) and the allowed origin come from settings: `localhost` in dev, `tmrx.crimsoncowlabs.com` in prod.
+  - A move to another domain means re-registering passkeys; passwords keep working.
+- **`/app/account`.**
+  - Lists your passkeys with when each was added and last used; add or remove them.
+  - Set or change your password.
+  - "Sign out everywhere".
+  - You can't remove your last sign-in method.
+- **Sessions.**
+  - An opaque session ID in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie, stored in a `sessions` table.
+  - Each session lasts 30 days from its last use.
+  - Every POST must also carry a custom `X-Requested-With` header (CSRF guard).
+  - Signing out deletes the session.
+- **Enforcement.**
+  - The API is the only gatekeeper: every `/api` route needs a session except `GET /api/health`, `/api/auth/*` and `POST /api/access-requests`.
+  - Next.js middleware only redirects signed-out visitors to `/login`.
+  - The server-side trace stream and the run endpoints use the same cookie.
+- **Who started a run.** New runs record a nullable `created_by` user id, for auditing and cost tracking. Every signed-in user still sees every run.
+
+**Admin CLI.** Each command is a `make` target, run in the prod container with `python -m scripts.<name>`, the same way as `guide-pin`.
+
+| Command | Does |
+| --- | --- |
+| `make invite EMAIL=...` | prints a one-time invite link (7 days) |
+| `make reset-link EMAIL=...` | prints a one-time password-reset link (1 hour) |
+| `make access-requests` | lists request-access submissions, newest first |
+| `make users` | lists accounts with their last sign-in |
+| `make disable-user EMAIL=...` | ends the user's sessions and blocks sign-in; the row stays so `created_by` still resolves |
+| `make dev-user` | creates a local account with a known password; refuses unless the database is the local one |
+
+**Rollout.**
+
+1. Deploy with login on, while basic_auth still sits in front.
+2. On the box, run `make invite` for yourself, sign in, and add a passkey.
+3. Remove basic_auth through a PR to the keyidpro repo's Caddy config, which you run.
+4. In a private window, check that `/` is public and that `/app` redirects to `/login`.
+
+Rolling back means restoring the basic_auth line.
 
 ## Demo script, risks and fallbacks
 
