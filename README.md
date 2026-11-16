@@ -74,6 +74,14 @@ ssh aaron@ccl-vps 'cd /app/trialmatchrx && docker compose -f compose.yaml exec -
 
 `users` lists every account, oldest first, with its created date, last sign-in, number of passkeys, whether a password is set, and its disabled date (times in UTC). `disable_user` ends all of that account's sessions and blocks sign-in; the row stays, so a run's `created_by` still resolves. An unknown email exits 2 and changes nothing; an already-disabled account says so and keeps its first disabled date.
 
+Request-access submissions from the form on `/` live in the `access_requests` table. `make access-requests` (`python -m scripts.access_requests`) lists them newest first: when each was received (UTC), name, work email, organization and role, with the message, if any, on the line below. Nothing is emailed; reply yourself and send an invite.
+
+```bash
+ssh aaron@ccl-vps 'cd /app/trialmatchrx && docker compose -f compose.yaml exec -T api python -m scripts.access_requests'
+```
+
+The form drops a submission with its hidden honeypot field filled (it still says thanks) and takes at most 3 per hour from one IP; the 4th reads "You've already sent a few requests. Try again in an hour."
+
 ### Inviting someone
 
 Accounts are invite-only and nothing sends email (SPEC.md, "Marketing and accounts"). Locally, `make invite EMAIL=someone@example.com` prints the link. In prod, run what it runs inside the API container:

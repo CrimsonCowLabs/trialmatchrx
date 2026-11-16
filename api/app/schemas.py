@@ -462,3 +462,24 @@ class AcceptInviteRequest(BaseModel):
 
     password: str | None = Field(default=None, max_length=1024)
     passkey: PasskeyRegisterRequest | None = None
+
+
+# Request access (SPEC.md "Marketing and accounts"): the form on `/`. Text fields are trimmed
+# and capped; a blank required one is a 422.
+AccessRole = Literal["sponsor", "cro", "site", "other"]
+ACCESS_REQUESTS_THROTTLED = "You've already sent a few requests. Try again in an hour."
+
+
+class AccessRequestCreate(BaseModel):
+    """`POST /api/access-requests`, public. `website` is the honeypot: the form hides it, so a
+    person leaves it empty; a filled one gets the same 204 and nothing is stored."""
+
+    model_config = {"str_strip_whitespace": True}
+
+    name: str = Field(min_length=1, max_length=200)
+    # Shape only (something@domain.tld): no deliverability check, no free-mail filter.
+    email: str = Field(max_length=320, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    organization: str = Field(min_length=1, max_length=200)
+    role: AccessRole
+    message: str | None = Field(default=None, max_length=2000)
+    website: str = Field(default="", max_length=2000)

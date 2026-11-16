@@ -1,5 +1,5 @@
 .PHONY: install dev api web check check-api check-web check-scripts types seed cohort eval eval-offline \
-	eval-smoke compile-fixtures record-demo guide-pin dev-user reset-link users disable-user invite
+	eval-smoke compile-fixtures record-demo guide-pin dev-user reset-link users disable-user invite access-requests
 
 API_PORT ?= 8045
 WEB_PORT ?= 3045
@@ -128,6 +128,11 @@ reset-link:
 # In prod there's no make: see README.
 users:
 	cd api && uv run python -m scripts.users
+
+# List request-access submissions from the form on `/`, newest first: received (UTC), name,
+# email, organization, role, and the message below. In prod there's no make: see README.
+access-requests:
+	cd api && uv run python -m scripts.access_requests
 
 # End EMAIL's sessions and block sign-in; the row stays so `created_by` still resolves.
 # Unknown email exits 2; an already-disabled account says so. In prod: see README.
