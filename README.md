@@ -73,3 +73,13 @@ ssh aaron@ccl-vps 'cd /app/trialmatchrx && docker compose -f compose.yaml exec -
 ```
 
 `users` lists every account, oldest first, with its created date, last sign-in, number of passkeys, whether a password is set, and its disabled date (times in UTC). `disable_user` ends all of that account's sessions and blocks sign-in; the row stays, so a run's `created_by` still resolves. An unknown email exits 2 and changes nothing; an already-disabled account says so and keeps its first disabled date.
+
+### Inviting someone
+
+Accounts are invite-only and nothing sends email (SPEC.md, "Marketing and accounts"). Locally, `make invite EMAIL=someone@example.com` prints the link. In prod, run what it runs inside the API container:
+
+```bash
+ssh aaron@ccl-vps 'cd /app/trialmatchrx && docker compose -f compose.yaml exec -T api python -m scripts.invite someone@example.com'
+```
+
+It prints a `https://tmrx.crimsoncowlabs.com/invite/<token>` link (the origin is `APP_URL`, set in `compose.yaml`; `--base-url URL` overrides it). Send it yourself. The link works once and expires after 7 days; on it the person sets a password and is signed in. An email that already has an account is refused and nothing is created. Inviting the same email again prints a new link; the older ones keep working until one is used.
