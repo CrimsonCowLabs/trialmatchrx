@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
-import { AppShell } from "@/components/AppShell";
-
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,6 +30,10 @@ export const metadata: Metadata = {
 // viewport-fit=cover exposes env(safe-area-inset-bottom), which the tab bar pads by.
 export const viewport: Viewport = { viewportFit: "cover" };
 
+// The root layout holds only what every page shares (fonts, metadata, <body>). Pages pick
+// their frame by route group: app/(shell) wraps the app pages in AppShell (sidebar, tab bar,
+// guide panel); app/(bare) is the plain frame for the public pages (marketing, and later
+// login, invite and reset).
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -39,7 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <AppShell>{children}</AppShell>
+        {children}
       </body>
     </html>
   );

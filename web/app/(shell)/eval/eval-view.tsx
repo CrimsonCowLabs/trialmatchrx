@@ -21,6 +21,7 @@ import {
   type MetricCard,
 } from "@/lib/eval";
 import { countNoun } from "@/lib/format";
+import { HOME_HREF } from "@/lib/nav";
 import { useLoad } from "@/lib/use-load";
 
 type Run = EvalLatest["history"][number];
@@ -35,7 +36,7 @@ function Header({ latest }: { latest?: EvalLatest }) {
   const ran = latest && latest.history.length > 0;
   return (
     <PageHeader
-      breadcrumb={[{ label: "Home", href: "/" }]}
+      breadcrumb={[{ label: "Home", href: HOME_HREF }]}
       title={
         <>
           <span className="md:hidden">Eval</span>

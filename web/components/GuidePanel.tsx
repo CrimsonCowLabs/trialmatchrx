@@ -28,6 +28,7 @@ import {
   applyGuideAction,
   guideLinks,
   isGuideOpen,
+  linkMarksStep,
   loadGuideState,
   markGuideStep,
   resetGuide,
@@ -136,12 +137,6 @@ export function GuideButton() {
 }
 
 // --- The panel ---
-
-/** Whether following `link` checks `step`. Step 1 is checked when the ALS run starts, so
- *  "Go to Home" (the way to start it) doesn't; every other step link does. */
-function marksStep(step: GuideStep, link: GuideLink): boolean {
-  return !(step.id === "als" && link.href === "/");
-}
 
 function StepItem({
   number,
@@ -370,7 +365,7 @@ export function GuidePanel() {
   const CloseIcon = config.closeIcon;
 
   function follow(step: GuideStep, link: GuideLink) {
-    if (marksStep(step, link)) markGuideStep(step.id);
+    if (linkMarksStep(step.id, link)) markGuideStep(step.id);
     // A sheet or drawer covers the page the link opens; the docked column stays.
     if (layout !== "docked") setGuideOpen(false);
   }

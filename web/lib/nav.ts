@@ -4,18 +4,22 @@ import type { Health } from "./api.ts";
 
 export type NavId = "home" | "match" | "runs" | "trials" | "eval";
 
+/** The app's Home. `/` is the public marketing page, outside the app shell. */
+export const HOME_HREF = "/app";
+
 export const NAV_ITEMS: readonly { id: NavId; label: string; href: string }[] = [
-  { id: "home", label: "Home", href: "/" },
+  { id: "home", label: "Home", href: HOME_HREF },
   { id: "match", label: "Match", href: "/match" },
   { id: "runs", label: "Runs", href: "/runs" },
   { id: "trials", label: "Trials", href: "/trials" },
   { id: "eval", label: "Eval", href: "/eval" },
 ];
 
-// First path segment -> the item it highlights. Feasibility is opened from a trial, so it sits
-// under Trials; a closer run continues a match (opened from the match results), so it sits under
-// Match.
+// First path segment -> the item it highlights. `/` (the marketing page, outside the shell)
+// highlights nothing. Feasibility is opened from a trial, so it sits under Trials; a closer run
+// continues a match (opened from the match results), so it sits under Match.
 const SECTION: Record<string, NavId> = {
+  app: "home",
   match: "match",
   closer: "match",
   runs: "runs",
@@ -28,8 +32,7 @@ const SECTION: Record<string, NavId> = {
 export function activeNav(pathname: string | null): NavId | null {
   if (pathname === null) return null;
   const segment = pathname.split("/").filter(Boolean)[0];
-  if (segment === undefined) return "home";
-  return SECTION[segment] ?? null;
+  return segment === undefined ? null : (SECTION[segment] ?? null);
 }
 
 /** The hint beside a nav item: the list's length, or `cap+` when the API cut the list off at
