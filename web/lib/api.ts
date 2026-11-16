@@ -21,6 +21,7 @@ export type RunKind = RunListItem["kind"];
 export type Tier = Schemas["TrialMatch"]["tier"];
 export type TierCounts = Schemas["TierCounts"];
 export type Health = Schemas["Health"];
+export type GuidePin = Schemas["GuidePin"];
 
 // Called directly (not through a Next rewrite) so the SSE stream is never buffered. Inlined at
 // build time: the Docker image is built with "" so every call is a same-origin `/api/...` path.
@@ -77,6 +78,7 @@ export const api = {
   getHealth: () => request<Health>("/api/health"),
   getRunStats: () => request<RunStats>("/api/runs/stats"),
   getEvalLatest: () => request<EvalLatest>("/api/eval/latest"),
+  listGuidePins: () => request<GuidePin[]>("/api/guide"),
   eventsUrl: (runId: string) => `${API_URL}/api/runs/${encodeURIComponent(runId)}/events`,
   feasibility: (nct: string, body: FeasibilityRequest, signal?: AbortSignal) =>
     request<FeasibilityResult>(`/api/feasibility/${encodeURIComponent(nct)}`, {
