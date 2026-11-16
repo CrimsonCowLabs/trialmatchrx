@@ -257,7 +257,8 @@ class InviteRow(SQLModel, table=True):
     """One invite link (SPEC.md "Marketing and accounts", Accounts). The link carries an opaque
     random token; only its SHA-256 is stored, like a session. It works once, until
     `expires_at` (7 days, `app/auth/invites.py`); accepting it creates the account and stamps
-    `used_at`. `email` is normalized; inviting an email again adds another row."""
+    `used_at`. `email` is normalized; inviting an email again adds another row and expires
+    the older unused ones."""
 
     __tablename__ = "invites"
 
