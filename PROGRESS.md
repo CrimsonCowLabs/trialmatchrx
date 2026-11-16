@@ -22,3 +22,22 @@
   - User decision: the web side uses `@simplewebauthn/browser` for passkey encoding, because the browser's WebAuthn JSON helpers aren't available everywhere yet. Third new dependency, after `py_webauthn` and `argon2-cffi`.
   - User decision: the video ID, results link and photo list are constants in `web/lib/marketing.ts`, and the photos go in `web/public/award/`. Changing them means an edit plus a deploy.
   - User decision: the footer reads "© 2026 Crimson Cow Labs · Synthetic data only".
+
+## 2026-11-16 11:06 marketing-and-accounts/home-to-app
+- Home moved from `/` to `/app` (#12). The web app is split into two Next.js route groups under web/app:
+  - `(shell)`: its layout wraps pages in AppShell (sidebar, tab bar, guide panel). Holds `app/` (the old Home, unchanged) and Match, Runs, Trials, Eval, Feasibility and Closer. Route groups add no URL segment, so `/match/<id>`, `/closer/<id>` etc. keep their paths.
+  - `(bare)`: a plain layout with no sidebar, tab bar or guide panel. Holds only the `/` placeholder for now; `/login`, `/invite/[token]` and `/reset/[token]` go here later.
+  - The root layout keeps only `<html>`, `<body>`, fonts and metadata.
+- `/` is a placeholder in the bare layout: the product name, one line and an "Open the app" link to `/app`. It is tagged `HACK(demo):`; the marketing page ticket replaces it.
+- Links moved to `/app`, all through one `HOME_HREF` constant in lib/nav.ts: the nav's Home item, the guide's "Go to Home" (lib/guide.ts), the sidebar logo (AppShell), the "Home" breadcrumb on Match, Runs, Trials and Eval, and the placeholder's link.
+- Code review (standards + spec, against origin/main): added the `HACK(demo):` tag to the placeholder, replaced the eight `"/app"` literals with `HOME_HREF`, rewrapped two long comments, and dropped the brand icon from the placeholder so it stays minimal. No spec gaps found.
+- GuidePanel's "does following this link check the step" rule compared hrefs to a literal `"/"`. It moved to lib/guide.ts as `linkMarksStep`, which compares to the Home link's own href, and now has a test.
+- Tests: nav.test.ts covers `/app` and `/app/` highlighting Home, `/` and `/apps` highlighting nothing; guide.test.ts covers the Go to Home links at `/app` and `linkMarksStep`. `make check` green (ruff, mypy, 498 pytest, typecheck, lint, 174 web tests, script tests).
+- Visual check: ran `make dev API_PORT=8145 WEB_PORT=3145` and took headless Chromium screenshots of `/` and `/app` at 1440px and 390px. `/` shows no sidebar, tab bar or guide; `/app` shows the shell with Home highlighted. The data cards on `/app` read "Failed to fetch" there because the API's CORS list only allows :3045; this is unrelated to the change.
+- Decisions:
+  - Route groups are named `(shell)` and `(bare)`, after the two layouts, rather than after login state; auth gating is a separate concern.
+  - `/` highlights no nav item: it's outside the shell, so no nav renders there anyway.
+  - Any path under `/app` highlights Home, so a later `/app/account` will too unless the accounts ticket changes the SECTION map in lib/nav.ts.
+  - The placeholder's line is "Match patients to recruiting clinical trials, and see why." (adapted from Home's title) and its button reads "Open the app".
+  - The guide's fallback copy still says "on Home"; Home is still the page's name, only its URL changed.
+  - compose.yaml's web healthcheck still fetches `/`, which still returns 200 (the placeholder, and later the public marketing page).

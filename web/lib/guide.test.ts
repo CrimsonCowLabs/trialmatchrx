@@ -11,6 +11,7 @@ import {
   applyGuideAction,
   guideLinks,
   isGuideOpen,
+  linkMarksStep,
   markGuideStep,
   readGuideState,
   resetGuide,
@@ -36,11 +37,19 @@ test("the five steps, in pitch order", () => {
   );
 });
 
+test("step 1's Go to Home link (to /app) does not check it; its other links and other steps' do", () => {
+  const links = guideLinks([pin({ step: "als", run_id: "run-als", run_exists: true }), IPF]);
+  assert.equal(linkMarksStep("als", { label: "Go to Home", href: "/app" }), false);
+  assert.equal(linkMarksStep("als", links.als.links[1]), true);
+  assert.equal(linkMarksStep("ipf", links.ipf.links[0]), true);
+  assert.equal(linkMarksStep("pah", { label: "Go to Home", href: "/app" }), true);
+});
+
 test("no pins: every step falls back to running a card, feasibility to Trials", () => {
   const links = guideLinks([]);
-  assert.deepEqual(links.als, { links: [{ label: "Go to Home", href: "/" }], fallback: null });
+  assert.deepEqual(links.als, { links: [{ label: "Go to Home", href: "/app" }], fallback: null });
   assert.deepEqual(links.ipf, {
-    links: [{ label: "Go to Home", href: "/" }],
+    links: [{ label: "Go to Home", href: "/app" }],
     fallback: "Find trials for Richard Hale (IPF) on Home, then open ifetroban.",
   });
   assert.deepEqual(links.ipf_flip, {
@@ -49,7 +58,7 @@ test("no pins: every step falls back to running a card, feasibility to Trials", 
       "On Match, pick Richard Hale (IPF) and click Find trials, then change FEV1/FVC 0.66 to 0.75 in the note and run it again.",
   });
   assert.deepEqual(links.pah, {
-    links: [{ label: "Go to Home", href: "/" }],
+    links: [{ label: "Go to Home", href: "/app" }],
     fallback: "Find trials for Lucía Ramírez (PAH) on Home, open the top trial and click Next steps.",
   });
   assert.deepEqual(links.feasibility, {
@@ -70,7 +79,7 @@ test("pinned runs that exist: each step links its run, with the trial deep link"
     pin({ step: "feasibility", nct_id: "NCT04" }),
   ]);
   assert.deepEqual(links.als.links, [
-    { label: "Go to Home", href: "/" },
+    { label: "Go to Home", href: "/app" },
     { label: "See a finished run", href: "/match/run-als?trial=NCT01" },
   ]);
   assert.deepEqual(links.ipf, {

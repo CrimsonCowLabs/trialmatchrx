@@ -21,6 +21,7 @@ import {
   runStatsHint,
   type RadiusMi,
 } from "@/lib/match-form";
+import { HOME_HREF } from "@/lib/nav";
 import { useLoad } from "@/lib/use-load";
 
 const loadStats = () => api.getRunStats();
@@ -60,7 +61,7 @@ export default function MatchPage() {
   return (
     <Page width="wide">
       <PageHeader
-        breadcrumb={[{ label: "Home", href: "/" }]}
+        breadcrumb={[{ label: "Home", href: HOME_HREF }]}
         title="Match a patient"
         description="Pick a demo patient or paste a note; the agent finds recruiting trials nearby and checks every criterion."
       />

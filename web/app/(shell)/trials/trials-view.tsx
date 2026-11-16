@@ -23,6 +23,7 @@ import {
   type TrialFilter,
 } from "@/lib/browse";
 import { formatCount } from "@/lib/format";
+import { HOME_HREF } from "@/lib/nav";
 import { useLoad } from "@/lib/use-load";
 
 const loadTrials = () => api.listTrials();
@@ -283,7 +284,7 @@ export function TrialsView() {
   return (
     <>
       <PageHeader
-        breadcrumb={[{ label: "Home", href: "/" }]}
+        breadcrumb={[{ label: "Home", href: HOME_HREF }]}
         title="Trials"
         description={description}
       />

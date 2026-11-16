@@ -14,6 +14,7 @@ import { Card, CardFooter } from "@/components/ui/card";
 import { api, type RunListItem } from "@/lib/api";
 import { runAction, runLinks } from "@/lib/browse";
 import { countNoun } from "@/lib/format";
+import { HOME_HREF } from "@/lib/nav";
 import { useLoad } from "@/lib/use-load";
 
 const LIMIT = 50;
@@ -166,7 +167,7 @@ export function RunsView() {
   return (
         <>
           <PageHeader
-            breadcrumb={[{ label: "Home", href: "/" }]}
+            breadcrumb={[{ label: "Home", href: HOME_HREF }]}
             title="Match runs"
             description={
               data && data.length > 0 ? (

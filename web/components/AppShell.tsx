@@ -1,11 +1,14 @@
-// The global app shell: a sidebar at md and up, a bottom tab bar below md (never both), the
-// first-time user guide (GuidePanel: docked right, a drawer, or a bottom sheet), and the
-// page frame every route renders in. The frame owns the 16px mobile gutters and padding; a page
-// picks its width with <Page width=...>. The route-aware nav suspends under cacheComponents on
-// dynamic routes, so each nav has a static fallback (same items, nothing highlighted).
+// The app shell, for the app pages only (app/(shell)/layout.tsx): a sidebar at md and up, a
+// bottom tab bar below md (never both), the first-time user guide (GuidePanel: docked right, a
+// drawer, or a bottom sheet), and the page frame every route renders in. The frame owns the
+// 16px mobile gutters and padding; a page picks its width with <Page width=...>. The route-aware
+// nav suspends under cacheComponents on dynamic routes, so each nav has a static fallback (same
+// items, nothing highlighted).
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
+
+import { HOME_HREF } from "@/lib/nav";
 
 import { GuidePanel } from "./GuidePanel";
 import { SidebarNav, SidebarNavFallback, TabBarNav, TabBarNavFallback } from "./ShellNav";
@@ -20,7 +23,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-full flex-1">
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-6 border-r bg-surface p-4 md:flex">
-        <Link href="/" className="flex items-center gap-2.5 px-1 font-semibold tracking-tight">
+        <Link href={HOME_HREF} className="flex items-center gap-2.5 px-1 font-semibold tracking-tight">
           <BrandMark />
           TrialMatch Rx
         </Link>

@@ -5,7 +5,7 @@ import { test } from "node:test";
 import { activeNav, countHint, healthLine } from "./nav.ts";
 
 test("each top-level route highlights its own item", () => {
-  assert.equal(activeNav("/"), "home");
+  assert.equal(activeNav("/app"), "home");
   assert.equal(activeNav("/match"), "match");
   assert.equal(activeNav("/runs"), "runs");
   assert.equal(activeNav("/trials"), "trials");
@@ -21,8 +21,14 @@ test("detail routes highlight their parent item", () => {
 
 test("a trailing slash still matches, a lookalike prefix does not", () => {
   assert.equal(activeNav("/runs/"), "runs");
+  assert.equal(activeNav("/app/"), "home");
+  assert.equal(activeNav("/apps"), null);
   assert.equal(activeNav("/matches"), null);
   assert.equal(activeNav("/evaluation"), null);
+});
+
+test("the bare marketing page at / highlights nothing", () => {
+  assert.equal(activeNav("/"), null);
 });
 
 test("an unknown route highlights nothing", () => {

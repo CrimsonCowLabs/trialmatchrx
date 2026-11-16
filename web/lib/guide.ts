@@ -4,6 +4,7 @@
 // with each change announced as a window event. Storage and event target are injectable, so
 // all of it is tested in guide.test.ts; GuidePanel.tsx renders it.
 import type { GuidePin } from "./api.ts";
+import { HOME_HREF } from "./nav.ts";
 
 export type GuideStepId = GuidePin["step"];
 
@@ -69,7 +70,13 @@ export interface StepLinks {
   fallback: string | null;
 }
 
-const HOME: GuideLink = { label: "Go to Home", href: "/" };
+const HOME: GuideLink = { label: "Go to Home", href: HOME_HREF };
+
+/** Whether following `link` checks `step`. Step 1 is checked when the ALS run starts, so
+ *  "Go to Home" (the way to start it) doesn't; every other step link does. */
+export function linkMarksStep(step: GuideStepId, link: GuideLink): boolean {
+  return !(step === "als" && link.href === HOME.href);
+}
 
 /** A pin whose run still exists. */
 type LivePin = GuidePin & { run_id: string };
