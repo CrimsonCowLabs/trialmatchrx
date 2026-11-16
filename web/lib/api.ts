@@ -24,6 +24,8 @@ export type Health = Schemas["Health"];
 export type GuidePin = Schemas["GuidePin"];
 export type Me = Schemas["Me"];
 export type LoginRequest = Schemas["LoginRequest"];
+export type InviteInfo = Schemas["InviteInfo"];
+export type AcceptInviteRequest = Schemas["AcceptInviteRequest"];
 
 // Called directly (not through a Next rewrite) so the SSE stream is never buffered. Inlined at
 // build time: the Docker image is built with "" so every call is a same-origin `/api/...` path.
@@ -89,6 +91,15 @@ export const api = {
   logout: () => request<void>("/api/auth/logout", { method: "POST" }),
   /** The signed-in account; rejects with an ApiError of status 401 when signed out. */
   me: () => request<Me>("/api/auth/me"),
+  /** Who a usable invite is for; 404 / 410 / 409 when the link can't be used. */
+  getInvite: (token: string) =>
+    request<InviteInfo>(`/api/auth/invites/${encodeURIComponent(token)}`),
+  /** Set a password, create the account and sign in. */
+  acceptInvite: (token: string, body: AcceptInviteRequest) =>
+    request<Me>(`/api/auth/invites/${encodeURIComponent(token)}/accept`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
   startMatch: (body: JsonBody<"/api/match", "post">) =>
     request<RunStarted>("/api/match", { method: "POST", body: JSON.stringify(body) }),
   startCloser: (body: CloserRequest) =>
