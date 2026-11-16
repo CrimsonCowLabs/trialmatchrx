@@ -22,6 +22,11 @@ def utcnow() -> dt.datetime:
     return dt.datetime.now(dt.UTC)
 
 
+def as_utc(value: dt.datetime) -> dt.datetime:
+    """SQLite hands datetimes back naive; every stored one is UTC."""
+    return value if value.tzinfo is not None else value.replace(tzinfo=dt.UTC)
+
+
 def make_engine(url: str) -> Engine:
     engine = create_engine(url, connect_args={"check_same_thread": False})
 
@@ -191,3 +196,44 @@ class GuidePinRow(SQLModel, table=True):
     run_id: str | None = None  # no foreign key: a pin outlives a deleted run (run_exists)
     nct_id: str | None = None
     pinned_at: dt.datetime = Field(default_factory=utcnow)
+
+
+class UserRow(SQLModel, table=True):
+    """One account (SPEC.md "Marketing and accounts"). `email` is stored normalized (trimmed,
+    lowercased; `app/auth/users.normalize_email`). `password_hash` is null for a passkey-only
+    account. A disabled account keeps its row (so a run's `created_by` still resolves) but
+    can't sign in, and its sessions stop working."""
+
+    __tablename__ = "users"
+
+    id: str = Field(primary_key=True)
+    email: str = Field(unique=True, index=True)
+    password_hash: str | None = None  # Argon2id, argon2-cffi's PHC string
+    created_at: dt.datetime = Field(default_factory=utcnow)
+    last_login_at: dt.datetime | None = None
+    disabled_at: dt.datetime | None = None
+
+
+class SessionRow(SQLModel, table=True):
+    """One signed-in browser. The cookie carries an opaque random token; only its SHA-256 is
+    stored, so a copy of the database can't be replayed as cookies. A session lasts 30 days
+    from `last_used_at`, which moves forward at most once a minute (`app/auth/sessions.py`)."""
+
+    __tablename__ = "sessions"
+
+    token_hash: str = Field(primary_key=True)  # sha256 hex of the cookie value
+    user_id: str = Field(foreign_key="users.id", index=True)
+    created_at: dt.datetime = Field(default_factory=utcnow)
+    last_used_at: dt.datetime = Field(default_factory=utcnow)
+
+
+class LoginFailureRow(SQLModel, table=True):
+    """One failed sign-in, for the throttle (5 per email or per IP in 15 minutes,
+    `app/auth/throttle.py`). Rows older than the window are pruned as new ones are added."""
+
+    __tablename__ = "login_failures"
+
+    id: int | None = Field(default=None, primary_key=True)
+    email: str = Field(index=True)  # normalized, whether or not an account has it
+    ip: str = Field(index=True)
+    failed_at: dt.datetime = Field(default_factory=utcnow, index=True)

@@ -356,3 +356,24 @@ class Health(BaseModel):
     model_ids: dict[str, str]
     # DEMO_MODE=replay: the demo patient ids with both a match and a closer recording.
     demo_patients: list[str] = []
+
+
+# Accounts (SPEC.md "Marketing and accounts"). A failed sign-in answers with one of these two
+# messages whatever went wrong (unknown email, wrong password, disabled account, no password).
+LOGIN_FAILED = "Email or password is incorrect"
+LOGIN_THROTTLED = "Try again in a few minutes"
+
+
+class LoginRequest(BaseModel):
+    email: str = Field(max_length=320)  # not checked as an address: a miss is the same 401
+    password: str = Field(max_length=1024)
+
+
+class Me(BaseModel):
+    """The signed-in account: `GET /api/auth/me` and a successful sign-in. Later tickets add
+    fields (passkeys, the account page) rather than reshaping it."""
+
+    id: str
+    email: str
+    has_password: bool  # false for a passkey-only account
+    created_at: dt.datetime

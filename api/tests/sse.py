@@ -35,4 +35,10 @@ def parse_sse(body: str) -> list[SSEMessage]:
 
 
 def client() -> httpx.AsyncClient:
-    return httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test")
+    """The app's client: sends X-Requested-With like web/lib/api.ts, so POSTs pass the CSRF
+    guard."""
+    return httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app),
+        base_url="http://test",
+        headers={"X-Requested-With": "fetch"},
+    )

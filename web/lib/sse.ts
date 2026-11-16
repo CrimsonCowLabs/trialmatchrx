@@ -24,7 +24,7 @@ export function useRunEvents(runId: string | null): RunEvents {
 
   useEffect(() => {
     if (!runId) return;
-    const source = new EventSource(api.eventsUrl(runId));
+    const source = new EventSource(api.eventsUrl(runId), { withCredentials: true });
 
     source.onopen = () => setState("open");
     source.addEventListener("trace", (msg) => {

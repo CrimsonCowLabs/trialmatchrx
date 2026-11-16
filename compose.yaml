@@ -24,6 +24,11 @@ services:
       # can't point the container at a path that isn't in it.
       DATABASE_URL: sqlite:////data/app.db
       DEMO_FIXTURES_DIR: /app/data/fixtures/runs
+      # Caddy reaches the container through the loopback-published port, so the API's TCP peer
+      # is the Docker bridge gateway (or, locally, the proxy container), never 127.0.0.1. The
+      # sign-in throttle believes X-Forwarded-For only from these (app/auth/client_ip.py).
+      # Docker's default address pools; nothing outside the box can reach the port.
+      TRUSTED_PROXIES: '["127.0.0.0/8", "::1/128", "172.16.0.0/12", "192.168.0.0/16"]'
     volumes:
       - db:/data
     # Loopback only. Docker on ccl-vps writes no iptables rules, so a port published on every
