@@ -1,5 +1,5 @@
 .PHONY: install dev api web check check-api check-web check-scripts types seed cohort eval eval-offline \
-	eval-smoke compile-fixtures record-demo guide-pin dev-user
+	eval-smoke compile-fixtures record-demo guide-pin dev-user users disable-user
 
 API_PORT ?= 8045
 WEB_PORT ?= 3045
@@ -117,3 +117,14 @@ guide-pin:
 # unless DATABASE_URL is a SQLite file inside api/ (the default api/app.db), so never in prod.
 dev-user:
 	cd api && uv run python -m scripts.dev_user
+
+# List every account: email, created date, last sign-in, passkeys, password set, disabled.
+# In prod there's no make: see README.
+users:
+	cd api && uv run python -m scripts.users
+
+# End EMAIL's sessions and block sign-in; the row stays so `created_by` still resolves.
+# Unknown email exits 2; an already-disabled account says so. In prod: see README.
+disable-user:
+	@test -n "$(EMAIL)" || { echo "usage: make disable-user EMAIL=..." >&2; exit 2; }
+	cd api && uv run python -m scripts.disable_user "$(EMAIL)"
