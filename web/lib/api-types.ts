@@ -256,6 +256,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/guide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Guide Pins
+         * @description Every pinned guide step, in guide order, with whether its run still exists. Reads the
+         *     guide_pins and runs tables only; read-only and not traced, like the runs list (there is
+         *     no write endpoint: pins come from `make guide-pin`).
+         */
+        get: operations["list_guide_pins"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -457,6 +479,23 @@ export interface components {
              * @description How the answer decides the criterion
              */
             why: string;
+        };
+        /**
+         * GuidePin
+         * @description One pinned guide step: the run (and, for some steps, the trial) its links open.
+         */
+        GuidePin: {
+            /**
+             * Step
+             * @enum {string}
+             */
+            step: "als" | "ipf" | "ipf_flip" | "pah" | "feasibility";
+            /** Run Id */
+            run_id: string | null;
+            /** Nct Id */
+            nct_id: string | null;
+            /** Run Exists */
+            run_exists: boolean;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1274,6 +1313,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EvalLatest"];
+                };
+            };
+        };
+    };
+    list_guide_pins: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuidePin"][];
                 };
             };
         };
