@@ -523,7 +523,7 @@ Rolling back means restoring the basic_auth line.
 Admin rollout:
 
 1. Set `RESEND_API_KEY` in the `.env` beside `compose.yaml` on the box (crimsoncowlabs.com is already verified with Resend), then deploy.
-2. Run `make admin EMAIL=aaron@crimsoncowlabs.com` in the container.
+2. Run `python -m scripts.admin aaron@crimsoncowlabs.com` in the API container (it has no `make`; see README "Managing accounts").
 3. Submit a test request from `/` and check the new-request email arrives.
 4. Grant it from `/app/admin` and check the invite email and link work.
 
