@@ -1,8 +1,8 @@
-// App shell navigation: the five items, which one a route highlights, and the sidebar's
+// App shell navigation: the five items (plus Admin for an admin), which one a route highlights, and the sidebar's
 // count hints and API health line. Pure helpers, tested in nav.test.ts.
 import type { Health } from "./api.ts";
 
-export type NavId = "home" | "match" | "runs" | "trials" | "eval";
+export type NavId = "home" | "match" | "runs" | "trials" | "eval" | "admin";
 
 /** The app's Home. `/` is the public marketing page, outside the app shell. */
 export const HOME_HREF = "/app";
@@ -14,6 +14,19 @@ export const NAV_ITEMS: readonly { id: NavId; label: string; href: string }[] = 
   { id: "trials", label: "Trials", href: "/trials" },
   { id: "eval", label: "Eval", href: "/eval" },
 ];
+
+/** The admin page (SPEC.md "Admin"); the API answers 404 there to anyone else. */
+export const ADMIN_HREF = `${HOME_HREF}/admin`;
+
+type NavItem = (typeof NAV_ITEMS)[number];
+
+const ADMIN_ITEM: NavItem = { id: "admin", label: "Admin", href: ADMIN_HREF };
+
+/** The nav items for this account: Admin is listed only when `/api/auth/me` says `is_admin`
+ *  (false while it loads or if it fails, so a non-admin never sees it flash in). */
+export function navItems(isAdmin: boolean): readonly NavItem[] {
+  return isAdmin ? [...NAV_ITEMS, ADMIN_ITEM] : NAV_ITEMS;
+}
 
 // First path segment -> the item it highlights. `/` (the marketing page, outside the shell)
 // highlights nothing. Feasibility is opened from a trial, so it sits under Trials; a closer run
@@ -31,7 +44,8 @@ const SECTION: Record<string, NavId> = {
 /** The nav item a pathname highlights, or null when none fits. */
 export function activeNav(pathname: string | null): NavId | null {
   if (pathname === null) return null;
-  const segment = pathname.split("/").filter(Boolean)[0];
+  const [segment, sub] = pathname.split("/").filter(Boolean);
+  if (segment === "app" && sub === "admin") return "admin";
   return segment === undefined ? null : (SECTION[segment] ?? null);
 }
 

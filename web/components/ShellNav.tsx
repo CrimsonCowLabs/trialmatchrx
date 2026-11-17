@@ -3,15 +3,15 @@
 // The shell's route-aware parts: the nav items (sidebar or tab bar) with the active one
 // highlighted, the sidebar's Runs / Trials count hints and its API health line. Everything
 // shown comes from the API (`/api/runs`, `/api/trials`, `/api/health`), re-read on navigation
-// so a new run shows up in the count.
-import { ChartColumn, FlaskConical, History, House, Stethoscope } from "lucide-react";
+// so a new run shows up in the count. An admin (`/api/auth/me` `is_admin`) also gets Admin.
+import { ChartColumn, FlaskConical, History, House, ShieldCheck, Stethoscope } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { GuideButton } from "@/components/GuidePanel";
 import { api, errorMessage, type Health } from "@/lib/api";
-import { activeNav, countHint, healthLine, NAV_ITEMS, type NavId } from "@/lib/nav";
+import { activeNav, countHint, healthLine, NAV_ITEMS, navItems, type NavId } from "@/lib/nav";
 
 const ICONS: Record<NavId, typeof House> = {
   home: House,
@@ -19,7 +19,25 @@ const ICONS: Record<NavId, typeof House> = {
   runs: History,
   trials: FlaskConical,
   eval: ChartColumn,
+  admin: ShieldCheck,
 };
+
+/** Whether the signed-in account is an admin (`/api/auth/me`), for the Admin item. False until
+ *  it's known and when the call fails; the API still answers 404 to a non-admin either way. */
+function useIsAdmin(): boolean {
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    api.me().then(
+      (me) => !cancelled && setIsAdmin(me.is_admin),
+      () => !cancelled && setIsAdmin(false),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return isAdmin;
+}
 
 /** `/api/runs` caps its list; at the cap the hint reads "200+". */
 const RUNS_CAP = 200;
@@ -75,10 +93,18 @@ function hintFor(id: NavId, status: ShellStatus | null): string | null {
   return id === "runs" ? status.runs : id === "trials" ? status.trials : null;
 }
 
-function SidebarItems({ active, status }: { active: NavId | null; status: ShellStatus | null }) {
+function SidebarItems({
+  active,
+  status,
+  items = NAV_ITEMS,
+}: {
+  active: NavId | null;
+  status: ShellStatus | null;
+  items?: typeof NAV_ITEMS;
+}) {
   return (
     <ul className="flex flex-col gap-0.5">
-      {NAV_ITEMS.map(({ id, label, href }) => {
+      {items.map(({ id, label, href }) => {
         const Icon = ICONS[id];
         const isActive = id === active;
         const hint = hintFor(id, status);
@@ -125,10 +151,11 @@ function HealthStatus({ status }: { status: ShellStatus }) {
 export function SidebarNav() {
   const pathname = usePathname();
   const status = useShellStatus(pathname);
+  const items = navItems(useIsAdmin());
   return (
     <>
       <nav aria-label="Main" className="flex-1">
-        <SidebarItems active={activeNav(pathname)} status={status} />
+        <SidebarItems active={activeNav(pathname)} status={status} items={items} />
         <GuideButton />
       </nav>
       <HealthStatus status={status} />
@@ -146,10 +173,11 @@ export function SidebarNavFallback() {
   );
 }
 
-function TabItems({ active }: { active: NavId | null }) {
+function TabItems({ active, items = NAV_ITEMS }: { active: NavId | null; items?: typeof NAV_ITEMS }) {
+  // Literal class names so Tailwind sees them: five tabs, or six with Admin.
   return (
-    <ul className="grid grid-cols-5">
-      {NAV_ITEMS.map(({ id, label, href }) => {
+    <ul className={`grid ${items.length > NAV_ITEMS.length ? "grid-cols-6" : "grid-cols-5"}`}>
+      {items.map(({ id, label, href }) => {
         const Icon = ICONS[id];
         const isActive = id === active;
         return (
@@ -176,7 +204,8 @@ function TabItems({ active }: { active: NavId | null }) {
 
 /** Mobile bottom tab bar items, active one marked with a bar on top. */
 export function TabBarNav() {
-  return <TabItems active={activeNav(usePathname())} />;
+  const items = navItems(useIsAdmin());
+  return <TabItems active={activeNav(usePathname())} items={items} />;
 }
 
 export function TabBarNavFallback() {
