@@ -10,9 +10,12 @@ import httpx
 import pytest
 
 from app import access_requests
+from app.config import get_settings
+from app.emails.sender import SendResult
 from app.main import app
 from app.schemas import ACCESS_REQUESTS_THROTTLED, AccessRequestCreate
 from scripts.access_requests import main as list_requests
+from tests.email_fake import FakeSender
 
 CSRF = {"X-Requested-With": "fetch"}
 T0 = dt.datetime(2026, 11, 16, 12, 0, tzinfo=dt.UTC)
@@ -188,3 +191,70 @@ def test_the_limit_lifts_an_hour_after_a_request() -> None:
     # The first one is now an hour old, so one slot is free again.
     assert access_requests.submit(body, "203.0.113.5", now=T0 + 60 * MINUTE) == "stored"
     assert access_requests.submit(body, "203.0.113.5", now=T0 + 60 * MINUTE) == "throttled"
+
+
+@pytest.fixture
+def notify(monkeypatch: pytest.MonkeyPatch) -> str:
+    """ADMIN_NOTIFY_EMAIL set, and a known APP_URL for the admin link."""
+    monkeypatch.setattr(get_settings(), "admin_notify_email", "admin@tm.example")
+    monkeypatch.setattr(get_settings(), "app_url", "https://tmrx.example/")
+    return "admin@tm.example"
+
+
+async def test_a_stored_request_emails_the_admin_with_reply_to_the_requester(
+    notify: str, fake_sender: FakeSender
+) -> None:
+    async with client() as c:
+        sent = await c.post("/api/access-requests", json=form())
+    assert sent.status_code == 204
+    (email,) = fake_sender.outbox
+    assert email.to == notify
+    assert email.reply_to == "ana@acme-pharma.example"
+    assert email.subject == "Access request: Ana Silva (Acme Pharma)"
+    for value in ("Ana Silva", "ana@acme-pharma.example", "Acme Pharma", "sponsor"):
+        assert value in email.text and value in email.html
+    assert "We run two T2D trials." in email.text
+    assert "https://tmrx.example/app/admin" in email.text
+
+
+async def test_without_a_notify_address_no_email_is_sent(
+    fake_sender: FakeSender, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(get_settings(), "admin_notify_email", None)
+    async with client() as c:
+        sent = await c.post("/api/access-requests", json=form())
+    assert sent.status_code == 204
+    assert fake_sender.outbox == []
+
+
+async def test_a_honeypot_hit_sends_nothing(notify: str, fake_sender: FakeSender) -> None:
+    async with client() as c:
+        await c.post("/api/access-requests", json=form(website="https://spam.example"))
+    assert fake_sender.outbox == []
+
+
+async def test_a_throttled_request_sends_nothing(notify: str, fake_sender: FakeSender) -> None:
+    async with client("198.51.100.40") as c:
+        for _ in range(3):
+            await c.post("/api/access-requests", json=form())
+        fourth = await c.post("/api/access-requests", json=form())
+    assert fourth.status_code == 429
+    assert len(fake_sender.outbox) == 3
+
+
+async def test_a_sender_that_raises_never_fails_the_form(
+    notify: str, fake_sender: FakeSender, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fake_sender.raises = RuntimeError("resend exploded")
+    async with client() as c:
+        sent = await c.post("/api/access-requests", json=form())
+    assert sent.status_code == 204
+    assert len(fake_sender.outbox) == 1
+    assert "Ana Silva" in "\n".join(listed(capsys))
+
+
+async def test_a_failed_send_never_fails_the_form(notify: str, fake_sender: FakeSender) -> None:
+    fake_sender.result = SendResult("failed", error="Resend 422: nope")
+    async with client() as c:
+        sent = await c.post("/api/access-requests", json=form())
+    assert sent.status_code == 204

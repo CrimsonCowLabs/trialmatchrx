@@ -6,12 +6,14 @@ import pytest
 
 from app import db
 from app.config import get_settings
+from app.emails.sender import get_sender
 from app.main import app
 from app.pipeline.fixture_model import FixtureChatModel, load_llm_fixture
 from app.pipeline.judge import JudgeModelUnavailable
 from app.routers.match import judge_model_factory, parse_model_factory
 from app.routers.trials import compile_model_factory
 from app.sources import ctgov
+from tests.email_fake import FakeSender
 
 PARSE_FIXTURES = Path(__file__).parent / "fixtures" / "parse_patient"
 
@@ -64,6 +66,16 @@ def no_api_key() -> Iterator[None]:
 
 def _no_judge_model() -> FixtureChatModel:
     raise JudgeModelUnavailable("tests: no judge model unless a test installs one")
+
+
+@pytest.fixture(autouse=True)
+def fake_sender() -> Iterator[FakeSender]:
+    """Routes never send real email, even with RESEND_API_KEY in a local .env: `get_sender`
+    is a recording fake. A test asks for this fixture to read its outbox."""
+    sender = FakeSender()
+    app.dependency_overrides[get_sender] = lambda: sender
+    yield sender
+    app.dependency_overrides.pop(get_sender, None)
 
 
 @pytest.fixture(autouse=True)
