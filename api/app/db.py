@@ -14,6 +14,7 @@ from typing import Any
 from sqlalchemy import JSON, Column, event, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.sql.elements import TextClause
 from sqlmodel import Field, Session, SQLModel, create_engine
 
 from app.config import get_settings
@@ -57,26 +58,51 @@ def set_engine(engine: Engine) -> None:
     _engine = engine
 
 
-# (table, column) pairs added to a table after it first shipped. Each must be nullable with no
-# default, which is what SQLite's ADD COLUMN can do in place; existing rows get NULL.
+# (table, column) pairs added to a table after it first shipped. Each must be nullable, or NOT
+# NULL with a constant `server_default`: what SQLite's ADD COLUMN can do in place. Existing rows
+# get NULL or that default.
 ADDED_COLUMNS: list[tuple[str, str]] = [
     ("runs", "created_by"),  # SPEC.md "Who started a run" (#10)
+    ("users", "is_admin"),  # SPEC.md "Admin", Who
 ]
 
 
+def _column_default(column: Any) -> str | None:
+    """The column's `server_default` as DDL (`text("0")` -> `0`, `"pending"` -> `'pending'`),
+    or None. Only those two constant forms are used here."""
+    default = column.server_default
+    if default is None:
+        return None
+    arg = getattr(default, "arg", None)
+    if isinstance(arg, str):
+        return "'" + arg.replace("'", "''") + "'"
+    if isinstance(arg, TextClause):
+        return arg.text
+    raise RuntimeError(f"{column}: ADDED_COLUMNS supports only a constant server_default")
+
+
 def _add_missing_columns(engine: Engine) -> None:
-    """ALTER TABLE ... ADD COLUMN for each `ADDED_COLUMNS` entry the database lacks, plus its
-    index. Idempotent: a column that's there is skipped, and a duplicate-column error (another
-    process added it first) is ignored, and the index is CREATE INDEX IF NOT EXISTS."""
+    """ALTER TABLE ... ADD COLUMN for each `ADDED_COLUMNS` entry the database lacks (with its
+    NOT NULL and DEFAULT, if any), plus its index. Idempotent: a column that's there is
+    skipped, and a duplicate-column error (another process added it first) is ignored, and the
+    index is CREATE INDEX IF NOT EXISTS."""
     for table_name, column_name in ADDED_COLUMNS:
         table = SQLModel.metadata.tables[table_name]
         column = table.columns[column_name]
-        if not column.nullable or column.server_default is not None:
-            raise RuntimeError(f"{table_name}.{column_name}: ADDED_COLUMNS must be nullable")
+        default = _column_default(column)
+        if not column.nullable and default is None:
+            raise RuntimeError(
+                f"{table_name}.{column_name}: ADDED_COLUMNS must be nullable or have a "
+                "server_default"
+            )
         existing = {c["name"] for c in inspect(engine).get_columns(table_name)}
         if column_name not in existing:
             ddl = f"ALTER TABLE {table_name} ADD COLUMN {column_name} "
             ddl += column.type.compile(engine.dialect)
+            if not column.nullable:
+                ddl += " NOT NULL"
+            if default is not None:
+                ddl += f" DEFAULT {default}"
             for fk in column.foreign_keys:
                 ddl += f" REFERENCES {fk.column.table.name} ({fk.column.name})"
             try:
@@ -250,7 +276,8 @@ class UserRow(SQLModel, table=True):
     """One account (SPEC.md "Marketing and accounts"). `email` is stored normalized (trimmed,
     lowercased; `app/auth/users.normalize_email`). `password_hash` is null for a passkey-only
     account. A disabled account keeps its row (so a run's `created_by` still resolves) but
-    can't sign in, and its sessions stop working."""
+    can't sign in, and its sessions stop working. `is_admin` (SPEC.md "Admin") is set only by
+    `make admin` (`scripts/admin.py`); there is no web path to it."""
 
     __tablename__ = "users"
 
@@ -260,6 +287,8 @@ class UserRow(SQLModel, table=True):
     created_at: dt.datetime = Field(default_factory=utcnow)
     last_login_at: dt.datetime | None = None
     disabled_at: dt.datetime | None = None
+    # Added after the table shipped: ADDED_COLUMNS gives existing rows the server default, 0.
+    is_admin: bool = Field(default=False, sa_column_kwargs={"server_default": text("0")})
 
 
 class SessionRow(SQLModel, table=True):

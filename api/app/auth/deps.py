@@ -4,7 +4,8 @@ the session.
 `require_session` is the app-wide gate (SPEC.md "Enforcement"): `app.main` installs it on the
 FastAPI app, so every route, including any added later, needs a session unless `is_public`
 names it. `signed_in_user` hands a gated route the user the gate found. `require_user` and
-`current_user` are for the public `/api/auth/*` routes, which the gate leaves alone. All of them
+`current_user` are for the public `/api/auth/*` routes, which the gate leaves alone.
+`require_admin` guards `/api/admin/*` (SPEC.md "Admin") and answers 404 to anyone else. All of them
 resolve the cookie through `app/auth/sessions.py`, which rolls the 30-day expiry, and re-send
 the cookie when it rolled so the browser's copy keeps the same lifetime as the row.
 """
@@ -90,4 +91,14 @@ def signed_in_user(request: Request) -> UserRow:
     user: UserRow | None = getattr(request.state, "user", None)
     if user is None:
         raise RuntimeError(f"signed_in_user on public route {request.url.path}: use require_user")
+    return user
+
+
+def require_admin(request: Request, response: Response) -> UserRow:
+    """The signed-in admin, or 404 `Not Found` (SPEC.md "Admin" and "Enforcement"): a non-admin,
+    a disabled account and no session all get the same answer as an unknown route, so the admin
+    API doesn't reveal itself. Reuses the user the gate found, else resolves the cookie."""
+    user: UserRow | None = getattr(request.state, "user", None) or current_user(request, response)
+    if user is None or not user.is_admin:
+        raise HTTPException(status_code=404, detail="Not Found")
     return user

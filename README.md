@@ -65,14 +65,15 @@ The arguments are `make guide-pin`'s `ARGS`: `als|ipf|ipf_flip RUN_ID [--trial N
 
 ### Managing accounts
 
-Accounts live in the `users` table of the prod database (SPEC.md, "Marketing and accounts", Admin CLI). Run the commands in the API container the same way as `guide_pin` (`python -m scripts.users` is what `make users` runs, `python -m scripts.disable_user EMAIL` is `make disable-user EMAIL=...`):
+Accounts live in the `users` table of the prod database (SPEC.md, "Marketing and accounts", Admin CLI). Run the commands in the API container the same way as `guide_pin` (`python -m scripts.users` is what `make users` runs, `python -m scripts.disable_user EMAIL` is `make disable-user EMAIL=...`, `python -m scripts.admin EMAIL` is `make admin EMAIL=...`):
 
 ```bash
 ssh aaron@ccl-vps 'cd /app/trialmatchrx && docker compose -f compose.yaml exec -T api python -m scripts.users'
 ssh aaron@ccl-vps 'cd /app/trialmatchrx && docker compose -f compose.yaml exec -T api python -m scripts.disable_user ana@example.com'
+ssh aaron@ccl-vps 'cd /app/trialmatchrx && docker compose -f compose.yaml exec -T api python -m scripts.admin aaron@crimsoncowlabs.com'
 ```
 
-`users` lists every account, oldest first, with its created date, last sign-in, number of passkeys, whether a password is set, and its disabled date (times in UTC). `disable_user` ends all of that account's sessions and blocks sign-in; the row stays, so a run's `created_by` still resolves. An unknown email exits 2 and changes nothing; an already-disabled account says so and keeps its first disabled date.
+`users` lists every account, oldest first, with its created date, last sign-in, number of passkeys, whether a password is set, its disabled date and whether it's an admin (times in UTC). `disable_user` ends all of that account's sessions and blocks sign-in; the row stays, so a run's `created_by` still resolves. An unknown email exits 2 and changes nothing; an already-disabled account says so and keeps its first disabled date. `admin` makes an existing account an admin (SPEC.md "Admin"); it's the only way to set one. An unknown email exits 2; an account that's already an admin says so.
 
 Request-access submissions from the form on `/` live in the `access_requests` table. `make access-requests` (`python -m scripts.access_requests`) lists them newest first: when each was received (UTC), name, work email, organization and role, with the message, if any, on the line below. Nothing is emailed; reply yourself and send an invite.
 

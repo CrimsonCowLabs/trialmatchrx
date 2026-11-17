@@ -983,6 +983,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Is Admin */
+            is_admin: boolean;
         };
         /**
          * PasskeyInfo

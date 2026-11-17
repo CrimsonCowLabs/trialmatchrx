@@ -404,6 +404,7 @@ class Me(BaseModel):
     email: str
     has_password: bool  # false for a passkey-only account
     created_at: dt.datetime
+    is_admin: bool  # SPEC.md "Admin": the sidebar links /app/admin only when true
 
 
 # Passkeys (WebAuthn, `app/auth/passkeys.py`). A ceremony is two calls: `options` hands the

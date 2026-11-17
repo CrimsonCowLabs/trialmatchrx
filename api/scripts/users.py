@@ -1,4 +1,5 @@
-"""List every account: email, created date, last sign-in, passkeys, password set, disabled.
+"""List every account: email, created date, last sign-in, passkeys, password set, disabled,
+admin.
 
     uv run python -m scripts.users
 
@@ -18,7 +19,7 @@ from sqlmodel import Session, col, select
 
 from app.db import PasskeyRow, UserRow, as_utc, init_db, session_scope
 
-HEADER = ("EMAIL", "CREATED", "LAST_SIGN_IN", "PASSKEYS", "PASSWORD", "DISABLED")
+HEADER = ("EMAIL", "CREATED", "LAST_SIGN_IN", "PASSKEYS", "PASSWORD", "DISABLED", "ADMIN")
 
 
 def passkey_counts(s: Session) -> dict[str, int]:
@@ -48,6 +49,7 @@ def display_rows() -> list[tuple[str, ...]]:
                 str(counts.get(u.id, 0)),
                 "yes" if u.password_hash else "no",
                 _day(u.disabled_at) if u.disabled_at else "no",
+                "yes" if u.is_admin else "no",
             )
             for u in accounts
         ]
