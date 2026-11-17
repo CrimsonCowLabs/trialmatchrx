@@ -8,9 +8,9 @@ import type { Metadata } from "next";
 import { REQUEST_ACCESS_ID } from "./access-request.ts";
 import { LOGIN_HREF } from "./auth.ts";
 
-// HACK(demo): set once the demo video is on YouTube (the 11-character ID from its URL). Until
-// then the poster reads "Demo video coming soon".
-export const DEMO_VIDEO_ID: string | null = null;
+// The demo video's YouTube ID (https://youtu.be/9DqMOuje33I). Set it to null and the poster reads
+// "Demo video coming soon".
+export const DEMO_VIDEO_ID: string | null = "9DqMOuje33I";
 
 // HACK(demo): set once HackRx 2026 publishes its results page, along with the photos (static
 // files in web/public/award/). The award section is hidden until both are set.
