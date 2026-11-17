@@ -5,7 +5,8 @@ the session.
 FastAPI app, so every route, including any added later, needs a session unless `is_public`
 names it. `signed_in_user` hands a gated route the user the gate found. `require_user` and
 `current_user` are for the public `/api/auth/*` routes, which the gate leaves alone.
-`require_admin` guards `/api/admin/*` (SPEC.md "Admin") and answers 404 to anyone else. All of them
+`require_admin` guards `/api/admin/*` (SPEC.md "Admin") and answers 404 to anyone else; the gate
+skips that prefix so a signed-out caller gets the same 404. All of them
 resolve the cookie through `app/auth/sessions.py`, which rolls the 30-day expiry, and re-send
 the cookie when it rolled so the browser's copy keeps the same lifetime as the row.
 """
@@ -29,6 +30,10 @@ PUBLIC_ROUTES = frozenset(
     }
 )
 PUBLIC_PREFIX = "/api/auth/"  # sign-in, invites, reset links: used before there's a session
+# `/api/admin/*` answers 404, not the gate's 401, to anyone but an admin, signed out included
+# (SPEC.md "Enforcement"), so the gate leaves it to `require_admin`, which the admin router
+# installs on every route. The trailing slash keeps e.g. `/api/administrator` gated.
+ADMIN_PREFIX = "/api/admin/"
 
 
 def set_session_cookie(response: Response, token: str) -> None:
@@ -77,11 +82,18 @@ def is_public(method: str, path: str) -> bool:
     return (method, path) in PUBLIC_ROUTES or path.startswith(PUBLIC_PREFIX)
 
 
+def is_admin_path(path: str) -> bool:
+    """Guarded by `require_admin` instead of the session gate."""
+    return path.startswith(ADMIN_PREFIX)
+
+
 def require_session(request: Request, response: Response) -> None:
     """The app-wide gate: 401 without a valid session, except on a public route. Public routes
     aren't looked up at all, so e.g. sign-out never gets a rolled cookie beside its cleared
-    one. The user is kept on `request.state` for `signed_in_user`."""
-    if is_public(request.method, request.url.path):
+    one. An admin route is left to `require_admin`. The user is kept on `request.state` for
+    `signed_in_user`."""
+    path = request.url.path
+    if is_public(request.method, path) or is_admin_path(path):
         return
     request.state.user = require_user(current_user(request, response))
 

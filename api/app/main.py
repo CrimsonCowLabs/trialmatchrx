@@ -13,7 +13,17 @@ from app.auth.csrf import RequireXRequestedWith
 from app.auth.deps import require_session
 from app.config import get_settings
 from app.db import init_db
-from app.routers import access_requests, auth, feasibility, guide, invites, match, runs, trials
+from app.routers import (
+    access_requests,
+    admin,
+    auth,
+    feasibility,
+    guide,
+    invites,
+    match,
+    runs,
+    trials,
+)
 from app.routers import eval as eval_routes
 from app.schemas import Health, RunDone
 from app.sources.cohort import get_cohort
@@ -67,6 +77,7 @@ for module in (
     auth,
     invites,
     access_requests,
+    admin,
 ):
     app.include_router(module.router)
 

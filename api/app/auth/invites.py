@@ -53,12 +53,22 @@ class Issued(NamedTuple):
     expires_at: dt.datetime
 
 
-def create(email: str, *, handled_by: str | None = None, now: dt.datetime | None = None) -> Issued:
+def create(
+    email: str,
+    *,
+    handled_by: str | None = None,
+    now: dt.datetime | None = None,
+    mark_requests: bool = True,
+) -> Issued:
     """A new invite for `email`. Raises AlreadyHasAccount if the email has an account.
     Earlier unused invites for the same email are cancelled: they expire now, so only the
     newest link works and an old one reads as expired. In the same transaction, the email's
     `pending` access requests become `invited` (SPEC.md "Admin", Request status), stamped `now`
-    and `handled_by` (the granting admin's user id; None from the CLI)."""
+    and `handled_by` (the granting admin's user id; None from the CLI).
+
+    `mark_requests=False` leaves the requests alone, for a caller that marks them itself with
+    `mark_requests_invited` once the email is out: the admin page's Grant access, where a failed
+    send keeps the request `pending` (SPEC.md "Admin", Sending)."""
     now = now or utcnow()
     email = normalize_email(email)
     if find_by_email(email) is not None:
@@ -66,7 +76,8 @@ def create(email: str, *, handled_by: str | None = None, now: dt.datetime | None
     token = secrets.token_urlsafe(32)  # 256 bits
     expires_at = now + INVITE_TTL
     with session_scope() as s:
-        _mark_requests_invited(s, email, handled_by=handled_by, now=now)
+        if mark_requests:
+            _mark_requests_invited(s, email, handled_by=handled_by, now=now)
         s.connection().execute(
             update(InviteRow)
             .where(col(InviteRow.email) == email)
@@ -83,6 +94,17 @@ def create(email: str, *, handled_by: str | None = None, now: dt.datetime | None
             )
         )
     return Issued(token, expires_at)
+
+
+def mark_requests_invited(
+    email: str, *, handled_by: str | None, now: dt.datetime | None = None
+) -> None:
+    """`pending` -> `invited` for each of `email`'s requests: what `create` does unless told
+    not to."""
+    with session_scope() as s:
+        _mark_requests_invited(
+            s, normalize_email(email), handled_by=handled_by, now=now or utcnow()
+        )
 
 
 def _mark_requests_invited(
