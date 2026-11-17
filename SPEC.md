@@ -453,7 +453,7 @@ The page states no accuracy numbers until a scored TREC run exists. It has a tit
 **Accounts.**
 
 - **Invite-only.** An account starts from a one-time invite link that expires after 7 days. On the invite page the person adds a passkey, sets a password, or both.
-- **No email sending.** Every link is printed by a CLI command, and you send it yourself.
+- **Email.** Invite links go out by email when an admin grants access (see "Admin"); the CLI still prints every link as the fallback.
 - **Login (`/login`).**
   - "Sign in with a passkey" is the primary button, and browser autofill offers saved passkeys when you click the email field. An email + password form sits below it.
   - Every failure shows the same message, "Email or password is incorrect".
@@ -478,10 +478,26 @@ The page states no accuracy numbers until a scored TREC run exists. It has a tit
   - Every POST must also carry a custom `X-Requested-With` header (CSRF guard).
   - Signing out deletes the session.
 - **Enforcement.**
-  - The API is the only gatekeeper: every `/api` route needs a session except `GET /api/health`, `/api/auth/*` and `POST /api/access-requests`.
+  - The API is the only gatekeeper: every `/api` route needs a session except `GET /api/health`, `/api/auth/*` and `POST /api/access-requests`. `/api/admin/*` also needs an admin and answers 404 to anyone else.
   - Next.js middleware only redirects signed-out visitors to `/login`.
   - The server-side trace stream and the run endpoints use the same cookie.
 - **Who started a run.** New runs record a nullable `created_by` user id, for auditing and cost tracking. Every signed-in user still sees every run.
+
+**Admin.** Added 2026-11-16. The point is to see who is interested and let them in from the app.
+
+- **Who.** `users.is_admin` (boolean, default false), set only by `make admin EMAIL=...`; there is no web path to it. `GET /api/auth/me` returns `is_admin`.
+- **Request status.** Each `access_requests` row has `status` (`pending` | `invited` | `dismissed`, default `pending`), `handled_at` and `handled_by` (a user id). Repeat requests from one email stay separate rows. `make invite` (and any invite made for an email) marks that email's pending requests `invited`.
+- **`/app/admin`.** Linked in the sidebar only for admins; a non-admin sees "Not found".
+  - **Requests**, pending first, then newest first: name, email, organization, role, message, date, and whether the email already has an account or an open invite.
+  - **Grant access** opens a confirm dialog with an optional personal note, prefilled "Hi <first name>,". Confirming creates the invite (7 days) and emails the link; the row becomes `invited`.
+  - **Dismiss** marks the row `dismissed`. No email is sent.
+  - An invited row reads `invited`, then `invite expired` with **Resend invite** (a new link; the old one stops working), or `joined <date>` once the account exists.
+  - **Users**, read-only: email, admin, created, last sign-in, disabled. Disabling stays on the CLI.
+- **Sending.** Through the Resend HTTP API with `httpx`. Settings: `RESEND_API_KEY`, `EMAIL_FROM` (`TrialMatch Rx <noreply@crimsoncowlabs.com>`), `EMAIL_REPLY_TO` (`aaron@crimsoncowlabs.com`) and `ADMIN_NOTIFY_EMAIL`. Templates live in `api/app/emails/*.md` with a `version:` header; each gives a plain-text and a simple HTML body.
+  - Without `RESEND_API_KEY` the email is logged, not sent, and the admin page shows the link to copy.
+  - If Resend fails, the invite still exists, the page shows the error and the link to copy, and the request stays `pending`.
+  - Tests use a fake sender; one `@pytest.mark.live` test sends for real.
+- **New-request email.** Each stored submission emails `ADMIN_NOTIFY_EMAIL` the full submission and a link to `/app/admin`, with Reply-To set to the requester. It is sent after the response, so a failure never blocks or fails the form.
 
 **Admin CLI.** Each command is a `make` target, run in the prod container with `python -m scripts.<name>`, the same way as `guide-pin`.
 
@@ -491,6 +507,7 @@ The page states no accuracy numbers until a scored TREC run exists. It has a tit
 | `make reset-link EMAIL=...` | prints a one-time password-reset link (1 hour) |
 | `make access-requests` | lists request-access submissions, newest first |
 | `make users` | lists accounts with their last sign-in |
+| `make admin EMAIL=...` | makes an existing account an admin |
 | `make disable-user EMAIL=...` | ends the user's sessions and blocks sign-in; the row stays so `created_by` still resolves |
 | `make dev-user` | creates a local account with a known password; refuses unless the database is the local one |
 
@@ -502,6 +519,13 @@ The page states no accuracy numbers until a scored TREC run exists. It has a tit
 4. In a private window, check that `/` is public and that `/app` redirects to `/login`.
 
 Rolling back means restoring the basic_auth line.
+
+Admin rollout:
+
+1. Set `RESEND_API_KEY` in the `.env` beside `compose.yaml` on the box (crimsoncowlabs.com is already verified with Resend), then deploy.
+2. Run `make admin EMAIL=aaron@crimsoncowlabs.com` in the container.
+3. Submit a test request from `/` and check the new-request email arrives.
+4. Grant it from `/app/admin` and check the invite email and link work.
 
 ## Demo script, risks and fallbacks
 

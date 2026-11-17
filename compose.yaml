@@ -17,7 +17,8 @@ services:
       context: .
       dockerfile: api/Dockerfile
     restart: unless-stopped
-    # ANTHROPIC_API_KEY, DEMO_MODE, model ids: from the .env beside this file, never the image.
+    # ANTHROPIC_API_KEY, RESEND_API_KEY, DEMO_MODE, model ids: from the .env beside this file,
+    # never the image.
     env_file: .env
     environment:
       # Stated here so a DATABASE_URL / DEMO_FIXTURES_DIR in .env (written for `make dev`)
@@ -31,6 +32,8 @@ services:
       TRUSTED_PROXIES: '["127.0.0.0/8", "::1/128", "172.16.0.0/12", "192.168.0.0/16"]'
       # The public origin for the links the admin CLI prints (api/app/config.py app_url).
       APP_URL: https://tmrx.crimsoncowlabs.com
+      # Each stored request-access submission is emailed here (SPEC.md "Admin").
+      ADMIN_NOTIFY_EMAIL: aaron@crimsoncowlabs.com
       # Passkeys are bound to this domain (SPEC.md). The local proxy stack (compose.override.yaml)
       # needs WEBAUTHN_RP_ID=localhost and WEBAUTHN_ORIGIN=http://localhost:8080 in the shell
       # or .env for passkeys to work there.

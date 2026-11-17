@@ -55,6 +55,12 @@ class Settings(BaseSettings):
     # The site's public origin, for the links the admin CLI prints (`make invite`, `make
     # reset-link`). compose.yaml sets the prod one.
     app_url: str = "http://localhost:3045"
+    # Email through Resend (SPEC.md "Admin", Sending). No key: every email is logged, not sent,
+    # and the admin page shows the link to copy. ADMIN_NOTIFY_EMAIL unset: no new-request email.
+    resend_api_key: str | None = None
+    email_from: str = "TrialMatch Rx <noreply@crimsoncowlabs.com>"
+    email_reply_to: str = "aaron@crimsoncowlabs.com"
+    admin_notify_email: str | None = None
     # Proxies (CIDR) whose X-Forwarded-For the sign-in throttle believes (app/auth/client_ip.py).
     # compose.yaml adds the Docker bridge ranges: Caddy's requests reach the container from the
     # bridge gateway, not from 127.0.0.1.

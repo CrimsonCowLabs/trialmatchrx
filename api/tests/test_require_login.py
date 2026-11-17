@@ -1,5 +1,6 @@
 """SPEC.md "Marketing and accounts", Enforcement: every `/api` route needs a session except
-`GET /api/health`, `/api/auth/*` and `POST /api/access-requests`.
+`GET /api/health`, `/api/auth/*` and `POST /api/access-requests`; `/api/admin/*` answers 404,
+not 401, to anyone but an admin, signed out included.
 
 The enumeration test walks every route registered on the app and calls it signed out, so a
 route added later is covered without anyone remembering to add it here."""
@@ -10,7 +11,7 @@ import pytest
 from fastapi.routing import APIRoute, RouteContext, iter_route_contexts
 from starlette.routing import Mount, Route
 
-from app.auth.deps import is_public
+from app.auth.deps import is_admin_path, is_public
 from app.main import app
 from app.trace import store
 from tests.sse import client, parse_sse
@@ -56,6 +57,16 @@ def test_the_public_routes_are_exactly_the_specs() -> None:
     assert not is_public("GET", "/api/runs")
 
 
+def test_only_paths_under_api_admin_skip_the_gate_for_require_admin() -> None:
+    assert is_admin_path("/api/admin/users")
+    assert is_admin_path("/api/admin/access-requests/1/grant")
+    assert not is_admin_path("/api/admin")  # no route; only paths under /api/admin/
+    assert not is_admin_path("/api/administrator")
+    assert not is_admin_path("/api/adminx/users")
+    assert not is_admin_path("/api/runs/admin/x")
+    assert not is_public("GET", "/api/admin/users")
+
+
 @pytest.mark.parametrize(("method", "path"), _endpoints())
 async def test_every_route_but_the_public_ones_needs_a_session(method: str, path: str) -> None:
     if is_public(method, path):
@@ -63,6 +74,10 @@ async def test_every_route_but_the_public_ones_needs_a_session(method: str, path
     # X-Requested-With is sent, so the CSRF guard's 403 can't stand in for the 401.
     async with client(signed_in=False) as c:
         res = await c.request(method, path, json={})
+    if is_admin_path(path):  # require_admin, not the gate: the same 404 as an unknown route
+        assert res.status_code == 404, f"{method} {path} -> {res.status_code}"
+        assert res.json() == {"detail": "Not Found"}
+        return
     assert res.status_code == 401, f"{method} {path} -> {res.status_code}"
     assert res.json() == {"detail": "Sign in first"}
 
@@ -73,6 +88,8 @@ def test_the_enumeration_sees_the_routes_it_should() -> None:
     assert ("POST", "/api/match") in endpoints
     assert ("GET", "/api/health") in endpoints
     assert ("POST", "/api/auth/login") in endpoints
+    assert ("GET", "/api/admin/users") in endpoints
+    assert ("POST", "/api/admin/access-requests/x/grant") in endpoints
     assert len(endpoints) > 25
 
 

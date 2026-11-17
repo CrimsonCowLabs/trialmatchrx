@@ -11,6 +11,9 @@ The link is `<base>/invite/<token>`; the base is APP_URL (settings `app_url`) un
 `--base-url` is given. It works once and expires after 7 days. There's no email sending: send
 the link yourself. An email that already has an account is refused (exit 1); something that
 isn't an email address is refused (exit 2). A refusal creates nothing.
+
+An invite marks the email's pending access requests `invited` (SPEC.md "Admin"), with no
+`handled_by`: the CLI has no signed-in admin.
 """
 
 import argparse

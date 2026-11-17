@@ -1,5 +1,5 @@
 """scripts/users.py: `make users` lists every account with its created date, last sign-in,
-passkey count, whether a password is set and whether it's disabled."""
+passkey count, whether a password is set, whether it's disabled and whether it's an admin."""
 
 import datetime as dt
 
@@ -30,6 +30,7 @@ def test_lists_each_account_with_its_columns(capsys: pytest.CaptureFixture[str])
         "bo@example.com",
         created_at=T0 + dt.timedelta(days=2),
         disabled_at=T0 + dt.timedelta(days=3),
+        is_admin=True,
     )
 
     assert main([]) == 0
@@ -42,6 +43,7 @@ def test_lists_each_account_with_its_columns(capsys: pytest.CaptureFixture[str])
         "PASSKEYS",
         "PASSWORD",
         "DISABLED",
+        "ADMIN",
     ]
     assert lines[1].split() == [
         "ana@example.com",
@@ -51,6 +53,7 @@ def test_lists_each_account_with_its_columns(capsys: pytest.CaptureFixture[str])
         "0",
         "yes",
         "no",
+        "no",
     ]
     assert lines[2].split() == [
         "bo@example.com",
@@ -59,6 +62,7 @@ def test_lists_each_account_with_its_columns(capsys: pytest.CaptureFixture[str])
         "0",
         "no",
         "2026-11-19",
+        "yes",
     ]
 
 

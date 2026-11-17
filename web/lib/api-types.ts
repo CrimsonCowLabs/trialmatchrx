@@ -636,6 +636,88 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/access-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Access Requests
+         * @description Every request, pending first, then newest first, with what the page shows for it.
+         */
+        get: operations["list_access_requests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/access-requests/{request_id}/grant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Grant Access Request
+         * @description Invite the request's email (7 days) and email the link, with the note on top. Also Resend
+         *     invite, on a request already `invited`. 409 if the email has an account or the request was
+         *     dismissed. See GrantResult for what each email_status means.
+         */
+        post: operations["grant_access_request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/access-requests/{request_id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dismiss Access Request
+         * @description Mark a pending request `dismissed`. No email is sent. 409 if it isn't pending.
+         */
+        post: operations["dismiss_access_request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Users
+         * @description Every account, newest first (read-only; disabling stays on the CLI).
+         */
+        get: operations["list_users"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -674,6 +756,52 @@ export interface components {
             passkey?: components["schemas"]["PasskeyRegisterRequest"] | null;
         };
         /**
+         * AccessRequestAdmin
+         * @description One row of `GET /api/admin/access-requests`: pending first, then newest first.
+         */
+        AccessRequestAdmin: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Email */
+            email: string;
+            /** Organization */
+            organization: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "sponsor" | "cro" | "site" | "other";
+            /** Message */
+            message: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "invited" | "dismissed";
+            /** Handled At */
+            handled_at: string | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "pending" | "dismissed" | "invited" | "invite_expired" | "joined";
+            /** Has Account */
+            has_account: boolean;
+            /** Has Open Invite */
+            has_open_invite: boolean;
+            /** Joined At */
+            joined_at: string | null;
+            /** Invite Expires At */
+            invite_expires_at: string | null;
+        };
+        /**
          * AccessRequestCreate
          * @description `POST /api/access-requests`, public. `website` is the honeypot: the form hides it, so a
          *     person leaves it empty; a filled one gets the same 204 and nothing is stored.
@@ -697,6 +825,27 @@ export interface components {
              * @default
              */
             website: string;
+        };
+        /**
+         * AdminUser
+         * @description One row of `GET /api/admin/users`, newest first. Read-only: disabling stays on the CLI.
+         */
+        AdminUser: {
+            /** Id */
+            id: string;
+            /** Email */
+            email: string;
+            /** Is Admin */
+            is_admin: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Last Login At */
+            last_login_at: string | null;
+            /** Disabled At */
+            disabled_at: string | null;
         };
         /**
          * ChangePasswordRequest
@@ -886,6 +1035,31 @@ export interface components {
             why: string;
         };
         /**
+         * GrantAccessRequest
+         * @description `POST /api/admin/access-requests/{id}/grant`: the personal note opens the email.
+         */
+        GrantAccessRequest: {
+            /** Note */
+            note?: string | null;
+        };
+        /**
+         * GrantResult
+         * @description The invite exists whatever `email_status` says. `logged` (no RESEND_API_KEY) and `failed`
+         *     carry the `link` for the admin to copy, and `failed` its `error`; `sent` never has the link.
+         *     `sent` and `logged` mark the request `invited`; `failed` leaves it `pending`.
+         */
+        GrantResult: {
+            /**
+             * Email Status
+             * @enum {string}
+             */
+            email_status: "sent" | "logged" | "failed";
+            /** Error */
+            error?: string | null;
+            /** Link */
+            link?: string | null;
+        };
+        /**
          * GuidePin
          * @description One pinned guide step: the run (and, for some steps, the trial) its links open.
          */
@@ -983,6 +1157,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Is Admin */
+            is_admin: boolean;
         };
         /**
          * PasskeyInfo
@@ -2533,6 +2709,152 @@ export interface operations {
             };
             /** @description You've already sent a few requests. Try again in an hour. */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_access_requests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessRequestAdmin"][];
+                };
+            };
+            /** @description Not Found: not a signed-in admin, or no such request */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    grant_access_request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantAccessRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrantResult"];
+                };
+            };
+            /** @description Not Found: not a signed-in admin, or no such request */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description This email already has an account. / This request was dismissed. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dismiss_access_request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found: not a signed-in admin, or no such request */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description This request has already been handled. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_users: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUser"][];
+                };
+            };
+            /** @description Not Found: not a signed-in admin, or no such request */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

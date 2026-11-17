@@ -36,6 +36,10 @@ export type AcceptInviteRequest = Schemas["AcceptInviteRequest"];
 export type ChangePasswordRequest = Schemas["ChangePasswordRequest"];
 export type AccessRequestCreate = Schemas["AccessRequestCreate"];
 export type AccessRole = AccessRequestCreate["role"];
+export type AccessRequestAdmin = Schemas["AccessRequestAdmin"];
+export type AdminUser = Schemas["AdminUser"];
+export type GrantAccessRequest = Schemas["GrantAccessRequest"];
+export type GrantResult = Schemas["GrantResult"];
 
 // Called directly (not through a Next rewrite) so the SSE stream is never buffered. Inlined at
 // build time: the Docker image is built with "" so every call is a same-origin `/api/...` path.
@@ -159,6 +163,18 @@ export const api = {
   /** The request-access form; public. 204 (also for a filled honeypot), or 429 / 422. */
   requestAccess: (body: AccessRequestCreate) =>
     request<void>("/api/access-requests", { method: "POST", body: JSON.stringify(body) }),
+  /** The admin page's calls (SPEC.md "Admin"): each answers 404 to anyone not a signed-in
+   *  admin. Grant and dismiss answer 404 / 409 with a `detail` to show. */
+  listAccessRequests: () => request<AccessRequestAdmin[]>("/api/admin/access-requests"),
+  /** Grant access, or Resend invite on an invited request: a new 7-day link, emailed. */
+  grantAccessRequest: (id: number, body: GrantAccessRequest) =>
+    request<GrantResult>(`/api/admin/access-requests/${id}/grant`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  dismissAccessRequest: (id: number) =>
+    request<void>(`/api/admin/access-requests/${id}/dismiss`, { method: "POST" }),
+  listAdminUsers: () => request<AdminUser[]>("/api/admin/users"),
   startMatch: (body: JsonBody<"/api/match", "post">) =>
     request<RunStarted>("/api/match", { method: "POST", body: JSON.stringify(body) }),
   startCloser: (body: CloserRequest) =>

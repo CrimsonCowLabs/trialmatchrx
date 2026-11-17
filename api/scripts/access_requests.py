@@ -1,5 +1,6 @@
 """List request-access submissions, newest first: received, name, email, organization, role,
-and the message (if any) on the line below.
+status (pending, invited or dismissed; SPEC.md "Admin"), and the message (if any) on the line
+below.
 
     uv run python -m scripts.access_requests
 
@@ -18,7 +19,7 @@ from sqlmodel import col, select
 from app.db import AccessRequestRow, as_utc, init_db, session_scope
 from scripts.users import format_table
 
-HEADER = ("RECEIVED", "NAME", "EMAIL", "ORGANIZATION", "ROLE")
+HEADER = ("RECEIVED", "NAME", "EMAIL", "ORGANIZATION", "ROLE", "STATUS")
 
 
 def display_rows() -> list[tuple[tuple[str, ...], str | None]]:
@@ -35,6 +36,7 @@ def display_rows() -> list[tuple[tuple[str, ...], str | None]]:
                     r.email,
                     r.organization,
                     r.role,
+                    r.status,
                 ),
                 " ".join(r.message.split()) if r.message else None,
             )

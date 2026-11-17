@@ -2,9 +2,10 @@
 one-time link that expires after 7 days.
 
 The link carries an opaque random token; the table holds only its SHA-256, like a session.
-`create` refuses an email that already has an account and cancels that email's older unused
-invites. `accept` creates the account and spends the invite in one transaction, so a link can't
-be used twice even by two requests at once, and a refused link creates nothing.
+`create` refuses an email that already has an account, cancels that email's older unused
+invites and marks its pending access requests `invited` (SPEC.md "Admin"). `accept` creates
+the account and spends the invite in one transaction, so a link can't be used twice even by
+two requests at once, and a refused link creates nothing.
 """
 
 import datetime as dt
@@ -18,7 +19,15 @@ from sqlmodel import Session, col, select
 
 from app.auth.sessions import token_hash
 from app.auth.users import find_by_email, normalize_email
-from app.db import InviteRow, PasskeyRow, UserRow, as_utc, session_scope, utcnow
+from app.db import (
+    AccessRequestRow,
+    InviteRow,
+    PasskeyRow,
+    UserRow,
+    as_utc,
+    session_scope,
+    utcnow,
+)
 
 INVITE_TTL = dt.timedelta(days=7)
 
@@ -44,10 +53,22 @@ class Issued(NamedTuple):
     expires_at: dt.datetime
 
 
-def create(email: str, *, now: dt.datetime | None = None) -> Issued:
+def create(
+    email: str,
+    *,
+    handled_by: str | None = None,
+    now: dt.datetime | None = None,
+    mark_requests: bool = True,
+) -> Issued:
     """A new invite for `email`. Raises AlreadyHasAccount if the email has an account.
     Earlier unused invites for the same email are cancelled: they expire now, so only the
-    newest link works and an old one reads as expired."""
+    newest link works and an old one reads as expired. In the same transaction, the email's
+    `pending` access requests become `invited` (SPEC.md "Admin", Request status), stamped `now`
+    and `handled_by` (the granting admin's user id; None from the CLI).
+
+    `mark_requests=False` leaves the requests alone, for a caller that marks them itself with
+    `mark_requests_invited` once the email is out: the admin page's Grant access, where a failed
+    send keeps the request `pending` (SPEC.md "Admin", Sending)."""
     now = now or utcnow()
     email = normalize_email(email)
     if find_by_email(email) is not None:
@@ -55,6 +76,8 @@ def create(email: str, *, now: dt.datetime | None = None) -> Issued:
     token = secrets.token_urlsafe(32)  # 256 bits
     expires_at = now + INVITE_TTL
     with session_scope() as s:
+        if mark_requests:
+            _mark_requests_invited(s, email, handled_by=handled_by, now=now)
         s.connection().execute(
             update(InviteRow)
             .where(col(InviteRow.email) == email)
@@ -71,6 +94,32 @@ def create(email: str, *, now: dt.datetime | None = None) -> Issued:
             )
         )
     return Issued(token, expires_at)
+
+
+def mark_requests_invited(
+    email: str, *, handled_by: str | None, now: dt.datetime | None = None
+) -> None:
+    """`pending` -> `invited` for each of `email`'s requests: what `create` does unless told
+    not to."""
+    with session_scope() as s:
+        _mark_requests_invited(
+            s, normalize_email(email), handled_by=handled_by, now=now or utcnow()
+        )
+
+
+def _mark_requests_invited(
+    s: Session, email: str, *, handled_by: str | None, now: dt.datetime
+) -> None:
+    """`pending` -> `invited` for each request from `email` (already normalized). Request
+    emails are stored as typed, so they're compared normalized here, in Python: SQLite's
+    lower() only folds ASCII. Pending rows are few."""
+    pending = s.exec(select(AccessRequestRow).where(AccessRequestRow.status == "pending"))
+    for row in pending:
+        if normalize_email(row.email) == email:
+            row.status = "invited"
+            row.handled_at = now
+            row.handled_by = handled_by
+            s.add(row)
 
 
 def _usable(s: Session, token: str, now: dt.datetime) -> InviteRow:

@@ -2,7 +2,23 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { activeNav, countHint, healthLine } from "./nav.ts";
+import { activeNav, ADMIN_HREF, countHint, healthLine, NAV_ITEMS, navItems } from "./nav.ts";
+
+test("the Admin item is listed only for an admin, last, linking to /app/admin", () => {
+  assert.deepEqual(navItems(false), NAV_ITEMS);
+  assert.equal(navItems(false).some((i) => i.id === "admin"), false);
+  const admin = navItems(true);
+  assert.equal(admin.length, NAV_ITEMS.length + 1);
+  assert.deepEqual(admin.at(-1), { id: "admin", label: "Admin", href: "/app/admin" });
+  assert.equal(ADMIN_HREF, "/app/admin");
+});
+
+test("/app/admin highlights Admin; other /app pages stay under Home", () => {
+  assert.equal(activeNav("/app/admin"), "admin");
+  assert.equal(activeNav("/app/admin/"), "admin");
+  assert.equal(activeNav("/app/account"), "home");
+  assert.equal(activeNav("/app/administer"), "home");
+});
 
 test("each top-level route highlights its own item", () => {
   assert.equal(activeNav("/app"), "home");

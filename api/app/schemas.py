@@ -404,6 +404,7 @@ class Me(BaseModel):
     email: str
     has_password: bool  # false for a passkey-only account
     created_at: dt.datetime
+    is_admin: bool  # SPEC.md "Admin": the sidebar links /app/admin only when true
 
 
 # Passkeys (WebAuthn, `app/auth/passkeys.py`). A ceremony is two calls: `options` hands the
@@ -485,6 +486,9 @@ class AcceptInviteRequest(BaseModel):
 # Request access (SPEC.md "Marketing and accounts"): the form on `/`. Text fields are trimmed
 # and capped; a blank required one is a 422.
 AccessRole = Literal["sponsor", "cro", "site", "other"]
+# SPEC.md "Admin", Request status: every request starts `pending`; an invite for its email makes
+# it `invited`, an admin's Dismiss makes it `dismissed`. Neither goes back to `pending`.
+AccessRequestStatus = Literal["pending", "invited", "dismissed"]
 ACCESS_REQUESTS_THROTTLED = "You've already sent a few requests. Try again in an hour."
 
 
@@ -501,3 +505,65 @@ class AccessRequestCreate(BaseModel):
     role: AccessRole
     message: str | None = Field(default=None, max_length=2000)
     website: str = Field(default="", max_length=2000)
+
+
+# The admin page, `/api/admin/*` (SPEC.md "Admin"). Signed-in admins only; anyone else gets 404.
+
+# What the Requests table shows for a row, derived from its stored status, the email's account
+# and the email's latest invite (`app/routers/admin.py`): an account means `joined` whatever the
+# status; a `pending` or `dismissed` row reads as stored; an `invited` row reads `invited` while
+# the latest invite is open, else `invite_expired` (offer Resend invite).
+AccessRequestState = Literal["pending", "dismissed", "invited", "invite_expired", "joined"]
+REQUEST_NOT_FOUND = "No such access request."
+REQUEST_NOT_PENDING = "This request has already been handled."
+REQUEST_DISMISSED = "This request was dismissed."
+GRANT_ACCOUNT_EXISTS = "This email already has an account."
+
+
+class AccessRequestAdmin(BaseModel):
+    """One row of `GET /api/admin/access-requests`: pending first, then newest first."""
+
+    id: int
+    name: str
+    email: str  # as typed on the form
+    organization: str
+    role: AccessRole
+    message: str | None
+    created_at: dt.datetime
+    status: AccessRequestStatus  # as stored
+    handled_at: dt.datetime | None
+    state: AccessRequestState  # what to show; see AccessRequestState
+    has_account: bool  # the email has an account (any status, disabled included)
+    has_open_invite: bool  # the email's latest invite is unused and unexpired
+    joined_at: dt.datetime | None  # the account's created_at, when there is an account
+    invite_expires_at: dt.datetime | None  # the latest invite's expiry, when there is one
+
+
+class GrantAccessRequest(BaseModel):
+    """`POST /api/admin/access-requests/{id}/grant`: the personal note opens the email."""
+
+    note: str | None = Field(default=None, max_length=2000)
+
+
+EmailStatus = Literal["sent", "logged", "failed"]
+
+
+class GrantResult(BaseModel):
+    """The invite exists whatever `email_status` says. `logged` (no RESEND_API_KEY) and `failed`
+    carry the `link` for the admin to copy, and `failed` its `error`; `sent` never has the link.
+    `sent` and `logged` mark the request `invited`; `failed` leaves it `pending`."""
+
+    email_status: EmailStatus
+    error: str | None = None
+    link: str | None = None
+
+
+class AdminUser(BaseModel):
+    """One row of `GET /api/admin/users`, newest first. Read-only: disabling stays on the CLI."""
+
+    id: str
+    email: str
+    is_admin: bool
+    created_at: dt.datetime
+    last_login_at: dt.datetime | None
+    disabled_at: dt.datetime | None

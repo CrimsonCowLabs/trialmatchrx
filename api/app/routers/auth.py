@@ -57,6 +57,7 @@ def to_me(user: UserRow) -> Me:
         email=user.email,
         has_password=user.password_hash is not None,
         created_at=user.created_at,
+        is_admin=user.is_admin,
     )
 
 

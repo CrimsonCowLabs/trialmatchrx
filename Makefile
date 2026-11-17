@@ -1,5 +1,5 @@
 .PHONY: install dev api web check check-api check-web check-scripts types seed cohort eval eval-offline \
-	eval-smoke compile-fixtures record-demo guide-pin dev-user reset-link users disable-user invite access-requests deploy
+	eval-smoke compile-fixtures record-demo guide-pin dev-user reset-link users disable-user admin invite access-requests deploy
 
 API_PORT ?= 8045
 WEB_PORT ?= 3045
@@ -130,13 +130,14 @@ dev-user:
 reset-link:
 	@test -n "$(EMAIL)" || { echo "usage: make reset-link EMAIL=someone@example.com" >&2; exit 2; }
 	cd api && uv run python -m scripts.reset_link "$(EMAIL)"
-# List every account: email, created date, last sign-in, passkeys, password set, disabled.
+# List every account: email, created date, last sign-in, passkeys, password set, disabled, admin.
 # In prod there's no make: see README.
 users:
 	cd api && uv run python -m scripts.users
 
 # List request-access submissions from the form on `/`, newest first: received (UTC), name,
-# email, organization, role, and the message below. In prod there's no make: see README.
+# email, organization, role, status (pending/invited/dismissed), and the message below. In prod
+# there's no make: see README.
 access-requests:
 	cd api && uv run python -m scripts.access_requests
 
@@ -145,6 +146,12 @@ access-requests:
 disable-user:
 	@test -n "$(EMAIL)" || { echo "usage: make disable-user EMAIL=..." >&2; exit 2; }
 	cd api && uv run python -m scripts.disable_user "$(EMAIL)"
+
+# Make EMAIL's existing account an admin (SPEC.md "Admin"; the only way to set is_admin).
+# Unknown email exits 2; an account that's already an admin says so. In prod: see README.
+admin:
+	@test -n "$(EMAIL)" || { echo "usage: make admin EMAIL=..." >&2; exit 2; }
+	cd api && uv run python -m scripts.admin "$(EMAIL)"
 
 # Print a one-time invite link for EMAIL (7 days; SPEC.md "Marketing and accounts"). Refuses an
 # email that already has an account. The link's origin is APP_URL (default
