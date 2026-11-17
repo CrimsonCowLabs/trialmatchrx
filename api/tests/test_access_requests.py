@@ -166,7 +166,7 @@ def test_lists_newest_first_with_the_message_below(capsys: pytest.CaptureFixture
     access_requests.submit(newer, "203.0.113.7", now=T0 + MINUTE)
 
     lines = listed(capsys)
-    assert lines[0].split() == ["RECEIVED", "NAME", "EMAIL", "ORGANIZATION", "ROLE"]
+    assert lines[0].split() == ["RECEIVED", "NAME", "EMAIL", "ORGANIZATION", "ROLE", "STATUS"]
     assert lines[1].split() == [
         "2026-11-16",
         "12:01",
@@ -176,9 +176,10 @@ def test_lists_newest_first_with_the_message_below(capsys: pytest.CaptureFixture
         "Acme",
         "Pharma",
         "sponsor",
+        "pending",
     ]
     assert lines[2].split()[:4] == ["2026-11-16", "12:00", "Old", "Person"]
-    assert lines[2].split()[-1] == "site"
+    assert lines[2].split()[-2:] == ["site", "pending"]
     assert lines[3] == "    First line. Second line."
     assert len(lines) == 4
 

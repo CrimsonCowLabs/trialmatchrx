@@ -64,6 +64,9 @@ def set_engine(engine: Engine) -> None:
 ADDED_COLUMNS: list[tuple[str, str]] = [
     ("runs", "created_by"),  # SPEC.md "Who started a run" (#10)
     ("users", "is_admin"),  # SPEC.md "Admin", Who
+    ("access_requests", "status"),  # SPEC.md "Admin", Request status
+    ("access_requests", "handled_at"),
+    ("access_requests", "handled_by"),
 ]
 
 
@@ -397,7 +400,13 @@ class InviteRow(SQLModel, table=True):
 class AccessRequestRow(SQLModel, table=True):
     """One request-access submission from the form on `/` (SPEC.md "Marketing and accounts").
     `ip` is the client IP (`app/auth/client_ip.py`), kept for the limit of 3 per hour per IP
-    (`app/access_requests.py`). `make access-requests` lists them, newest first."""
+    (`app/access_requests.py`). `make access-requests` lists them, newest first.
+
+    `status` (SPEC.md "Admin", Request status) starts `pending`; an invite for the email marks
+    it `invited` (`app/auth/invites.create`) and an admin can mark it `dismissed`
+    (`access_requests.dismiss`). `handled_at` / `handled_by` say when and by whom; `handled_by`
+    is null for an invite from the CLI. `email` is stored as typed (not normalized), and repeat
+    requests from one email stay separate rows."""
 
     __tablename__ = "access_requests"
 
@@ -409,3 +418,8 @@ class AccessRequestRow(SQLModel, table=True):
     message: str | None = None  # None when left blank
     ip: str = Field(index=True)
     created_at: dt.datetime = Field(default_factory=utcnow, index=True)
+    # Added after the table shipped: ADDED_COLUMNS. Existing rows read `pending`.
+    # schemas.AccessRequestStatus: "pending" | "invited" | "dismissed"
+    status: str = Field(default="pending", sa_column_kwargs={"server_default": "pending"})
+    handled_at: dt.datetime | None = None
+    handled_by: str | None = Field(default=None, foreign_key="users.id")  # the admin

@@ -486,6 +486,9 @@ class AcceptInviteRequest(BaseModel):
 # Request access (SPEC.md "Marketing and accounts"): the form on `/`. Text fields are trimmed
 # and capped; a blank required one is a 422.
 AccessRole = Literal["sponsor", "cro", "site", "other"]
+# SPEC.md "Admin", Request status: every request starts `pending`; an invite for its email makes
+# it `invited`, an admin's Dismiss makes it `dismissed`. Neither goes back to `pending`.
+AccessRequestStatus = Literal["pending", "invited", "dismissed"]
 ACCESS_REQUESTS_THROTTLED = "You've already sent a few requests. Try again in an hour."
 
 

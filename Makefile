@@ -136,7 +136,8 @@ users:
 	cd api && uv run python -m scripts.users
 
 # List request-access submissions from the form on `/`, newest first: received (UTC), name,
-# email, organization, role, and the message below. In prod there's no make: see README.
+# email, organization, role, status (pending/invited/dismissed), and the message below. In prod
+# there's no make: see README.
 access-requests:
 	cd api && uv run python -m scripts.access_requests
 
